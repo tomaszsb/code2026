@@ -5,6 +5,11 @@
 ## Project Summary
 Single-page web app using vanilla HTML/CSS/JavaScript with React (via CDN). Players navigate project phases from initiation to completion.
 
+## Repository
+- **GitHub**: https://github.com/tomaszsb/code2026
+- **Owner**: tomaszsb@gmail.com
+- **Branch**: main
+
 ## Essential Commands
 ```bash
 # Development server
@@ -13,6 +18,12 @@ python -m http.server 8000
 # Testing URLs
 http://localhost:8000/                              # Main game
 http://localhost:8000/?debug=true&logLevel=debug     # Debug mode
+
+# Git operations
+git add .                                           # Stage changes
+git commit -m "Description of changes"             # Commit changes
+git push origin main                                # Push to GitHub
+git pull origin main                                # Pull latest changes
 ```
 **No build required** - Browser-based Babel compilation.
 
