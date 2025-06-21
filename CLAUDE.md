@@ -45,9 +45,46 @@ js/components/App.js            # Root component
 data/cards.csv                  # Card properties and effects
 data/Spaces.csv                 # Space actions and outcomes
 data/DiceRoll Info.csv          # Dice result mappings
+scripts/clean-spaces-csv.js     # CSV cleanup utilities
+scripts/clean-dice-csv.js       # Dice data cleanup utilities
 ```
 
 ## Development Rules
+
+### CSV Data Integrity (CRITICAL)
+**All space names must be clean and consistent across CSV files:**
+
+```csv
+# ✅ CORRECT - Clean space names in movement columns
+space_1,space_2,space_3
+LEND-SCOPE-CHECK,ARCH-INITIATION,CHEAT-BYPASS
+
+# ❌ WRONG - Descriptions mixed with space names  
+space_1,space_2,space_3
+LEND-SCOPE-CHECK - To get more $,ARCH-INITIATION - To start design,CHEAT-BYPASS - To get ahead
+
+# ✅ CORRECT - Clean dice outcomes
+1,2,3,4,5,6
+REG-FDNY-FEE-REVIEW,REG-DOB-PLAN-EXAM,ARCH-INITIATION,ARCH-INITIATION,REG-FDNY-FEE-REVIEW,REG-FDNY-FEE-REVIEW
+
+# ❌ WRONG - Descriptions in dice outcomes
+1,2,3,4,5,6
+REG-FDNY-FEE-REVIEW - Pass,REG-DOB-PLAN-EXAM - Missing files,ARCH-INITIATION - Major problem,ARCH-INITIATION - Major problem,REG-FDNY-FEE-REVIEW - Missing Approval,REG-FDNY-FEE-REVIEW - Missing Approval
+```
+
+**Maintenance Scripts:**
+```bash
+# Clean space movement data (space_1 through space_5 columns)
+node scripts/clean-spaces-csv.js
+
+# Clean dice roll outcomes (columns 1-6)
+node scripts/clean-dice-csv.js
+```
+
+**RULE: Space references must match space_name entries exactly**
+- No descriptions, no extra text, no inconsistent naming
+- Backups created automatically before cleaning
+- Run scripts after any CSV data changes
 
 ### CSV Data Standards
 ```javascript
@@ -149,6 +186,8 @@ componentWillUnmount() {
 ```
 
 ## Debugging
+
+### CSV Data Issues
 ```javascript
 // Enable CSV query logging
 CSVDatabase.debug = true;
@@ -159,6 +198,26 @@ GameStateManager.debug = true;
 // Component-specific debugging
 window.DEBUG_COMPONENT = 'ComponentName';
 ```
+
+**Common "Space not found" errors:**
+```bash
+# Error: Space LEND-SCOPE-CHECK - To get more $/First not found
+# CAUSE: CSV contains descriptions mixed with space names
+# FIX: Run cleaning scripts
+node scripts/clean-spaces-csv.js
+node scripts/clean-dice-csv.js
+
+# Error: Space REG-FDNY-PLAN EXAM/First not found  
+# CAUSE: Space name inconsistency (space vs dash)
+# FIX: Check space_name column matches dice outcomes exactly
+```
+
+**CSV Validation Checklist:**
+- ✅ All space_1 through space_5 contain clean space names only
+- ✅ All dice outcome columns (1-6) contain clean space names only  
+- ✅ Space names match exactly across Spaces.csv and DiceRoll Info.csv
+- ✅ No descriptions after " - " in movement/outcome fields
+- ✅ Consistent naming (dashes vs spaces vs underscores)
 
 ## Reference Materials
 
