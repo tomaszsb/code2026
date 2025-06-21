@@ -207,16 +207,6 @@ const ComponentUtils = {
         return nextSpaces;
     },
     
-    // Extract clean space name from space string (removes description)
-    cleanSpaceName: (spaceString) => {
-        if (!spaceString) return '';
-        const cleaned = spaceString.trim();
-        // Handle special cases
-        if (cleaned === 'n/a' || cleaned === '{ORIGINAL_SPACE}') return cleaned;
-        // Split on " - " and take first part (the actual space name)
-        return cleaned.split(' - ')[0];
-    },
-    
     // Check if space requires dice roll
     requiresDiceRoll: (spaceData) => {
         return spaceData.requires_dice_roll === 'Yes';

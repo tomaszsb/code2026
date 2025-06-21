@@ -35,11 +35,10 @@ function SpaceChoice() {
     const confirmSelection = () => {
         if (!state.selectedSpace) return;
         
-        // Move player to selected space (use clean space name)
-        const cleanSpaceName = ComponentUtils.cleanSpaceName(state.selectedSpace);
+        // Move player to selected space
         gameStateManager.emit('movePlayerRequest', {
             playerId: state.playerId,
-            spaceName: cleanSpaceName,
+            spaceName: state.selectedSpace,
             visitType: 'First'
         });
         
@@ -56,7 +55,7 @@ function SpaceChoice() {
     // Auto-select if only one option
     if (state.spaceOptions.length === 1 && !state.selectedSpace) {
         setTimeout(() => {
-            selectSpace(ComponentUtils.cleanSpaceName(state.spaceOptions[0]));
+            selectSpace(state.spaceOptions[0]);
         }, 100);
     }
 
@@ -80,7 +79,7 @@ function SpaceChoice() {
         
         React.createElement('div', { className: 'space-options' },
             state.spaceOptions.map((spaceName, index) => {
-                const cleanSpaceName = ComponentUtils.cleanSpaceName(spaceName);
+                const cleanSpaceName = spaceName.split(' - ')[0]; // Remove descriptions
                 const isSelected = state.selectedSpace === cleanSpaceName;
                 
                 return React.createElement('div', {

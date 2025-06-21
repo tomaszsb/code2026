@@ -10,24 +10,14 @@ function GameManager() {
     // Handle player movement
     useEventListener('movePlayerRequest', ({ playerId, spaceName, visitType }) => {
         try {
-            // Handle special cases
-            if (!spaceName || spaceName === 'n/a' || spaceName === '{ORIGINAL_SPACE}') {
-                // Skip invalid moves
-                console.warn(`Skipping invalid move to: ${spaceName}`);
-                return;
-            }
-            
-            // Clean the space name
-            const cleanSpaceName = ComponentUtils.cleanSpaceName(spaceName);
-            
             // Validate the space exists
-            const spaceData = window.CSVDatabase.spaces.find(cleanSpaceName, visitType);
+            const spaceData = window.CSVDatabase.spaces.find(spaceName, visitType);
             if (!spaceData) {
-                throw new Error(`Space ${cleanSpaceName}/${visitType} not found in CSV data`);
+                throw new Error(`Space ${spaceName}/${visitType} not found in CSV data`);
             }
             
             // Move player
-            gameStateManager.movePlayer(playerId, cleanSpaceName, visitType);
+            gameStateManager.movePlayer(playerId, spaceName, visitType);
             
             // Process space effects
             processSpaceEffects(playerId, spaceData);
@@ -207,31 +197,20 @@ function GameManager() {
         else if (outcome.includes(' or ')) {
             // Multiple space options - emit for player choice
             const spaceOptions = outcome.split(' or ').map(opt => opt.trim());
-            // Filter out n/a options
-            const validOptions = spaceOptions.filter(space => {
-                const clean = ComponentUtils.cleanSpaceName(space);
-                return clean && clean !== 'n/a';
+            gameStateManager.emit('showSpaceChoice', {
+                playerId,
+                spaceOptions,
+                source: 'dice_outcome'
             });
-            
-            if (validOptions.length > 0) {
-                gameStateManager.emit('showSpaceChoice', {
-                    playerId,
-                    spaceOptions: validOptions,
-                    source: 'dice_outcome'
-                });
-            }
         }
         // Check if outcome is a single space movement
         else if (outcome.includes('-')) {
-            // Single space movement - clean the space name
-            const cleanSpaceName = ComponentUtils.cleanSpaceName(outcome.trim());
-            if (cleanSpaceName && cleanSpaceName !== 'n/a') {
-                gameStateManager.emit('movePlayerRequest', {
-                    playerId,
-                    spaceName: cleanSpaceName,
-                    visitType: 'First'
-                });
-            }
+            // Single space movement
+            gameStateManager.emit('movePlayerRequest', {
+                playerId,
+                spaceName: outcome.trim(),
+                visitType: 'First'
+            });
         }
         // Check if outcome is a fee/percentage
         else if (outcome.includes('%')) {
@@ -271,29 +250,18 @@ function GameManager() {
             gameStateManager.emit('noMovementOptions', { playerId, spaceData });
         } else if (nextSpaces.length === 1) {
             // Only one option - move automatically
-            const cleanSpaceName = ComponentUtils.cleanSpaceName(nextSpaces[0]);
-            if (cleanSpaceName && cleanSpaceName !== 'n/a') {
-                gameStateManager.emit('movePlayerRequest', {
-                    playerId,
-                    spaceName: cleanSpaceName,
-                    visitType: 'First'
-                });
-            }
+            gameStateManager.emit('movePlayerRequest', {
+                playerId,
+                spaceName: nextSpaces[0],
+                visitType: 'First'
+            });
         } else {
             // Multiple options - let player choose
-            // Filter out n/a options and provide both original and clean names
-            const validSpaces = nextSpaces.filter(space => {
-                const clean = ComponentUtils.cleanSpaceName(space);
-                return clean && clean !== 'n/a';
+            gameStateManager.emit('showSpaceChoice', {
+                playerId,
+                spaceOptions: nextSpaces,
+                source: 'space_movement'
             });
-            
-            if (validSpaces.length > 0) {
-                gameStateManager.emit('showSpaceChoice', {
-                    playerId,
-                    spaceOptions: validSpaces,
-                    source: 'space_movement'
-                });
-            }
         }
     }
     
