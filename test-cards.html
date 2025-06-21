@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Display Test</title>
+    <link rel="stylesheet" href="css/unified-design.css">
+</head>
+<body>
+    <div id="test-app">
+        <div class="section">
+            <div class="section__header">
+                <h1 class="section__title">Card Display Component Test</h1>
+            </div>
+            <div class="section__content">
+                <div id="card-test-container">Loading cards...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- React via CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Core Systems -->
+    <script src="js/data/CSVDatabase.js"></script>
+    <script src="js/data/GameStateManager.js"></script>
+    
+    <!-- Card Display Component -->
+    <script type="text/babel" src="js/components/CardDisplay.js"></script>
+
+    <script type="text/babel">
+        async function testCardDisplay() {
+            try {
+                // Initialize CSV Database
+                await CSVDatabase.initialize();
+                
+                // Get sample cards of different types
+                const sampleCards = [
+                    CSVDatabase.cards.query({card_type: 'W'})[0],
+                    CSVDatabase.cards.query({card_type: 'B'})[0],
+                    CSVDatabase.cards.query({card_type: 'I'})[0],
+                    CSVDatabase.cards.query({card_type: 'L'})[0],
+                    CSVDatabase.cards.query({card_type: 'E'})[0]
+                ].filter(card => card); // Remove any undefined cards
+
+                console.log('Sample cards:', sampleCards);
+
+                // Render card display
+                const root = ReactDOM.createRoot(document.getElementById('card-test-container'));
+                root.render(
+                    React.createElement(CardDisplay, {
+                        cards: sampleCards,
+                        layout: 'grid',
+                        onCardSelect: (card) => {
+                            console.log('Selected card:', card);
+                        }
+                    })
+                );
+
+            } catch (error) {
+                console.error('Test failed:', error);
+                document.getElementById('card-test-container').innerHTML = 
+                    `<div class="text-body">Error loading cards: ${error.message}</div>`;
+            }
+        }
+
+        // Run test when page loads
+        testCardDisplay();
+    </script>
+</body>
+</html>

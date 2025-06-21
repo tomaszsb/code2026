@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Effect Animations Test</title>
+    <link rel="stylesheet" href="css/unified-design.css">
+</head>
+<body>
+    <div id="test-app">
+        <div class="section">
+            <div class="section__header">
+                <h1 class="section__title">Card Effect Animations Test</h1>
+                <p class="text-body">Click the buttons in the bottom-right to test different card effect animations.</p>
+            </div>
+            <div class="section__content">
+                <div class="card">
+                    <h3 class="heading-3">Available Animations</h3>
+                    <ul class="text-body">
+                        <li><strong>Money Effect:</strong> Shows money gained from business cards</li>
+                        <li><strong>Loan Effect:</strong> Displays loan amounts from bank cards</li>
+                        <li><strong>Draw Effect:</strong> Animates card drawing actions</li>
+                        <li><strong>Card Play:</strong> Shows when cards are played to areas</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h3 class="heading-3">Features</h3>
+                    <ul class="text-body">
+                        <li>Floating messages with icons and colors</li>
+                        <li>Smooth rise, hold, and fade animations</li>
+                        <li>Queue system for multiple simultaneous effects</li>
+                        <li>Event-driven integration with game system</li>
+                        <li>Mobile-responsive design</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div id="animation-container">Loading animations...</div>
+    </div>
+
+    <!-- React via CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Core Systems -->
+    <script src="js/data/CSVDatabase.js"></script>
+    <script src="js/data/GameStateManager.js"></script>
+    
+    <!-- Components -->
+    <script type="text/babel" src="js/components/CardEffectAnimations.js"></script>
+
+    <script type="text/babel">
+        async function testCardAnimations() {
+            try {
+                // Initialize CSV Database
+                await CSVDatabase.initialize();
+                
+                // Render animation system with test controls
+                const root = ReactDOM.createRoot(document.getElementById('animation-container'));
+                root.render(
+                    React.createElement(CardEffectAnimations, {
+                        showTestControls: true,
+                        gameStateManager: null // No game state manager for testing
+                    })
+                );
+
+                console.log('Card effect animations initialized');
+
+            } catch (error) {
+                console.error('Test failed:', error);
+                document.getElementById('animation-container').innerHTML = 
+                    `<div class="text-body">Error loading animations: ${error.message}</div>`;
+            }
+        }
+
+        // Run test when page loads
+        testCardAnimations();
+    </script>
+</body>
+</html>
