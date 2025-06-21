@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Management Board Game</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
+    <!-- CSS Framework -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/game-components.css">
+    <link rel="stylesheet" href="css/card-components.css">
+    <link rel="stylesheet" href="css/board-space-renderer.css">
+    <link rel="stylesheet" href="css/player-animations.css">
+    <link rel="stylesheet" href="css/dice-animations.css">
+    <link rel="stylesheet" href="css/player-setup.css">
+    <link rel="stylesheet" href="css/static-player-status.css">
+    <link rel="stylesheet" href="css/space-info.css">
+    <link rel="stylesheet" href="css/space-explorer.css">
+    <link rel="stylesheet" href="css/logic-space-components.css">
+</head>
+<body>
+    <div id="app">
+        <div class="loading-screen">
+            <h1>Project Management Board Game</h1>
+            <p>Loading game data...</p>
+        </div>
+    </div>
+
+    <!-- React via CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX transformation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Core Systems (CRITICAL LOADING ORDER) -->
+    <script src="js/data/CSVDatabase.js"></script>
+    <script src="js/data/GameStateManager.js"></script>
+    
+    <!-- Component Utilities -->
+    <script type="text/babel" src="js/utils/ComponentUtils.js"></script>
+    
+    <!-- Manager Components -->
+    <script type="text/babel" src="js/components/GameManager.js"></script>
+    
+    <!-- UI Components -->
+    <script type="text/babel" src="js/components/LoadingScreen.js"></script>
+    <script type="text/babel" src="js/components/PlayerSetup.js"></script>
+    <script type="text/babel" src="js/components/GameBoard.js"></script>
+    
+    <!-- Main App -->
+    <script type="text/babel" src="js/components/App.js"></script>
+
+    <script type="text/babel">
+        // Initialize application
+        const { StrictMode } = React;
+        const { createRoot } = ReactDOM;
+        
+        // Debug mode from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const debugMode = urlParams.get('debug') === 'true';
+        const logLevel = urlParams.get('logLevel') || 'info';
+        
+        if (debugMode) {
+            CSVDatabase.debug = true;
+            GameStateManager.setDebug(true);
+            console.log('Debug mode enabled');
+        }
+
+        // Create React root and render app
+        const root = createRoot(document.getElementById('app'));
+        root.render(
+            React.createElement(StrictMode, null,
+                React.createElement(App, { debugMode, logLevel })
+            )
+        );
+    </script>
+</body>
+</html>
