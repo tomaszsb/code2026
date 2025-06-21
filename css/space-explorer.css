@@ -1,0 +1,352 @@
+/* space-explorer.css - Styles for Space Explorer component */
+
+/**
+ * This file contains styles for the Space Explorer panel and related UI elements
+ * 
+ * Key features:
+ * - Styling for the Space Explorer panel and its contents
+ * - Support for showing/hiding the explorer with close and open buttons
+ * - Styling for the explorer header, dice tables, cards, and resources
+ * - Classes for JavaScript to toggle via the space-explorer-logger.js
+ */
+/* Board and explorer container */
+.board-and-explorer-container {
+  position: relative;
+  display: flex;
+}
+
+
+/* Open Explorer button */
+.open-explorer-container {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 600; /* Above turn transition overlay (500) */
+}
+
+.open-explorer-btn {
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.open-explorer-btn:hover {
+  background-color: #3367d6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Explorer header and close button */
+.explorer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.explorer-close-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background-color: #e74c3c;
+  border: none;
+  color: white;
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.explorer-close-btn:hover {
+  background-color: #c0392b;
+  transform: scale(1.1);
+}
+
+/* Classes for JavaScript className-based styling */
+.explorer-auto-height {
+  height: auto;
+  min-height: 360px;
+  max-height: none;
+  overflow-y: visible;
+}
+
+.dice-table-fixed {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.row-alternate {
+  background-color: rgba(242, 242, 242, 0.6);
+}
+
+.space-vertical-fixed {
+  vertical-align: top;
+  align-self: flex-start;
+  transform: translateY(0);
+}
+
+.row-align-start {
+  align-items: flex-start;
+}
+
+.setup-space-fixed {
+  position: relative;
+  transform: translateY(0);
+  vertical-align: top;
+  align-self: flex-start;
+}
+
+.player-tokens-fixed {
+  position: absolute;
+  bottom: 5px;
+  left: 5px;
+}
+
+/* Fix for vertical alignment of all spaces */
+.board-row {
+  align-items: flex-start;
+}
+
+/* Force OWNER-SCOPE-INITIATION to align with other spaces */
+.space-type-setup {
+  vertical-align: top;
+  transform: translateY(0);
+}
+
+/* Fix for any special top elements in spaces */
+.space-type-setup::before,
+.space-type-setup::after {
+  position: absolute;
+  top: 0;
+  height: 0;
+  margin-top: 0;
+  transform: translateY(0);
+}
+
+/* Reset vertical alignment for all spaces */
+.board-space {
+  vertical-align: top;
+  align-self: flex-start;
+  transform: translateY(0);
+}
+
+/* Fix for any player tokens positioning */
+.player-tokens {
+  position: absolute;
+  bottom: 5px;
+  left: 5px;
+  transform: translateY(0);
+}
+
+/* Fix for the red badge/tag in OWNER-SCOPE-INITIATION */
+.space-type-setup .dice-roll-indicator,
+.space-type-setup .badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translateY(0);
+  margin-top: 0;
+}
+
+/* Make Space Explorer expand to fit content before scrolling */
+.space-explorer-container {
+  height: auto;
+  min-height: 360px;
+  max-height: none;
+  overflow-y: visible;
+  z-index: 600; /* Above turn transition overlay (500) */
+  position: relative;
+}
+
+/* Ensure the space explorer content displays fully */
+.space-explorer {
+  height: auto;
+  overflow-y: visible;
+  z-index: 600; /* Above turn transition overlay (500) */
+  position: relative;
+}
+
+/* Fix table display in space explorer */
+.explorer-dice-table-container {
+  width: 100%;
+  overflow-x: hidden;
+  margin-bottom: 16px;
+}
+
+.explorer-dice-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.explorer-dice-table thead {
+  background-color: #4285f4;
+  color: white;
+}
+
+.explorer-dice-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-weight: bold;
+}
+
+.explorer-dice-table tbody tr:nth-child(odd) {
+  background-color: rgba(242, 242, 242, 0.6);
+}
+
+.explorer-dice-table th:first-child,
+.explorer-dice-table td:first-child {
+  width: 60px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.explorer-dice-table th:last-child,
+.explorer-dice-table td:last-child {
+  width: calc(100% - 60px);
+}
+
+.explorer-dice-table td {
+  padding: 8px 12px;
+  vertical-align: top;
+}
+
+/* Fix for outcome display in dice table */
+.explorer-dice-table .dice-outcome span {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.explorer-dice-table .dice-outcome span:last-child {
+  margin-bottom: 0;
+}
+
+/* Style for different outcome types */
+.explorer-dice-table .outcome-move {
+  color: #4285f4;
+  font-weight: bold;
+}
+
+.explorer-dice-table .outcome-card {
+  color: #34a853;
+}
+
+.explorer-dice-table .outcome-resource {
+  color: #ea4335;
+}
+
+/* Card display styles */
+.explorer-card-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  background-color: rgba(242, 242, 242, 0.5);
+  border-radius: 4px;
+}
+
+.card-type {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  text-align: center;
+  border-radius: 50%;
+  color: white;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.work-card {
+  background-color: #4285f4;
+}
+
+.business-card {
+  background-color: #ea4335;
+}
+
+.innovation-card {
+  background-color: #fbbc05;
+}
+
+.leadership-card {
+  background-color: #34a853;
+}
+
+.environment-card {
+  background-color: #8e44ad;
+}
+
+/* Ensure all sections in space explorer have proper spacing */
+.explorer-section, 
+.explorer-dice-section,
+.explorer-cards-section,
+.explorer-resources-section {
+  margin-bottom: 16px;
+}
+
+/* Improve heading styles */
+.explorer-title {
+  margin: 0 0 8px 0;
+  color: #4285f4;
+}
+
+.explorer-space-name {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.explorer-visit-type {
+  font-style: italic;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+/* Improve dice indicator */
+.explorer-dice-indicator {
+  background-color: rgba(234, 67, 53, 0.1);
+  border-left: 3px solid #ea4335;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.explorer-dice-indicator .dice-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-color: #ea4335;
+  border-radius: 3px;
+  margin-right: 8px;
+}
+
+/* Resource items */
+.explorer-resource-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background-color: rgba(242, 242, 242, 0.5);
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.resource-label {
+  font-weight: bold;
+}

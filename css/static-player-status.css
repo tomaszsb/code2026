@@ -1,0 +1,331 @@
+/* static-player-status.css file is beginning to be used - UPDATED 2025-06-20 */
+console.log('static-player-status.css file is beginning to be used - UPDATED 2025-06-20');
+
+/* Main container styling - BALANCED HEIGHT */
+.info-panels-container .player-panel .static-player-status,
+.player-panel .static-player-status,
+.static-player-status {
+  margin: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+  max-width: 100%;
+  min-height: 400px !important; /* Reasonable minimum height */
+  height: auto !important; /* Allow content to determine height */
+  max-height: 70vh !important; /* Prevent excessive height */
+  overflow: visible !important; /* No scrollbar needed */
+}
+
+/* Specific override for left panel positioning */
+.info-panels-container .player-panel:first-child .static-player-status {
+  height: auto !important;
+  min-height: 400px !important;
+  max-height: 70vh !important;
+  overflow: visible !important;
+}
+
+/* Border stylings for different player colors - will be applied via JS className */
+.static-player-status-border-blue {
+  border: 2px solid #4285f4;
+}
+
+.static-player-status-border-red {
+  border: 2px solid #ea4335;
+}
+
+.static-player-status-border-green {
+  border: 2px solid #34a853;
+}
+
+.static-player-status-border-yellow {
+  border: 2px solid #fbbc05;
+}
+
+.static-player-status-border-purple {
+  border: 2px solid #8e44ad;
+}
+
+.static-player-status-border-orange {
+  border: 2px solid #ff9800;
+}
+
+/* Header section */
+.static-player-status-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* Color indicator */
+.static-player-status-color-indicator {
+  width: 15px;
+  height: 40px;
+  border-radius: 3px;
+  margin-right: 10px;
+}
+
+/* Color indicator colors - will be applied via JS className */
+.static-player-status-color-blue {
+  background-color: #4285f4;
+  box-shadow: 0 0 5px #4285f4;
+}
+
+.static-player-status-color-red {
+  background-color: #ea4335;
+  box-shadow: 0 0 5px #ea4335;
+}
+
+.static-player-status-color-green {
+  background-color: #34a853;
+  box-shadow: 0 0 5px #34a853;
+}
+
+.static-player-status-color-yellow {
+  background-color: #fbbc05;
+  box-shadow: 0 0 5px #fbbc05;
+}
+
+.static-player-status-color-purple {
+  background-color: #8e44ad;
+  box-shadow: 0 0 5px #8e44ad;
+}
+
+.static-player-status-color-orange {
+  background-color: #ff9800;
+  box-shadow: 0 0 5px #ff9800;
+}
+
+.static-player-status-name-container {
+  flex: 1;
+}
+
+/* Player name styling */
+.static-player-status-name {
+  padding: 5px 10px;
+  border-radius: 4px;
+  color: white;
+  font-weight: bold;
+  font-size: 1.1em;
+  margin-bottom: 5px;
+}
+
+/* Name background colors - will be applied via JS className */
+.static-player-status-name-blue {
+  background-color: #4285f4;
+}
+
+.static-player-status-name-red {
+  background-color: #ea4335;
+}
+
+.static-player-status-name-green {
+  background-color: #34a853;
+}
+
+.static-player-status-name-yellow {
+  background-color: #fbbc05;
+}
+
+.static-player-status-name-purple {
+  background-color: #8e44ad;
+}
+
+.static-player-status-name-orange {
+  background-color: #ff9800;
+}
+
+/* Space info */
+.static-player-status-space {
+  font-size: 0.9em;
+  color: #555;
+  margin-top: 2px;
+}
+
+/* Section titles */
+.static-player-status-section-title {
+  font-weight: bold;
+  margin: 15px 0 5px 0;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #eee;
+  color: #333;
+}
+
+/* Resources section */
+.status-resources {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 5px 0;
+}
+
+.static-player-status-resource-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+/* Financial status */
+.status-financial {
+  grid-column: span 2;
+  margin-top: 10px;
+  padding: 8px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  border-left: 3px solid #ddd;
+}
+
+.status-financial h4 {
+  margin: 0 0 5px 0;
+  font-size: 1em;
+  color: #555;
+}
+
+.status-financial-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+
+.surplus-value {
+  color: #34a853;
+  font-weight: bold;
+}
+
+.deficit-value {
+  color: #ea4335;
+  font-weight: bold;
+}
+
+/* Card counts section */
+.card-counts-container {
+  margin: 5px 0;
+  padding: 8px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+}
+
+.card-counts-total {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  padding-bottom: 5px;
+  margin-bottom: 5px;
+  border-bottom: 1px dashed #ddd;
+}
+
+.card-counts-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.card-type-count {
+  display: flex;
+  align-items: center;
+  font-size: 0.9em;
+}
+
+.card-type-indicator {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 0.8em;
+  margin-right: 5px;
+}
+
+/* Card type colors */
+.card-type-w {
+  background-color: #4285f4; /* Blue for Work Type */
+}
+
+.card-type-b {
+  background-color: #ea4335; /* Red for Bank */
+}
+
+.card-type-i {
+  background-color: #fbbc05; /* Yellow for Investor */
+}
+
+.card-type-l {
+  background-color: #34a853; /* Green for Life */
+}
+
+.card-type-e {
+  background-color: #8e44ad; /* Purple for Expeditor */
+}
+
+.card-type-name {
+  margin-right: 5px;
+}
+
+.card-type-value {
+  font-weight: bold;
+}
+
+/* Scope table */
+.static-player-status-scope-container {
+  margin: 5px 0;
+}
+
+.static-player-status-scope-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.static-player-status-scope-table th {
+  background-color: #f2f2f2;
+  text-align: left;
+  padding: 8px;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+.static-player-status-scope-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9em;
+}
+
+.static-player-status-scope-table .total-row {
+  font-weight: bold;
+  background-color: #f9f9f9;
+}
+
+.static-player-status-scope-table .total-row td {
+  border-top: 2px solid #ddd;
+}
+
+/* Empty and error states */
+.static-player-status.empty {
+  padding: 15px;
+  text-align: center;
+  color: #777;
+  font-style: italic;
+}
+
+.static-player-status.error {
+  padding: 15px;
+  color: #d32f2f;
+  border: 1px solid #ffcdd2;
+  background-color: #ffebee;
+}
+
+.static-player-status.error h3 {
+  margin-top: 0;
+  color: #b71c1c;
+}
+
+.static-player-status-no-scope {
+  color: #777;
+  font-style: italic;
+}
+
+console.log('static-player-status.css code execution finished');

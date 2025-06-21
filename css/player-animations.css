@@ -1,0 +1,846 @@
+/* player-animations.css - Enhanced player movement visualization system */
+console.log('player-animations.css file is beginning to be used');
+
+.player-token {
+  transition: transform 0.5s ease-out, opacity 0.3s ease;
+  position: relative;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  margin: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Style for current player token */
+.player-token.current-player {
+  transform: scale(1.2);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8), 0 0 10px rgba(255, 255, 0, 0.6);
+  z-index: 2;
+}
+
+/* Enhanced highlighting for active player */
+.player-token.current-player.active-player-enhanced {
+  animation: active-player-pulse 2s infinite;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.9), 0 0 15px rgba(255, 255, 0, 0.8), 0 0 20px rgba(255, 165, 0, 0.6);
+  z-index: 5; /* Higher z-index to ensure visibility */
+}
+
+/* Pulse animation for active player token */
+@keyframes active-player-pulse {
+  0% {
+    transform: scale(1.2);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.8), 0 0 10px rgba(255, 255, 0, 0.6);
+  }
+  50% {
+    transform: scale(1.4);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.9), 0 0 18px rgba(255, 255, 0, 0.8), 0 0 25px rgba(255, 165, 0, 0.7);
+  }
+  100% {
+    transform: scale(1.2);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.8), 0 0 10px rgba(255, 255, 0, 0.6);
+  }
+}
+
+/* Hover effect for all tokens */
+.player-token:hover {
+  transform: scale(1.3);
+  z-index: 3;
+}
+
+/* Player movement animation styles */
+
+/* For tokens arriving at a new space */
+.player-token.player-moved-in {
+  animation: player-arrive 0.8s ease-out;
+  z-index: 10; /* Keep moving tokens above others */
+}
+
+/* For tokens leaving a space (ghost effect) */
+.player-token.player-moved-out {
+  animation: player-leave 0.8s ease-out;
+  opacity: 0;
+  z-index: 1;
+}
+
+/* Container for ghost tokens */
+.player-tokens-moving-out {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Don't interfere with clicks */
+}
+
+/* Animation keyframes */
+@keyframes player-arrive {
+  0% {
+    transform: scale(0.1) translateY(-30px);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.5) translateY(0);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes player-leave {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.1) translateY(30px);
+    opacity: 0;
+  }
+}
+
+/* Different movement animations based on direction */
+.player-token.move-right {
+  animation: move-right 1s ease-out;
+}
+
+.player-token.move-left {
+  animation: move-left 1s ease-out;
+}
+
+.player-token.move-up {
+  animation: move-up 1s ease-out;
+}
+
+.player-token.move-down {
+  animation: move-down 1s ease-out;
+}
+
+@keyframes move-right {
+  0% {
+    transform: translateX(-50px) scale(0.8);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes move-left {
+  0% {
+    transform: translateX(50px) scale(0.8);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes move-up {
+  0% {
+    transform: translateY(50px) scale(0.8);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes move-down {
+  0% {
+    transform: translateY(-50px) scale(0.8);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* StaticPlayerStatus component styles */
+.static-player-status {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  padding: 15px;
+  /* The border will be set dynamically via JavaScript */
+  transition: all 0.3s ease-in-out;
+}
+
+/* Enhanced player info highlight */
+.player-info.current.active-player-info-enhanced {
+  animation: active-player-info-pulse 2.5s infinite;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.18);
+}
+
+/* Pulse animation for active player info card */
+@keyframes active-player-info-pulse {
+  0% {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+  100% {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transform: translateY(0);
+  }
+}
+
+.static-player-status.empty {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+.static-player-status.error {
+  background-color: #fff4f4;
+  border: 2px solid #ff5555;
+  color: #d32f2f;
+  padding: 20px;
+  text-align: center;
+}
+
+.static-player-status-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.static-player-status-color-indicator {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  margin-right: 10px;
+  /* The background-color and box-shadow will be set dynamically via JavaScript */
+}
+
+.static-player-status-name-container {
+  flex: 1;
+}
+
+.static-player-status-name {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 4px;
+  color: white;
+  font-weight: bold;
+  margin-bottom: 5px;
+  /* The background-color will be set dynamically via JavaScript */
+}
+
+.static-player-status-space {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.static-player-status-section-title {
+  font-weight: bold;
+  margin: 15px 0 5px 0;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #eee;
+}
+
+.status-resources {
+  padding: 5px 0;
+}
+
+.static-player-status-resource-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+
+.status-financial {
+  margin-top: 10px;
+  background-color: #f5f5f5;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.status-financial h4 {
+  margin: 0 0 5px 0;
+  font-size: 0.9em;
+}
+
+.status-financial-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+
+.surplus-value {
+  color: #34a853;
+  font-weight: bold;
+}
+
+.deficit-value {
+  color: #ea4335;
+  font-weight: bold;
+}
+
+/* Card count styles */
+.card-counts-container {
+  margin-top: 5px;
+  padding: 5px 0;
+}
+
+.card-counts-total {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  padding: 3px 0;
+  margin-bottom: 5px;
+  border-bottom: 1px dotted #eee;
+}
+
+.card-counts-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.card-type-count {
+  display: flex;
+  align-items: center;
+  margin: 2px 0;
+}
+
+.card-type-indicator {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  color: white;
+  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 18px;
+  border-radius: 3px;
+  margin-right: 8px;
+}
+
+.card-type-name {
+  flex: 1;
+  font-size: 0.9em;
+}
+
+.card-type-value {
+  font-weight: bold;
+  width: 30px;
+  text-align: right;
+}
+
+.static-player-status-scope-container {
+  margin-top: 5px;
+}
+
+.static-player-status-scope-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.static-player-status-scope-table th {
+  text-align: left;
+  padding: 5px;
+  border-bottom: 1px solid #ddd;
+  background-color: #f5f5f5;
+}
+
+.static-player-status-scope-table td {
+  padding: 5px;
+  border-bottom: 1px solid #eee;
+}
+
+.static-player-status-scope-table .total-row {
+  font-weight: bold;
+  background-color: #f9f9f9;
+}
+
+.static-player-status-no-scope {
+  color: #888;
+  font-style: italic;
+}
+
+/* Your Turn Indicator Styles */
+.your-turn-indicator {
+  display: none; /* Hidden by default */
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(255, 215, 0, 0.9); /* Gold */
+  color: #333;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: bold;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  animation: bounce-in 0.5s ease-out forwards;
+}
+
+/* Only show indicator for current player tokens */
+.player-token.current-player.active-player-enhanced .your-turn-indicator {
+  display: block;
+}
+
+/* Bounce in animation for the indicator */
+@keyframes bounce-in {
+  0% {
+    transform: translateX(-50%) translateY(10px);
+    opacity: 0;
+  }
+  70% {
+    transform: translateX(-50%) translateY(-3px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ====== ENHANCED MOVEMENT VISUALIZATION SYSTEM ====== */
+
+/* Movement trail system */
+.movement-trail-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.movement-trail {
+  position: absolute;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  border-radius: 2px;
+  animation: trailFlow 2s linear infinite;
+  opacity: 0.7;
+}
+
+.movement-trail.recent {
+  height: 4px;
+  opacity: 0.9;
+  animation: trailFlow 1.5s linear infinite;
+}
+
+.movement-trail.active {
+  height: 5px;
+  opacity: 1;
+  box-shadow: 0 0 8px currentColor;
+  animation: trailFlow 1s linear infinite;
+}
+
+/* Trail particles */
+.trail-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: particleMove 3s ease-out forwards;
+  opacity: 0.8;
+}
+
+.trail-particle.spark {
+  animation: sparkMove 2s ease-out forwards;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* Flying player token for smooth movement */
+.player-token-flying {
+  position: fixed;
+  z-index: 1000;
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.2);
+}
+
+.player-token-flying.long-distance {
+  transition: all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Position history breadcrumbs */
+.position-history-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.position-breadcrumb {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.4;
+  animation: breadcrumbFade 5s linear forwards;
+}
+
+.position-breadcrumb.recent {
+  width: 10px;
+  height: 10px;
+  opacity: 0.6;
+  animation: breadcrumbFade 3s linear forwards;
+}
+
+.position-breadcrumb.current {
+  width: 12px;
+  height: 12px;
+  opacity: 0.8;
+  animation: breadcrumbPulse 2s ease-in-out infinite;
+}
+
+/* Turn transition animations */
+.turn-transition-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.05));
+  z-index: 500;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.turn-transition-overlay.active {
+  opacity: 1;
+}
+
+.turn-handoff-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px 30px;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  animation: handoffSlide 1s ease-out;
+}
+
+.handoff-from-player,
+.handoff-to-player {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0;
+}
+
+.handoff-player-token {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin: 0 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.handoff-arrow {
+  font-size: 24px;
+  color: #4caf50;
+  animation: arrowBounce 0.5s ease-in-out infinite alternate;
+}
+
+/* Enhanced player movement effects */
+.player-token.moving {
+  animation: tokenMoving 0.8s ease-out;
+  z-index: 100;
+}
+
+.player-token.arriving {
+  animation: tokenArriving 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.player-token.departure-ghost {
+  animation: departureGhost 2s ease-out forwards;
+  pointer-events: none;
+}
+
+/* Path prediction visualization */
+.path-prediction-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.predicted-path {
+  position: absolute;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 193, 7, 0.6), transparent);
+  border-radius: 1px;
+  animation: pathPrediction 3s ease-in-out infinite;
+}
+
+.predicted-destination {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 3px dashed #ffc107;
+  border-radius: 50%;
+  animation: destinationPulse 2s ease-in-out infinite;
+  transform: translate(-50%, -50%);
+}
+
+/* Movement speed indicators */
+.player-token.speed-slow {
+  transition: all 1.2s ease-out;
+}
+
+.player-token.speed-normal {
+  transition: all 0.8s ease-out;
+}
+
+.player-token.speed-fast {
+  transition: all 0.4s ease-out;
+}
+
+.player-token.speed-instant {
+  transition: all 0.1s ease-out;
+}
+
+/* Distance-based movement effects */
+.player-token.move-distance-1 {
+  animation: shortMove 0.6s ease-out;
+}
+
+.player-token.move-distance-2-3 {
+  animation: mediumMove 1s ease-out;
+}
+
+.player-token.move-distance-4-plus {
+  animation: longMove 1.4s ease-out;
+}
+
+/* Animation keyframes */
+@keyframes trailFlow {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes particleMove {
+  0% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+@keyframes sparkMove {
+  0% {
+    opacity: 1;
+    transform: scale(0.5);
+    box-shadow: 0 0 3px currentColor;
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.5);
+    box-shadow: 0 0 12px currentColor;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.2);
+    box-shadow: 0 0 6px currentColor;
+  }
+}
+
+@keyframes breadcrumbFade {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes breadcrumbPulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes handoffSlide {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8) rotateY(90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1) rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes arrowBounce {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes tokenMoving {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.15);
+    filter: brightness(1.3) drop-shadow(0 0 8px currentColor);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes tokenArriving {
+  0% {
+    transform: scale(0.3) translateY(-20px);
+    opacity: 0;
+    filter: brightness(2);
+  }
+  60% {
+    transform: scale(1.3) translateY(0px);
+    opacity: 1;
+    filter: brightness(1.5);
+  }
+  100% {
+    transform: scale(1) translateY(0px);
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+@keyframes departureGhost {
+  0% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes pathPrediction {
+  0%, 100% {
+    opacity: 0.3;
+    background-position: -100% 0;
+  }
+  50% {
+    opacity: 0.8;
+    background-position: 100% 0;
+  }
+}
+
+@keyframes destinationPulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+}
+
+@keyframes shortMove {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes mediumMove {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.2);
+    filter: brightness(1.2);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes longMove {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  30% {
+    transform: scale(1.3);
+    filter: brightness(1.4) drop-shadow(0 0 10px currentColor);
+  }
+  70% {
+    transform: scale(1.1);
+    filter: brightness(1.2);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+console.log('player-animations.css code execution finished');

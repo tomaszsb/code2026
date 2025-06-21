@@ -1,0 +1,466 @@
+/* board-space-renderer.css - Contains all styles for the game board layout */
+
+/* Grid layout styles */
+.game-board.full-width.grid-layout {
+  height: auto !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+  overflow: hidden !important;
+}
+
+.board-row.grid-row {
+  display: grid !important;
+  /* Non-uniform grid with column 3 at 50px */
+  grid-template-columns: 120px 120px 50px 120px 120px 120px 120px 120px !important;
+  gap: 5px !important; /* Reduced gap between columns */
+  justify-content: flex-start !important; /* Align to the left */
+  width: calc(7 * 120px + 50px + 7 * 5px) !important; /* Fixed exact width accounting for 50px column and larger spaces */
+  max-width: calc(7 * 120px + 50px + 7 * 5px) !important; /* Explicitly limit width */
+  height: 60px !important; /* Reduced row height */
+  margin: 0 !important; /* Left-align the grid */
+  margin-bottom: 0 !important; /* Minimizing row spacing to 0 */
+  margin-top: 0 !important; /* Ensure no top margin */
+  padding: 0 !important; /* Remove any padding */
+  box-sizing: border-box !important; /* Apply box-sizing */
+  overflow: hidden !important; /* Prevent overflow that might create extra space */
+  flex-wrap: nowrap !important; /* Prevent wrapping of columns */
+  line-height: 0 !important; /* Remove line-height spacing */
+}
+
+/* Ensure the main board area is contained properly */
+.main-board-area {
+  width: calc(7 * 120px + 50px + 7 * 5px) !important; /* Fixed exact width with 50px col 3 and larger spaces */
+  max-width: calc(7 * 120px + 50px + 7 * 5px) !important; /* Match row width */
+  margin: 0 !important; /* Remove auto margins for tighter fit */
+  padding: 0 !important; /* Remove any padding */
+  box-sizing: border-box !important;
+  overflow: hidden !important; /* Prevent overflow */
+  display: flex !important; /* Changed from grid to flex for better control */
+  flex-direction: column !important; /* Stack rows vertically */
+  gap: 0 !important; /* Reduced to 0px to eliminate row spacing */
+  font-size: 0 !important; /* Fix for unexpected spacing */
+  line-height: 0 !important; /* Fix for unexpected spacing */
+  border-spacing: 0 !important; /* Fix for unexpected spacing */
+}
+
+.board-space {
+  width: 120px !important; /* Keep 120px width */
+  height: 60px !important; /* Reduce height to 60px */
+  min-width: 120px !important; /* Force minimum width */
+  min-height: 60px !important; /* Force minimum height */
+  max-width: 120px !important; /* Force maximum width */
+  max-height: 60px !important; /* Force maximum height */
+  box-sizing: border-box !important;
+  position: relative !important;
+  padding: 5px !important;
+  border-radius: 5px !important;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  word-break: break-word;
+  overflow: hidden;
+  flex-shrink: 0 !important; /* Prevent shrinking */
+  flex-grow: 0 !important; /* Prevent growing */
+}
+
+/* Space explorer state */
+.space-explorer-active .game-board.grid-layout {
+  transition: none;
+}
+
+/* Empty spaces */
+.board-space.empty-space {
+  visibility: visible;
+  background: rgba(200, 200, 200, 0.3);
+  border: 1px dashed #999;
+  box-shadow: none;
+  cursor: default;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #999;
+  font-size: 10px;
+}
+
+.empty-space-coordinates {
+  font-size: 9px;
+  color: #ccc;
+}
+
+/* Column 3 spaces are half-size */
+.column-3-space {
+  width: 50px !important; /* Half-width for column 3 */
+  height: 60px !important; /* Match the reduced height */
+  min-width: 50px !important; /* Force minimum width */
+  min-height: 60px !important; /* Force minimum height */
+  max-width: 50px !important; /* Force maximum width */
+  max-height: 60px !important; /* Force maximum height */
+  margin: 0 !important; /* No need for margin since the grid column is now 50px */
+  flex-shrink: 0 !important; /* Prevent shrinking */
+  flex-grow: 0 !important; /* Prevent growing */
+}
+
+/* Force override any other row styling that might be causing gaps */
+.board-row {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-spacing: 0 !important;
+  font-size: inherit !important; /* Fix for unexpected spacing */
+  line-height: normal !important; /* Reset line height for content */
+}
+
+.board-space.empty-space:hover {
+  transform: none;
+  box-shadow: none;
+  border: none;
+}
+
+/* ======================
+   ENHANCED SPACE VISUALIZATION
+   ====================== */
+
+/* Path-based space styling - Subtle indicators only */
+.board-space.path-main {
+  border-left: 2px solid #2196f3;
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.05), rgba(33, 150, 243, 0.02));
+}
+
+.board-space.path-special {
+  border-left: 2px solid #ff9800;
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.05), rgba(255, 152, 0, 0.02));
+}
+
+.board-space.path-side-quest {
+  border-left: 2px solid #9c27b0;
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.05), rgba(156, 39, 176, 0.02));
+}
+
+/* Space type indicators - Reduced visibility */
+.space-type-indicator {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 7px;
+  font-weight: bold;
+  padding: 1px 2px;
+  border-radius: 4px;
+  color: white;
+  z-index: 2;
+  opacity: 0.8;
+}
+
+.space-type-setup .space-type-indicator { background-color: #607d8b; }
+.space-type-funding .space-type-indicator { background-color: #4caf50; }
+.space-type-design .space-type-indicator { background-color: #03a9f4; }
+.space-type-regulatory .space-type-indicator { background-color: #ff5722; }
+.space-type-construction .space-type-indicator { background-color: #795548; }
+
+/* Progress indicators - Hidden for now to reduce clutter */
+.progress-indicator {
+  display: none;
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  right: 2px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50, #2196f3);
+  transition: width 0.5s ease;
+}
+
+/* Enhanced move highlighting */
+.board-space.selected {
+  box-shadow: 0 0 15px rgba(33, 150, 243, 0.7);
+  transform: scale(1.08);
+  z-index: 10;
+  border: 2px solid #2196f3;
+}
+
+.board-space.available-move {
+  box-shadow: 0 0 12px rgba(76, 175, 80, 0.6);
+  border: 2px solid #4CAF50;
+  animation: availablePulse 2s ease-in-out infinite;
+  cursor: pointer;
+}
+
+.board-space.available-move:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 18px rgba(76, 175, 80, 0.8);
+}
+
+.board-space.selected-move {
+  border: 3px solid #e74c3c;
+  box-shadow: 0 0 20px rgba(231, 76, 60, 0.8);
+  animation: selectedPulse 1.5s ease-in-out infinite;
+}
+
+.board-space.enlarged {
+  transform: scale(1.05);
+  z-index: 5;
+}
+
+/* Visit status indicators - Simplified */
+.board-space.first-visit {
+  position: relative;
+}
+
+.board-space.first-visit::before {
+  content: "●";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  color: #4caf50;
+  font-size: 8px;
+  font-weight: bold;
+  z-index: 2;
+}
+
+.board-space.subsequent-visit {
+  opacity: 0.9;
+}
+
+.board-space.subsequent-visit::before {
+  content: "✓";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  color: #607d8b;
+  font-size: 8px;
+  font-weight: bold;
+  z-index: 2;
+}
+
+/* Move connection lines */
+.move-connection {
+  position: absolute;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #4caf50, transparent);
+  z-index: 1;
+  animation: connectionFlow 2s linear infinite;
+}
+
+/* Phase progress visualization - Hidden for cleaner look */
+.phase-progress {
+  display: none;
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.phase-progress.setup { background: #607d8b; }
+.phase-progress.funding { background: #4caf50; }
+.phase-progress.design { background: #03a9f4; }
+.phase-progress.regulatory { background: #ff5722; }
+.phase-progress.construction { background: #795548; }
+
+/* Animation keyframes */
+@keyframes availablePulse {
+  0% {
+    box-shadow: 0 0 12px rgba(76, 175, 80, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(76, 175, 80, 0.9);
+  }
+  100% {
+    box-shadow: 0 0 12px rgba(76, 175, 80, 0.6);
+  }
+}
+
+@keyframes selectedPulse {
+  0% {
+    box-shadow: 0 0 20px rgba(231, 76, 60, 0.8);
+    transform: scale(1.05);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(231, 76, 60, 1);
+    transform: scale(1.08);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(231, 76, 60, 0.8);
+    transform: scale(1.05);
+  }
+}
+
+@keyframes connectionFlow {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Space content styling */
+.space-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.space-name {
+  font-weight: bold;
+  font-size: 11px;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.visit-type {
+  font-size: 10px;
+  color: #555;
+  margin-bottom: 3px;
+  line-height: 1.1;
+}
+
+/* Board space dice roll indicator */
+.board-space .dice-roll-indicator {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 14px;
+  height: 14px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.board-space .dice-icon {
+  width: 10px;
+  height: 10px;
+  background-color: #666;
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+
+/* Destination tag for selected moves */
+.destination-tag {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: #e74c3c;
+  color: white;
+  padding: 3px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: bold;
+  z-index: 5;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Space enhanced info styling */
+.space-enhanced-info {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  z-index: 10;
+}
+
+.explorer-hint {
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+  text-align: center;
+  padding: 5px;
+}
+
+/* Special whitespace and element fixes */
+.game-board-wrapper {
+  overflow: hidden !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.game-board.grid-layout {
+  min-width: 1050px !important;
+  max-width: none !important;
+  width: auto !important;
+  overflow: visible !important;
+  min-height: auto !important;
+  max-height: none !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.board-row.grid-row {
+  min-width: 1000px !important;
+  max-width: none !important;
+  width: auto !important;
+  overflow: visible !important;
+}
+
+/* Direct fix for row gaps */
+.main-board-area > div {
+  margin-bottom: 0 !important;
+  margin-top: 0 !important;
+  border-spacing: 0 !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+/* Row alignment fixes */
+.board-row.row-align-start {
+  align-items: flex-start;
+}
+
+/* Setup space fixes */
+.space-type-setup.setup-space-fixed {
+  height: 100%;
+}
+
+/* Token container fixes */
+.player-tokens.player-tokens-fixed {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  position: absolute;
+  bottom: 3px;
+  left: 0;
+  right: 0;
+}
+
+/* Fix for the last row */
+.board-row.grid-row:last-child {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Fix for the truncated board issue */
+.game-board-wrapper {
+  overflow: visible !important;
+  min-width: 1050px !important;
+}
+
+/* Eliminate any hidden elements causing gaps */
+.game-board::after,
+.main-board-area::after,
+.board-row::after {
+  content: none !important;
+  display: none !important;
+  height: 0 !important;
+  width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
