@@ -413,14 +413,14 @@ class GameStateManager {
 }
 
 // Create singleton instance
-const GameStateManager = new GameStateManager();
+const GameStateManagerInstance = new GameStateManager();
 
 // Export for browser usage
 if (typeof window !== 'undefined') {
-    window.GameStateManager = GameStateManager;
+    window.GameStateManager = GameStateManagerInstance;
 }
 
 // Export for Node.js usage
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = GameStateManager;
+    module.exports = GameStateManagerInstance;
 }

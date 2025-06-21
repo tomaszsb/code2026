@@ -11,7 +11,7 @@ function GameManager() {
     useEventListener('movePlayerRequest', ({ playerId, spaceName, visitType }) => {
         try {
             // Validate the space exists
-            const spaceData = CSVDatabase.spaces.find(spaceName, visitType);
+            const spaceData = window.CSVDatabase.spaces.find(spaceName, visitType);
             if (!spaceData) {
                 throw new Error(`Space ${spaceName}/${visitType} not found in CSV data`);
             }
@@ -30,7 +30,7 @@ function GameManager() {
     // Handle dice roll outcomes
     useEventListener('diceRollComplete', ({ playerId, spaceName, visitType, rollValue }) => {
         try {
-            const outcome = CSVDatabase.dice.getRollOutcome(spaceName, visitType, rollValue);
+            const outcome = window.CSVDatabase.dice.getRollOutcome(spaceName, visitType, rollValue);
             if (outcome) {
                 processDiceOutcome(playerId, outcome);
             }
@@ -120,7 +120,7 @@ function GameManager() {
      * Draw random cards for player
      */
     function drawCardsForPlayer(playerId, cardType, amount) {
-        const availableCards = CSVDatabase.cards.byType(cardType);
+        const availableCards = window.CSVDatabase.cards.byType(cardType);
         if (availableCards.length === 0) {
             throw new Error(`No ${cardType} cards available`);
         }

@@ -27,18 +27,28 @@ function useGameState() {
  * Custom hook for CSV data queries
  */
 function useCSVData() {
-    const [loaded, setLoaded] = useState(CSVDatabase.loaded);
+    const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(null);
     
     useEffect(() => {
-        if (!CSVDatabase.loaded) {
-            CSVDatabase.loadAll()
+        // Ensure CSVDatabase is available
+        if (typeof window.CSVDatabase === 'undefined') {
+            setError('CSVDatabase not loaded');
+            return;
+        }
+        
+        const csvDB = window.CSVDatabase;
+        
+        if (csvDB.loaded) {
+            setLoaded(true);
+        } else {
+            csvDB.loadAll()
                 .then(() => setLoaded(true))
                 .catch(err => setError(err.message));
         }
     }, []);
     
-    return { loaded, error, database: CSVDatabase };
+    return { loaded, error, database: window.CSVDatabase };
 }
 
 /**

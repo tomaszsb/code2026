@@ -264,14 +264,14 @@ class CSVDatabase {
 }
 
 // Create singleton instance
-const CSVDatabase = new CSVDatabase();
+const CSVDatabaseInstance = new CSVDatabase();
 
 // Export for browser usage
 if (typeof window !== 'undefined') {
-    window.CSVDatabase = CSVDatabase;
+    window.CSVDatabase = CSVDatabaseInstance;
 }
 
 // Export for Node.js usage
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = CSVDatabase;
+    module.exports = CSVDatabaseInstance;
 }

@@ -38,6 +38,14 @@
     <script src="js/data/CSVDatabase.js"></script>
     <script src="js/data/GameStateManager.js"></script>
     
+    <!-- Wait for core systems to load -->
+    <script>
+        // Ensure core systems are available
+        if (typeof window.CSVDatabase === 'undefined' || typeof window.GameStateManager === 'undefined') {
+            console.error('Core systems not loaded properly');
+        }
+    </script>
+    
     <!-- Component Utilities -->
     <script type="text/babel" src="js/utils/ComponentUtils.js"></script>
     

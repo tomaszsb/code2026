@@ -11,7 +11,7 @@ function GameBoard() {
     
     // Handle space selection
     const handleSpaceClick = (spaceName) => {
-        const spaceData = CSVDatabase.spaces.find(spaceName, 'First');
+        const spaceData = window.CSVDatabase.spaces.find(spaceName, 'First');
         setSelectedSpace({ name: spaceName, data: spaceData });
     };
     
@@ -121,7 +121,7 @@ function GameBoard() {
  * SpaceDisplay - Shows current space information
  */
 function SpaceDisplay({ spaceName, visitType, onMoveRequest }) {
-    const spaceData = CSVDatabase.spaces.find(spaceName, visitType);
+    const spaceData = window.CSVDatabase.spaces.find(spaceName, visitType);
     
     if (!spaceData) {
         return React.createElement('div', 
