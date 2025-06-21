@@ -31,6 +31,30 @@ function GameBoard() {
         gameStateManager.startTurn(nextPlayer);
     };
     
+    // Take action on current space (dice or direct action)
+    const takeAction = () => {
+        const spaceData = window.CSVDatabase.spaces.find(
+            currentPlayer.position, 
+            currentPlayer.visitType || 'First'
+        );
+        
+        if (ComponentUtils.requiresDiceRoll(spaceData)) {
+            // Show dice roll
+            gameStateManager.emit('showDiceRoll', {
+                playerId: gameState.currentPlayer,
+                spaceName: currentPlayer.position,
+                visitType: currentPlayer.visitType || 'First'
+            });
+        } else {
+            // Process space effects directly
+            gameStateManager.emit('movePlayerRequest', {
+                playerId: gameState.currentPlayer,
+                spaceName: currentPlayer.position,
+                visitType: currentPlayer.visitType || 'First'
+            });
+        }
+    };
+    
     return React.createElement('div', 
         { className: 'game-board' },
         
@@ -87,6 +111,13 @@ function GameBoard() {
             React.createElement('div', 
                 { className: 'actions-sidebar' },
                 React.createElement('h2', null, 'Actions'),
+                React.createElement('button', 
+                    { 
+                        className: 'take-action-button',
+                        onClick: takeAction 
+                    },
+                    'Take Action'
+                ),
                 React.createElement('button', 
                     { 
                         className: 'end-turn-button',

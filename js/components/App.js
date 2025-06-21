@@ -49,6 +49,10 @@ function App({ debugMode = false, logLevel = 'info' }) {
             // Game Manager - handles game logic
             React.createElement(GameManager),
             
+            // Game mechanics components
+            React.createElement(DiceRoll),
+            React.createElement(SpaceChoice),
+            
             // Main game UI based on current state
             showPlayerSetup
                 ? React.createElement(PlayerSetup)

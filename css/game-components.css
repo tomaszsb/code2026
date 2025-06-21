@@ -1,6 +1,67 @@
 /* game-components.css - Game-specific components like board, cards, dice */
 console.log('game-components.css file is beginning to be used');
 
+/* Space Choice Component */
+.space-choice-container {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 15px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 2px solid #007bff;
+}
+
+.space-choice-header {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.space-choice-header h3 {
+  margin: 0 0 10px 0;
+  color: #007bff;
+}
+
+.space-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.space-option {
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.space-option:hover {
+  border-color: #007bff;
+  background-color: #f8f9fa;
+}
+
+.space-option.selected {
+  border-color: #28a745;
+  background-color: #d4edda;
+}
+
+.space-name {
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.space-description {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.space-choice-actions {
+  text-align: center;
+}
+
 /* ======================
    ENHANCED INTERACTIVE FEEDBACK SYSTEM
    ====================== */

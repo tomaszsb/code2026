@@ -39,6 +39,15 @@ function GameManager() {
         }
     });
     
+    // Handle dice outcome processing
+    useEventListener('processDiceOutcome', ({ playerId, outcome, spaceName, visitType }) => {
+        try {
+            processDiceOutcome(playerId, outcome, spaceName, visitType);
+        } catch (error) {
+            gameStateManager.handleError(error, 'Dice Outcome Processing');
+        }
+    });
+    
     // Handle card actions
     useEventListener('processCardAction', ({ playerId, cardType, action }) => {
         try {
@@ -83,6 +92,9 @@ function GameManager() {
                 spaceName: spaceData.space_name,
                 visitType: spaceData.visit_type 
             });
+        } else {
+            // Show movement options
+            showMovementOptions(playerId, spaceData);
         }
     }
     
@@ -163,6 +175,92 @@ function GameManager() {
                 player,
                 cardType,
                 amount: removeCount
+            });
+        }
+    }
+    
+    /**
+     * Process dice roll outcomes from CSV data
+     */
+    function processDiceOutcome(playerId, outcome, spaceName, visitType) {
+        if (!outcome || outcome === 'No change') return;
+        
+        // Check if outcome is a card action
+        if (outcome.includes('Draw') || outcome.includes('Replace') || outcome.includes('Remove')) {
+            // Parse card action from outcome
+            const cardType = ComponentUtils.parseCardTypeFromOutcome(outcome);
+            if (cardType) {
+                processCardAction(playerId, cardType, outcome);
+            }
+        }
+        // Check if outcome is a movement instruction
+        else if (outcome.includes(' or ')) {
+            // Multiple space options - emit for player choice
+            const spaceOptions = outcome.split(' or ').map(opt => opt.trim());
+            gameStateManager.emit('showSpaceChoice', {
+                playerId,
+                spaceOptions,
+                source: 'dice_outcome'
+            });
+        }
+        // Check if outcome is a single space movement
+        else if (outcome.includes('-')) {
+            // Single space movement
+            gameStateManager.emit('movePlayerRequest', {
+                playerId,
+                spaceName: outcome.trim(),
+                visitType: 'First'
+            });
+        }
+        // Check if outcome is a fee/percentage
+        else if (outcome.includes('%')) {
+            const percentage = parseFloat(outcome.replace('%', ''));
+            gameStateManager.emit('applyFeePercentage', {
+                playerId,
+                percentage,
+                source: `${spaceName} dice outcome`
+            });
+        }
+        // Check if outcome is time-based
+        else if (outcome.includes('day')) {
+            const timeMatch = outcome.match(/(\d+)\s*day/);
+            if (timeMatch) {
+                const timeAmount = parseInt(timeMatch[1]);
+                updatePlayerTime(playerId, timeAmount);
+            }
+        }
+        
+        // Emit generic outcome event for custom handling
+        gameStateManager.emit('diceOutcomeProcessed', {
+            playerId,
+            outcome,
+            spaceName,
+            visitType
+        });
+    }
+    
+    /**
+     * Show movement options from space data
+     */
+    function showMovementOptions(playerId, spaceData) {
+        const nextSpaces = ComponentUtils.getNextSpaces(spaceData);
+        
+        if (nextSpaces.length === 0) {
+            // No movement options - end turn
+            gameStateManager.emit('noMovementOptions', { playerId, spaceData });
+        } else if (nextSpaces.length === 1) {
+            // Only one option - move automatically
+            gameStateManager.emit('movePlayerRequest', {
+                playerId,
+                spaceName: nextSpaces[0],
+                visitType: 'First'
+            });
+        } else {
+            // Multiple options - let player choose
+            gameStateManager.emit('showSpaceChoice', {
+                playerId,
+                spaceOptions: nextSpaces,
+                source: 'space_movement'
             });
         }
     }

@@ -221,6 +221,16 @@ const ComponentUtils = {
         if (spaceData.l_card) types.push({ type: 'L', action: spaceData.l_card });
         if (spaceData.e_card) types.push({ type: 'E', action: spaceData.e_card });
         return types;
+    },
+    
+    // Parse card type from dice outcome
+    parseCardTypeFromOutcome: (outcome) => {
+        if (outcome.includes('W Cards') || outcome.includes('W Card')) return 'W';
+        if (outcome.includes('B Cards') || outcome.includes('B Card')) return 'B';
+        if (outcome.includes('I Cards') || outcome.includes('I Card')) return 'I';
+        if (outcome.includes('L Cards') || outcome.includes('L Card')) return 'L';
+        if (outcome.includes('E Cards') || outcome.includes('E Card')) return 'E';
+        return null;
     }
 };
 
