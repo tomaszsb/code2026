@@ -171,7 +171,7 @@ class GameStateManager {
             players: players.map((name, index) => ({
                 id: index,
                 name,
-                position: 'START-QUICK-PLAY-GUIDE',
+                position: 'OWNER-SCOPE-INITIATION',
                 visitType: 'First',
                 money: 0,
                 timeSpent: 0,
