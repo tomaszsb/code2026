@@ -30,7 +30,7 @@
 /* Ensure the main board area is contained properly */
 .main-board-area {
   width: calc(7 * 120px + 50px + 7 * 5px) !important; /* Fixed exact width with 50px col 3 and larger spaces */
-  max-width: calc(7 * 120px + 50px + 7 * 5px) !important; /* Match row width */
+  max-width: 100% !important; /* Fit within container */
   margin: 0 !important; /* Remove auto margins for tighter fit */
   padding: 0 !important; /* Remove any padding */
   box-sizing: border-box !important;
@@ -41,6 +41,8 @@
   font-size: 0 !important; /* Fix for unexpected spacing */
   line-height: 0 !important; /* Fix for unexpected spacing */
   border-spacing: 0 !important; /* Fix for unexpected spacing */
+  transform: scale(0.8) !important; /* Scale down to fit in smaller container */
+  transform-origin: top left !important; /* Scale from top-left corner */
 }
 
 .board-space {

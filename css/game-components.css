@@ -1,5 +1,418 @@
 /* game-components.css - Game-specific components like board, cards, dice */
-console.log('game-components.css file is beginning to be used');
+
+/* Game Board Layout */
+.game-board {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.game-header {
+  background: #007bff;
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.game-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.turn-info {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.game-main {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px);
+}
+
+/* Compact Player Info */
+.compact-player-info {
+  display: flex;
+  gap: 20px;
+  background: #f8f9fa;
+  padding: 10px 20px;
+  border-bottom: 1px solid #ddd;
+  flex-wrap: wrap;
+}
+
+.compact-player {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.compact-player.active {
+  border-color: #007bff;
+  background: #e3f2fd;
+}
+
+.player-name {
+  font-weight: bold;
+  color: #007bff;
+}
+
+.player-position {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.player-money {
+  color: #28a745;
+  font-weight: bold;
+}
+
+/* Actions Sidebar - Keep but make smaller */
+.actions-sidebar {
+  position: fixed;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  width: 180px;
+  background: white;
+  padding: 15px;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 100;
+}
+
+.player-status {
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background: #f9f9f9;
+}
+
+.player-status.active {
+  border-color: #007bff;
+  background: #e3f2fd;
+}
+
+.player-status h3 {
+  margin: 0 0 10px 0;
+  color: #007bff;
+}
+
+.player-info div {
+  margin: 5px 0;
+  font-size: 0.9rem;
+}
+
+/* Board Area */
+.board-area {
+  flex: 1;
+  padding: 20px;
+  padding-right: 220px; /* Leave space for floating actions */
+  overflow-y: auto;
+  max-width: 100%; /* Constrain to container */
+}
+
+/* Visual Board */
+.visual-board {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.phase-section {
+  margin-bottom: 30px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.phase-title {
+  background: #007bff;
+  color: white;
+  padding: 10px 15px;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.spaces-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 15px;
+  padding: 15px;
+}
+
+.board-space {
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  background: #f9f9f9;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Phase-specific space colors */
+.phase-setup .board-space { background: #f3e5f5; border-color: #9c27b0; }
+.phase-owner .board-space { background: #e3f2fd; border-color: #2196f3; }
+.phase-funding .board-space { background: #e8f5e8; border-color: #4caf50; }
+.phase-design .board-space { background: #e0f2f1; border-color: #009688; }
+.phase-regulatory .board-space { background: #fff3e0; border-color: #ff9800; }
+.phase-construction .board-space { background: #fce4ec; border-color: #e91e63; }
+.phase-end .board-space { background: #ffebee; border-color: #f44336; }
+
+.board-space:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  filter: brightness(1.1);
+}
+
+.board-space.has-players {
+  background: #fff3e0;
+  border-color: #ff9800;
+}
+
+.space-name {
+  font-weight: bold;
+  font-size: 0.85rem;
+  color: #333;
+  margin-bottom: 5px;
+  line-height: 1.3;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.space-phase {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.players-on-space {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.player-piece {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Current Space Section */
+.current-space-section {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.current-space-section h3 {
+  margin: 0 0 15px 0;
+  color: #007bff;
+}
+
+/* Space Display */
+.space-display {
+  background: #f9f9f9;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.space-display h3 {
+  margin: 0 0 10px 0;
+  color: #007bff;
+}
+
+.space-phase {
+  background: #007bff;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  display: inline-block;
+  margin-bottom: 15px;
+}
+
+.space-event, .space-action {
+  margin: 15px 0;
+}
+
+.space-event h4, .space-action h4 {
+  margin: 0 0 8px 0;
+  color: #333;
+  font-size: 1rem;
+}
+
+.space-event p, .space-action p {
+  margin: 0;
+  line-height: 1.4;
+  color: #555;
+}
+
+.space-cards {
+  margin: 15px 0;
+}
+
+.card-effect {
+  background: #e3f2fd;
+  padding: 6px 10px;
+  margin: 4px 0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.space-costs {
+  margin: 15px 0;
+  background: #fff3e0;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.next-spaces {
+  margin: 15px 0;
+}
+
+.move-button {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  margin: 4px 8px 4px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.move-button:hover {
+  background: #218838;
+}
+
+/* Action Buttons */
+.take-action-button, .end-turn-button {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.take-action-button {
+  background: #007bff;
+  color: white;
+}
+
+.take-action-button:hover {
+  background: #0056b3;
+}
+
+.end-turn-button {
+  background: #6c757d;
+  color: white;
+}
+
+.end-turn-button:hover {
+  background: #545b62;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+
+.close-button:hover {
+  color: #000;
+}
+
+/* Error Display */
+.error-display {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 15px;
+  margin: 15px 0;
+}
+
+.error-display h3 {
+  margin: 0 0 10px 0;
+}
+
+.error-display button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+/* Phase-specific colors */
+.phase-setup .phase-title { background: #6f42c1; }
+.phase-owner .phase-title { background: #007bff; }
+.phase-funding .phase-title { background: #28a745; }
+.phase-design .phase-title { background: #17a2b8; }
+.phase-construction .phase-title { background: #fd7e14; }
+.phase-end .phase-title { background: #dc3545; }
 
 /* Space Choice Component */
 .space-choice-container {
@@ -401,9 +814,8 @@ button.loading:after {
 .game-board {
   width: 100%;
   max-width: 100%;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10%, 1fr));
-  grid-gap: 0.313rem;
+  /* Remove conflicting grid layout - let board-space-renderer.css handle layout */
+  overflow: hidden;
   padding: 0.313rem;
 }
 
