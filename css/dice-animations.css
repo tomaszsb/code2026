@@ -1,23 +1,146 @@
 /* dice-animations.css - Dedicated styles for dice roll animations and 3D effects */
-console.log('dice-animations.css file is beginning to be used');
 
-/* ====== 3D DICE STYLES ====== */
-
-/* Scope all dice styles to prevent conflicts with other components */
+/* Dice Roll Container */
 .dice-roll-container {
-  width: 100%;
-  max-width: 100%;
-  background-color: white;
-  border-radius: 8px;
-  padding: 15px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 15px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  border: 2px solid #007bff;
+  min-width: 300px;
+  text-align: center;
 }
 
-.dice-roll-container .dice-roll-header {
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
-  margin-bottom: 15px;
+.dice-roll-header h3 {
+  margin: 0 0 10px 0;
+  color: #007bff;
+}
+
+.dice-roll-header p {
+  margin: 0 0 20px 0;
+  color: #666;
+}
+
+/* Dice Animation Area */
+.dice-animation-area {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 120px;
+  margin: 20px 0;
+}
+
+/* Dice Styles */
+.dice {
+  width: 80px;
+  height: 80px;
+  background: #007bff;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #0056b3;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.dice.rolling {
+  animation: diceRoll 1.5s ease-in-out;
+  background: linear-gradient(45deg, #007bff, #0056b3);
+}
+
+.dice.rolled {
+  background: #28a745;
+  border-color: #1e7e34;
+  transform: scale(1.1);
+}
+
+.dice-face {
+  color: white;
+  font-size: 2rem;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Rolling Animation */
+@keyframes diceRoll {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(90deg) scale(1.2); }
+  50% { transform: rotate(180deg) scale(0.8); }
+  75% { transform: rotate(270deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* Dice Outcome */
+.dice-outcome {
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 20px 0;
+}
+
+.dice-outcome h4 {
+  margin: 0 0 10px 0;
+  color: #495057;
+}
+
+.dice-outcome p {
+  margin: 0;
+  color: #6c757d;
+  line-height: 1.4;
+}
+
+/* Action Buttons */
+.dice-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.dice-actions .btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dice-actions .btn-primary {
+  background: #007bff;
+  color: white;
+}
+
+.dice-actions .btn-primary:hover {
+  background: #0056b3;
+}
+
+.dice-actions .btn-success {
+  background: #28a745;
+  color: white;
+}
+
+.dice-actions .btn-success:hover {
+  background: #1e7e34;
+}
+
+.rolling-message {
+  font-style: italic;
+  color: #6c757d;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
 }
 
 .dice-roll-container .dice-roll-header h3 {

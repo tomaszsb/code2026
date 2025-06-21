@@ -72,39 +72,38 @@ function GameBoard() {
         React.createElement('div', 
             { className: 'game-main' },
             
-            // Left sidebar - Player status
+            // Compact player info in header - no sidebar
             React.createElement('div', 
-                { className: 'player-sidebar' },
-                React.createElement('h2', null, 'Players'),
+                { className: 'compact-player-info' },
                 gameState.players.map((player, index) => 
                     React.createElement('div', 
                         { 
                             key: player.id,
-                            className: `player-status ${index === gameState.currentPlayer ? 'active' : ''}`
+                            className: `compact-player ${index === gameState.currentPlayer ? 'active' : ''}`
                         },
-                        React.createElement('h3', null, player.name),
-                        React.createElement('div', { className: 'player-info' },
-                            React.createElement('div', null, `Position: ${player.position}`),
-                            React.createElement('div', null, `Money: ${ComponentUtils.formatMoney(player.money)}`),
-                            React.createElement('div', null, `Time: ${ComponentUtils.formatTime(player.timeSpent)}`),
-                            React.createElement('div', null, 
-                                `Cards: W:${player.cards.W?.length || 0} B:${player.cards.B?.length || 0} ` +
-                                `I:${player.cards.I?.length || 0} L:${player.cards.L?.length || 0} E:${player.cards.E?.length || 0}`
-                            )
-                        )
+                        React.createElement('span', { className: 'player-name' }, player.name),
+                        React.createElement('span', { className: 'player-position' }, player.position),
+                        React.createElement('span', { className: 'player-money' }, ComponentUtils.formatMoney(player.money))
                     )
                 )
             ),
             
-            // Center - Game board
+            // Center - Visual Game board
             React.createElement('div', 
                 { className: 'board-area' },
-                React.createElement('h2', null, 'Current Space'),
-                currentPlayer && React.createElement(SpaceDisplay, {
-                    spaceName: currentPlayer.position,
-                    visitType: currentPlayer.visitType,
-                    onMoveRequest: handleMovePlayer
-                })
+                React.createElement('h2', null, 'Game Board'),
+                React.createElement(VisualBoard, {
+                    gameState,
+                    onSpaceClick: handleSpaceClick
+                }),
+                React.createElement('div', { className: 'current-space-section' },
+                    React.createElement('h3', null, 'Current Space'),
+                    currentPlayer && React.createElement(SpaceDisplay, {
+                        spaceName: currentPlayer.position,
+                        visitType: currentPlayer.visitType,
+                        onMoveRequest: handleMovePlayer
+                    })
+                )
             ),
             
             // Right sidebar - Actions
@@ -217,6 +216,95 @@ function SpaceDisplay({ spaceName, visitType, onMoveRequest }) {
 }
 
 /**
+ * VisualBoard - Visual representation of the game board
+ */
+function VisualBoard({ gameState, onSpaceClick }) {
+    const [allSpaces, setAllSpaces] = useState([]);
+    const [loading, setLoading] = useState(true);
+    
+    useEffect(() => {
+        // Load all unique spaces for the board
+        if (window.CSVDatabase.loaded) {
+            const spaces = window.CSVDatabase.spaces.query();
+            // Get unique spaces by name (ignoring visit type for board display)
+            const uniqueSpaces = spaces.reduce((acc, space) => {
+                if (!acc.find(s => s.space_name === space.space_name)) {
+                    acc.push(space);
+                }
+                return acc;
+            }, []);
+            
+            setAllSpaces(uniqueSpaces);
+            setLoading(false);
+        }
+    }, []);
+    
+    if (loading) {
+        return React.createElement('div', { className: 'board-loading' }, 'Loading board...');
+    }
+    
+    // Group spaces by phase for visual organization
+    const spacesByPhase = allSpaces.reduce((acc, space) => {
+        const phase = space.phase || 'MISC';
+        if (!acc[phase]) acc[phase] = [];
+        acc[phase].push(space);
+        return acc;
+    }, {});
+    
+    return React.createElement('div', 
+        { className: 'visual-board' },
+        Object.entries(spacesByPhase).map(([phase, spaces]) =>
+            React.createElement('div', 
+                { key: phase, className: `phase-section phase-${phase.toLowerCase()}` },
+                React.createElement('h4', { className: 'phase-title' }, phase),
+                React.createElement('div', 
+                    { className: 'spaces-container' },
+                    spaces.map(space => 
+                        React.createElement(BoardSpace, {
+                            key: space.space_name,
+                            space,
+                            players: gameState.players.filter(p => p.position === space.space_name),
+                            onClick: () => onSpaceClick(space.space_name)
+                        })
+                    )
+                )
+            )
+        )
+    );
+}
+
+/**
+ * BoardSpace - Individual space on the board
+ */
+function BoardSpace({ space, players, onClick }) {
+    const hasPlayers = players.length > 0;
+    
+    return React.createElement('div', 
+        { 
+            className: `board-space ${hasPlayers ? 'has-players' : ''}`,
+            onClick,
+            title: space.space_name
+        },
+        React.createElement('div', { className: 'space-name' }, space.space_name),
+        React.createElement('div', { className: 'space-phase' }, space.phase),
+        hasPlayers && React.createElement('div', 
+            { className: 'players-on-space' },
+            players.map(player => 
+                React.createElement('div', 
+                    { 
+                        key: player.id,
+                        className: 'player-piece',
+                        style: { backgroundColor: player.color || '#333' },
+                        title: player.name
+                    },
+                    player.name.charAt(0).toUpperCase()
+                )
+            )
+        )
+    );
+}
+
+/**
  * SpaceModal - Detailed space information modal
  */
 function SpaceModal({ space, onClose, onMove }) {
@@ -244,3 +332,5 @@ function SpaceModal({ space, onClose, onMove }) {
 // Export components
 window.GameBoard = GameBoard;
 window.SpaceDisplay = SpaceDisplay;
+window.VisualBoard = VisualBoard;
+window.BoardSpace = BoardSpace;

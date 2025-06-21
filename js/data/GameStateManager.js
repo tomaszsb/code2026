@@ -168,9 +168,10 @@ class GameStateManager {
     initializeGame(players, settings = {}) {
         const newGameState = {
             ...this.getInitialState(),
-            players: players.map((name, index) => ({
+            players: players.map((playerData, index) => ({
                 id: index,
-                name,
+                name: typeof playerData === 'string' ? playerData : playerData.name,
+                color: typeof playerData === 'string' ? '#007bff' : playerData.color,
                 position: 'OWNER-SCOPE-INITIATION',
                 visitType: 'First',
                 money: 0,

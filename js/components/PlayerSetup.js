@@ -40,11 +40,18 @@ function PlayerSetup() {
             return;
         }
         
-        console.log('Starting game with players:', validPlayers);
+        // Add player colors
+        const playerColors = ['#007bff', '#28a745', '#dc3545', '#fd7e14'];
+        const playersWithColors = validPlayers.map((name, index) => ({
+            name: name.trim(),
+            color: playerColors[index % playerColors.length]
+        }));
+        
+        console.log('Starting game with players:', playersWithColors);
         console.log('Game settings:', gameSettings);
         
         if (gameStateManager && gameStateManager.initializeGame) {
-            gameStateManager.initializeGame(validPlayers, gameSettings);
+            gameStateManager.initializeGame(playersWithColors, gameSettings);
         } else {
             console.error('GameStateManager not available or missing initializeGame method');
         }
@@ -104,7 +111,7 @@ function PlayerSetup() {
                         onClick: () => {
                             console.log('Quick start clicked');
                             if (gameStateManager && gameStateManager.initializeGame) {
-                                gameStateManager.initializeGame(['Player 1'], gameSettings);
+                                gameStateManager.initializeGame([{ name: 'Player 1', color: '#007bff' }], gameSettings);
                             } else {
                                 console.error('GameStateManager not available for quick start');
                             }
