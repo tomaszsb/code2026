@@ -33,6 +33,14 @@ function App({ debugMode = false, logLevel = 'info' }) {
         return React.createElement(LoadingScreen);
     }
     
+    // Debug log to track state changes
+    if (debugMode) {
+        console.log('App render - gameState.players.length:', gameState.players.length);
+    }
+    
+    // Determine which screen to show
+    const showPlayerSetup = !gameState.players || gameState.players.length === 0;
+    
     // Main application
     return React.createElement(ErrorBoundary, null,
         React.createElement('div', 
@@ -42,7 +50,7 @@ function App({ debugMode = false, logLevel = 'info' }) {
             React.createElement(GameManager),
             
             // Main game UI based on current state
-            gameState.players.length === 0 
+            showPlayerSetup
                 ? React.createElement(PlayerSetup)
                 : React.createElement(GameBoard),
             

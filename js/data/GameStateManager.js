@@ -166,7 +166,7 @@ class GameStateManager {
      * Initialize new game
      */
     initializeGame(players, settings = {}) {
-        const gameState = {
+        const newGameState = {
             ...this.getInitialState(),
             players: players.map((name, index) => ({
                 id: index,
@@ -189,7 +189,13 @@ class GameStateManager {
             gameSettings: { ...this.state.gameSettings, ...settings }
         };
         
-        this.state = gameState;
+        // Use setState to ensure proper event emission
+        this.state = newGameState;
+        this.emit('stateChanged', {
+            previous: this.getInitialState(),
+            current: this.getState(),
+            updates: newGameState
+        });
         this.emit('gameInitialized', this.getState());
     }
 

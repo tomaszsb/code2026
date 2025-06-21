@@ -40,7 +40,14 @@ function PlayerSetup() {
             return;
         }
         
-        gameStateManager.initializeGame(validPlayers, gameSettings);
+        console.log('Starting game with players:', validPlayers);
+        console.log('Game settings:', gameSettings);
+        
+        if (gameStateManager && gameStateManager.initializeGame) {
+            gameStateManager.initializeGame(validPlayers, gameSettings);
+        } else {
+            console.error('GameStateManager not available or missing initializeGame method');
+        }
     };
     
     return React.createElement('div', 
@@ -95,7 +102,12 @@ function PlayerSetup() {
                     { 
                         className: 'quick-start-button',
                         onClick: () => {
-                            gameStateManager.initializeGame(['Player 1'], gameSettings);
+                            console.log('Quick start clicked');
+                            if (gameStateManager && gameStateManager.initializeGame) {
+                                gameStateManager.initializeGame(['Player 1'], gameSettings);
+                            } else {
+                                console.error('GameStateManager not available for quick start');
+                            }
                         }
                     },
                     'Quick Start (1 Player)'
