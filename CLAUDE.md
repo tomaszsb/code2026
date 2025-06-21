@@ -43,48 +43,40 @@ js/data/CSVDatabase.js          # Unified CSV query system
 js/data/GameStateManager.js     # Central state + events
 js/components/App.js            # Root component
 data/cards.csv                  # Card properties and effects
-data/Spaces.csv                 # Space actions and outcomes
-data/DiceRoll Info.csv          # Dice result mappings
-scripts/clean-spaces-csv.js     # CSV cleanup utilities
-scripts/clean-dice-csv.js       # Dice data cleanup utilities
+data/Spaces.csv                 # Space actions and outcomes (CLEAN DATA)
+data/DiceRoll Info.csv          # Dice result mappings (CLEAN DATA)
 ```
 
 ## Development Rules
 
 ### CSV Data Integrity (CRITICAL)
-**All space names must be clean and consistent across CSV files:**
+**Current Status of CSV Data Cleanliness:**
 
 ```csv
-# ✅ CORRECT - Clean space names in movement columns
+# ✅ CLEAN - Standard space movements
 space_1,space_2,space_3
 LEND-SCOPE-CHECK,ARCH-INITIATION,CHEAT-BYPASS
 
-# ❌ WRONG - Descriptions mixed with space names  
-space_1,space_2,space_3
-LEND-SCOPE-CHECK - To get more $,ARCH-INITIATION - To start design,CHEAT-BYPASS - To get ahead
-
-# ✅ CORRECT - Clean dice outcomes
+# ✅ CLEAN - All dice outcomes  
 1,2,3,4,5,6
 REG-FDNY-FEE-REVIEW,REG-DOB-PLAN-EXAM,ARCH-INITIATION,ARCH-INITIATION,REG-FDNY-FEE-REVIEW,REG-FDNY-FEE-REVIEW
 
-# ❌ WRONG - Descriptions in dice outcomes
-1,2,3,4,5,6
-REG-FDNY-FEE-REVIEW - Pass,REG-DOB-PLAN-EXAM - Missing files,ARCH-INITIATION - Major problem,ARCH-INITIATION - Major problem,REG-FDNY-FEE-REVIEW - Missing Approval,REG-FDNY-FEE-REVIEW - Missing Approval
+# ⚠️ COMPLEX - Logic-based spaces (handled by special game logic)
+space_1,space_2,space_3,space_4,space_5
+"Did you pass FDNY approval before? YES - Space 2 - NO - Space 3","Did the scope change since...","Did Department of Buildings...","Do you have: sprinklers...","Do you have DOB approval? YES - PM-DECISION-CHECK or CON-INITIATION NO - REG-DOB-TYPE-SELECT"
 ```
 
-**Maintenance Scripts:**
-```bash
-# Clean space movement data (space_1 through space_5 columns)
-node scripts/clean-spaces-csv.js
+**Current State:**
+- ✅ **Dice outcomes**: 100% clean (no descriptions)
+- ✅ **Standard space movements**: Clean space names only
+- ⚠️ **Logic spaces**: REG-FDNY-FEE-REVIEW uses conditional logic (intentional)
+- 📁 **Backups available**: `Spaces.csv.backup` and `DiceRoll Info.csv.backup`
+- 🛠️ **Cleanup scripts available**: For future data maintenance if needed
 
-# Clean dice roll outcomes (columns 1-6)
-node scripts/clean-dice-csv.js
-```
-
-**RULE: Space references must match space_name entries exactly**
-- No descriptions, no extra text, no inconsistent naming
-- Backups created automatically before cleaning
-- Run scripts after any CSV data changes
+**RULE: Two types of movement data**
+- **Simple movements**: Must be clean space names only
+- **Logic movements**: Complex conditions handled by special game logic
+- **Never mix**: Don't put descriptions in simple movement fields
 
 ### CSV Data Standards
 ```javascript
@@ -199,17 +191,23 @@ GameStateManager.debug = true;
 window.DEBUG_COMPONENT = 'ComponentName';
 ```
 
-**Common "Space not found" errors:**
+**CSV Issues Resolution:**
 ```bash
-# Error: Space LEND-SCOPE-CHECK - To get more $/First not found
-# CAUSE: CSV contains descriptions mixed with space names
-# FIX: Run cleaning scripts
-node scripts/clean-spaces-csv.js
-node scripts/clean-dice-csv.js
+# ✅ FIXED: Space LEND-SCOPE-CHECK - To get more $/First not found
+# CAUSE: CSV contained descriptions mixed with space names
+# SOLUTION: Cleaned all standard movement fields
 
-# Error: Space REG-FDNY-PLAN EXAM/First not found  
+# ✅ FIXED: Space REG-FDNY-PLAN EXAM/First not found  
 # CAUSE: Space name inconsistency (space vs dash)
-# FIX: Check space_name column matches dice outcomes exactly
+# SOLUTION: Standardized naming across all CSV files
+
+# ✅ FIXED: REG-DOB-PLAN-EXAM movement problems
+# CAUSE: Dice outcomes contained descriptions  
+# SOLUTION: Cleaned all dice outcome columns
+
+# ℹ️ INTENTIONAL: REG-FDNY-FEE-REVIEW complex logic
+# STATUS: Uses conditional movement logic (not a bug)
+# HANDLING: Special game logic processes these conditions
 ```
 
 **CSV Validation Checklist:**
