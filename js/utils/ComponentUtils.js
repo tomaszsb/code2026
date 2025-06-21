@@ -10,17 +10,30 @@ const { useState, useEffect, useCallback, useRef } = React;
  * Custom hook for GameStateManager integration
  */
 function useGameState() {
-    const [state, setState] = useState(GameStateManager.getState());
+    const [state, setState] = useState(() => {
+        // Ensure GameStateManager is available
+        if (typeof window.GameStateManager === 'undefined') {
+            console.error('GameStateManager not available');
+            return { players: [], gamePhase: 'SETUP', currentPlayer: 0, turnCount: 0, ui: {}, error: null };
+        }
+        return window.GameStateManager.getState();
+    });
     
     useEffect(() => {
-        const unsubscribe = GameStateManager.on('stateChanged', (data) => {
+        // Ensure GameStateManager is available
+        if (typeof window.GameStateManager === 'undefined') {
+            console.error('GameStateManager not available for event listener');
+            return;
+        }
+        
+        const unsubscribe = window.GameStateManager.on('stateChanged', (data) => {
             setState(data.current);
         });
         
         return unsubscribe;
     }, []);
     
-    return [state, GameStateManager];
+    return [state, window.GameStateManager];
 }
 
 /**
@@ -56,7 +69,13 @@ function useCSVData() {
  */
 function useEventListener(eventName, handler, deps = []) {
     useEffect(() => {
-        const unsubscribe = GameStateManager.on(eventName, handler);
+        // Ensure GameStateManager is available
+        if (typeof window.GameStateManager === 'undefined') {
+            console.error('GameStateManager not available for event listener');
+            return;
+        }
+        
+        const unsubscribe = window.GameStateManager.on(eventName, handler);
         return unsubscribe;
     }, deps);
 }
@@ -76,7 +95,9 @@ class ErrorBoundary extends React.Component {
     
     componentDidCatch(error, errorInfo) {
         console.error('Component Error:', error, errorInfo);
-        GameStateManager.handleError(error, 'Component Boundary');
+        if (window.GameStateManager) {
+            window.GameStateManager.handleError(error, 'Component Boundary');
+        }
     }
     
     render() {
