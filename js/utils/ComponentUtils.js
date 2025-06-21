@@ -231,6 +231,25 @@ const ComponentUtils = {
         if (outcome.includes('L Cards') || outcome.includes('L Card')) return 'L';
         if (outcome.includes('E Cards') || outcome.includes('E Card')) return 'E';
         return null;
+    },
+    
+    // Parse fee amount from CSV fee text
+    parseFeeAmount: (feeText) => {
+        if (!feeText) return 0;
+        
+        // Handle percentage fees
+        if (feeText.includes('%')) {
+            // Return 0 for now - percentage fees need context
+            return 0;
+        }
+        
+        // Extract numeric value from text like "$1000" or "1000"
+        const numericMatch = feeText.match(/[\d,]+/);
+        if (numericMatch) {
+            return parseInt(numericMatch[0].replace(/,/g, ''));
+        }
+        
+        return 0;
     }
 };
 
