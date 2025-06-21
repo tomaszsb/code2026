@@ -19,21 +19,23 @@ function useGameState() {
         return window.GameStateManager.getState();
     });
     
+    const gameStateManager = useRef(window.GameStateManager);
+    
     useEffect(() => {
         // Ensure GameStateManager is available
-        if (typeof window.GameStateManager === 'undefined') {
+        if (!gameStateManager.current) {
             console.error('GameStateManager not available for event listener');
             return;
         }
         
-        const unsubscribe = window.GameStateManager.on('stateChanged', (data) => {
+        const unsubscribe = gameStateManager.current.on('stateChanged', (data) => {
             setState(data.current);
         });
         
         return unsubscribe;
     }, []);
     
-    return [state, window.GameStateManager];
+    return [state, gameStateManager.current];
 }
 
 /**
@@ -42,15 +44,16 @@ function useGameState() {
 function useCSVData() {
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(null);
+    const databaseRef = useRef(window.CSVDatabase);
     
     useEffect(() => {
         // Ensure CSVDatabase is available
-        if (typeof window.CSVDatabase === 'undefined') {
+        if (!databaseRef.current) {
             setError('CSVDatabase not loaded');
             return;
         }
         
-        const csvDB = window.CSVDatabase;
+        const csvDB = databaseRef.current;
         
         if (csvDB.loaded) {
             setLoaded(true);
@@ -61,23 +64,25 @@ function useCSVData() {
         }
     }, []);
     
-    return { loaded, error, database: window.CSVDatabase };
+    return { loaded, error, database: databaseRef.current };
 }
 
 /**
  * Custom hook for event listeners
  */
 function useEventListener(eventName, handler, deps = []) {
+    const gameStateManager = useRef(window.GameStateManager);
+    
     useEffect(() => {
         // Ensure GameStateManager is available
-        if (typeof window.GameStateManager === 'undefined') {
+        if (!gameStateManager.current) {
             console.error('GameStateManager not available for event listener');
             return;
         }
         
-        const unsubscribe = window.GameStateManager.on(eventName, handler);
+        const unsubscribe = gameStateManager.current.on(eventName, handler);
         return unsubscribe;
-    }, deps);
+    }, [eventName, ...deps]);
 }
 
 /**

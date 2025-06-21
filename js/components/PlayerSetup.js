@@ -4,17 +4,17 @@
  */
 
 function PlayerSetup() {
-    const [players, setPlayers] = useState(['']);
-    const [gameSettings, setGameSettings] = useState({
+    const [players, setPlayers] = useState(['Player 1']);
+    const [gameSettings] = useState({
         maxPlayers: 4,
-        winCondition: 'TIME_AND_MONEY'
+        winCondition: 'FIRST_TO_FINISH'
     });
     const [gameState, gameStateManager] = useGameState();
     
     // Add player input
     const addPlayer = () => {
         if (players.length < gameSettings.maxPlayers) {
-            setPlayers([...players, '']);
+            setPlayers([...players, `Player ${players.length + 1}`]);
         }
     };
     
@@ -88,41 +88,17 @@ function PlayerSetup() {
                 )
             ),
             
-            // Game settings
+            // Quick start section
             React.createElement('div', 
-                { className: 'settings-section' },
-                React.createElement('h3', null, 'Game Settings'),
-                
-                React.createElement('div', 
-                    { className: 'setting' },
-                    React.createElement('label', null, 'Max Players:'),
-                    React.createElement('select', {
-                        value: gameSettings.maxPlayers,
-                        onChange: (e) => setGameSettings({
-                            ...gameSettings,
-                            maxPlayers: parseInt(e.target.value)
-                        })
+                { className: 'quick-start-section' },
+                React.createElement('button', 
+                    { 
+                        className: 'quick-start-button',
+                        onClick: () => {
+                            gameStateManager.initializeGame(['Player 1'], gameSettings);
+                        }
                     },
-                        React.createElement('option', { value: 2 }, '2'),
-                        React.createElement('option', { value: 3 }, '3'),
-                        React.createElement('option', { value: 4 }, '4')
-                    )
-                ),
-                
-                React.createElement('div', 
-                    { className: 'setting' },
-                    React.createElement('label', null, 'Win Condition:'),
-                    React.createElement('select', {
-                        value: gameSettings.winCondition,
-                        onChange: (e) => setGameSettings({
-                            ...gameSettings,
-                            winCondition: e.target.value
-                        })
-                    },
-                        React.createElement('option', { value: 'TIME_AND_MONEY' }, 'Time & Money'),
-                        React.createElement('option', { value: 'FIRST_TO_FINISH' }, 'First to Finish'),
-                        React.createElement('option', { value: 'HIGHEST_SCORE' }, 'Highest Score')
-                    )
+                    'Quick Start (1 Player)'
                 )
             ),
             
