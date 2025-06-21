@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(python:*)",
+      "Bash(node:*)",
+      "Bash(pkill:*)",
+      "Bash(git revert:*)",
+      "Bash(grep:*)",
+      "Bash(cut:*)",
+      "Bash(mkdir:*)",
+      "Bash(find:*)",
+      "Bash(curl:*)",
+      "Bash(git config:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git rm:*)",
+      "Bash(git push:*)",
+      "Bash(git remote:*)",
+      "Bash(git reset:*)",
+      "Bash(git pull:*)"
+    ],
+    "deny": []
+  }
+}

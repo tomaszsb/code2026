@@ -1,0 +1,4 @@
+127.0.0.1 - - [21/Jun/2025 17:08:40] "GET /test-cards.html HTTP/1.1" 200 -
+127.0.0.1 - - [21/Jun/2025 17:10:48] "GET /test-card-play.html HTTP/1.1" 200 -
+127.0.0.1 - - [21/Jun/2025 17:12:57] "GET /test-hand-manager.html HTTP/1.1" 200 -
+127.0.0.1 - - [21/Jun/2025 17:14:36] "GET /test-card-animations.html HTTP/1.1" 200 -
