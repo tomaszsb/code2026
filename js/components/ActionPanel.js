@@ -12,6 +12,7 @@ function ActionPanel() {
         showMoveDetails: false,
         diceRequired: false,
         hasRolled: false,
+        rolling: false,
         pendingAction: null,
         showNegotiate: false,
         negotiationOptions: [],
@@ -22,7 +23,8 @@ function ActionPanel() {
         showDiceRoll: false,
         diceRollValue: null,
         diceOutcome: null,
-        canTakeAction: false
+        canTakeAction: false,
+        showRulesModal: false
     });
 
     const currentPlayer = gameState.players[gameState.currentPlayer];
@@ -109,7 +111,7 @@ function ActionPanel() {
         });
     };
 
-    // Get available moves and check action availability on player change
+    // Get available moves and check if current space requires dice
     useEffect(() => {
         if (currentPlayer) {
             const currentSpaceData = window.CSVDatabase.spaces.find(
@@ -119,55 +121,35 @@ function ActionPanel() {
             
             if (currentSpaceData) {
                 const moves = ComponentUtils.getNextSpaces(currentSpaceData);
-                const canTakeAction = currentSpaceData.Action || ComponentUtils.requiresDiceRoll(currentSpaceData);
+                const requiresDice = ComponentUtils.requiresDiceRoll(currentSpaceData);
                 
                 setActionState(prev => ({
                     ...prev,
                     availableMoves: moves,
-                    canTakeAction
+                    diceRequired: requiresDice,
+                    showDiceRoll: requiresDice,
+                    pendingAction: requiresDice ? currentPlayer.position : null
                 }));
             }
         }
     }, [currentPlayer?.position, currentPlayer?.id]);
 
     const handleMoveSelect = (spaceName) => {
-        const spaceData = window.CSVDatabase.spaces.find(spaceName, 'First');
-        
+        // Select/preview the move choice (don't execute yet)
         setActionState(prev => ({
             ...prev,
             selectedMove: spaceName,
             showMoveDetails: true
         }));
-
-        // Check if dice roll is required
-        const diceInfo = window.CSVDatabase.dice.query({
-            space: spaceName,
-            visitType: 'First'
-        });
-
-        if (diceInfo.length > 0) {
-            setActionState(prev => ({
-                ...prev,
-                diceRequired: true,
-                pendingAction: spaceName
-            }));
-        }
     };
 
-    const handleMoveConfirm = () => {
+    const executeSelectedMove = () => {
         if (actionState.selectedMove && currentPlayer) {
-            // Check if negotiation is available
             const spaceData = window.CSVDatabase.spaces.find(actionState.selectedMove, 'First');
-            if (spaceData && spaceData.Action && spaceData.Action.includes('negotiate')) {
-                setActionState(prev => ({
-                    ...prev,
-                    showNegotiate: true,
-                    negotiationOptions: ['Accept', 'Negotiate for better terms']
-                }));
-                return;
-            }
+            
+            // Skip negotiation check - we already have negotiate button in UI
 
-            // Direct move
+            // Move player to new space
             gameStateManager.emit('playerMove', {
                 playerId: currentPlayer.id,
                 targetSpace: actionState.selectedMove,
@@ -181,59 +163,63 @@ function ActionPanel() {
                 toSpace: actionState.selectedMove
             });
 
-            setActionState(prev => ({
-                ...prev,
-                selectedMove: null,
-                showMoveDetails: false,
-                hasMoved: true
-            }));
+            // Auto-trigger space effects after move
+            if (spaceData) {
+                if (ComponentUtils.requiresDiceRoll(spaceData)) {
+                    // Show dice roll interface for this space
+                    setActionState(prev => ({
+                        ...prev,
+                        showDiceRoll: true,
+                        diceRequired: true,
+                        pendingAction: actionState.selectedMove,
+                        selectedMove: null,
+                        showMoveDetails: false,
+                        hasMoved: true
+                    }));
+                } else {
+                    // Process space effects directly
+                    gameStateManager.emit('movePlayerRequest', {
+                        playerId: currentPlayer.id,
+                        spaceName: actionState.selectedMove,
+                        visitType: 'First'
+                    });
+                    
+                    setActionState(prev => ({
+                        ...prev,
+                        selectedMove: null,
+                        showMoveDetails: false,
+                        hasMoved: true,
+                        actionsCompleted: [...prev.actionsCompleted, 'space_action']
+                    }));
+                }
+            } else {
+                // No space data, just clear selection
+                setActionState(prev => ({
+                    ...prev,
+                    selectedMove: null,
+                    showMoveDetails: false,
+                    hasMoved: true
+                }));
+            }
 
             checkCanEndTurn();
         }
     };
 
-    // Handle Take Action button - similar to original GameBoard logic
-    const handleTakeAction = () => {
-        if (!currentPlayer) return;
-        
-        const spaceData = window.CSVDatabase.spaces.find(
-            currentPlayer.position, 
-            currentPlayer.visitType || 'First'
-        );
-        
-        if (ComponentUtils.requiresDiceRoll(spaceData)) {
-            // Show dice roll in this panel
-            setActionState(prev => ({
-                ...prev,
-                showDiceRoll: true,
-                diceRequired: true,
-                pendingAction: currentPlayer.position
-            }));
-            
-            // Also emit for other components
-            gameStateManager.emit('showDiceRoll', {
-                playerId: gameState.currentPlayer,
-                spaceName: currentPlayer.position,
-                visitType: currentPlayer.visitType || 'First'
-            });
-        } else {
-            // Process space effects directly
-            gameStateManager.emit('movePlayerRequest', {
-                playerId: gameState.currentPlayer,
-                spaceName: currentPlayer.position,
-                visitType: currentPlayer.visitType || 'First'
-            });
-            
-            // Mark action as completed
-            setActionState(prev => ({
-                ...prev,
-                actionsCompleted: [...prev.actionsCompleted, 'space_action']
-            }));
-            checkCanEndTurn();
-        }
-    };
+    // handleTakeAction removed - space effects now auto-trigger on move
 
-    const handleDiceRoll = () => {
+    const handleDiceRoll = async () => {
+        // Start rolling animation
+        setActionState(prev => ({
+            ...prev,
+            rolling: true,
+            diceRollValue: '🎲'
+        }));
+        
+        // Simulate dice roll animation delay (like original DiceRoll component)
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Generate random roll (1-6)
         const roll = Math.floor(Math.random() * 6) + 1;
         
         // Check if CSV database is loaded
@@ -242,6 +228,7 @@ function ActionPanel() {
             const fallbackOutcome = `Rolled ${roll} - CSV data not available`;
             setActionState(prev => ({
                 ...prev,
+                rolling: false,
                 hasRolled: true,
                 diceRollValue: roll,
                 diceOutcome: fallbackOutcome
@@ -251,86 +238,118 @@ function ActionPanel() {
         
         // Get outcome from CSV
         const outcome = window.CSVDatabase.dice.getRollOutcome(
-            currentPlayer.position, 
+            actionState.pendingAction || currentPlayer.position, 
             currentPlayer.visitType || 'First', 
             roll
         );
         
         const finalOutcome = outcome || `You rolled ${roll} - no specific outcome defined`;
         
-        console.log(`ActionPanel: Dice roll ${roll} at ${currentPlayer.position}, outcome: "${finalOutcome}"`);
+        console.log(`ActionPanel: Dice roll ${roll} at ${actionState.pendingAction || currentPlayer.position}, outcome: "${finalOutcome}"`);
         
         setActionState(prev => ({
             ...prev,
+            rolling: false,
             hasRolled: true,
             diceRollValue: roll,
             diceOutcome: finalOutcome
         }));
 
-        gameStateManager.emit('diceRolled', {
+        // Only emit processDiceOutcome to avoid double processing
+        gameStateManager.emit('processDiceOutcome', {
             playerId: currentPlayer.id,
-            roll,
-            space: actionState.pendingAction,
-            outcome
+            outcome: finalOutcome,
+            spaceName: actionState.pendingAction || currentPlayer.position,
+            visitType: currentPlayer.visitType || 'First'
         });
 
         // Emit completion event for turn tracking
         gameStateManager.emit('diceRollCompleted', {
             playerId: currentPlayer.id,
             roll,
-            space: actionState.pendingAction,
-            outcome
+            space: actionState.pendingAction || currentPlayer.position,
+            outcome: finalOutcome
         });
+
+        // Hide dice interface after processing
+        setTimeout(() => {
+            setActionState(prev => ({
+                ...prev,
+                showDiceRoll: false,
+                diceRequired: false,
+                hasRolled: false,
+                rolling: false,
+                diceRollValue: null,
+                diceOutcome: null,
+                pendingAction: null
+            }));
+        }, 2000); // Show result for 2 seconds then hide
 
         checkCanEndTurn();
     };
 
-    const handleApplyOutcome = () => {
-        if (!actionState.diceOutcome) {
-            console.error('ActionPanel: No dice outcome to apply');
-            return;
-        }
-        
-        console.log(`ActionPanel: Applying dice outcome: "${actionState.diceOutcome}" for player ${currentPlayer.id} at ${currentPlayer.position}`);
-        
-        // Process the dice outcome - use same event as original DiceRoll component
-        gameStateManager.emit('processDiceOutcome', {
-            playerId: currentPlayer.id,
-            outcome: actionState.diceOutcome,
-            spaceName: currentPlayer.position,
-            visitType: currentPlayer.visitType || 'First'
-        });
-        
-        // Hide dice roll interface
+    // handleApplyOutcome removed - outcomes now auto-apply after dice roll
+
+    const showRulesModal = () => {
         setActionState(prev => ({
             ...prev,
-            showDiceRoll: false,
-            diceRequired: false,
-            actionsCompleted: [...prev.actionsCompleted, 'dice_action']
+            showRulesModal: true
         }));
-        
-        checkCanEndTurn();
     };
 
-    const handleNegotiate = (option) => {
+    const hideRulesModal = () => {
+        setActionState(prev => ({
+            ...prev,
+            showRulesModal: false
+        }));
+    };
+
+    const getRulesData = () => {
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+            return null;
+        }
+        
+        // Get both First and Subsequent versions of the rules space
+        const rulesSpaceFirst = window.CSVDatabase.spaces.find('START-QUICK-PLAY-GUIDE', 'First');
+        const rulesSpaceSubsequent = window.CSVDatabase.spaces.find('START-QUICK-PLAY-GUIDE', 'Subsequent');
+        
+        return {
+            first: rulesSpaceFirst,
+            subsequent: rulesSpaceSubsequent
+        };
+    };
+
+    const handleNegotiate = () => {
+        // Clear selected move and apply time penalty
         gameStateManager.emit('negotiationChosen', {
             playerId: currentPlayer.id,
-            option,
+            option: 'Clear choices with time penalty',
             space: actionState.selectedMove
         });
 
+        // Apply time penalty (reduce time by 1)
+        gameStateManager.emit('updatePlayerResources', {
+            playerId: currentPlayer.id,
+            timeChange: -1,
+            reason: 'Negotiation time penalty'
+        });
+
+        // Clear all selections
         setActionState(prev => ({
             ...prev,
+            selectedMove: null,
+            showMoveDetails: false,
             showNegotiate: false,
             negotiationOptions: []
         }));
-
-        if (option === 'Accept') {
-            handleMoveConfirm();
-        }
     };
 
     const handleEndTurn = () => {
+        // If a move is selected, execute it first
+        if (actionState.selectedMove) {
+            executeSelectedMove();
+        }
+        
         gameStateManager.emit('turnEnded', {
             playerId: currentPlayer.id
         });
@@ -374,32 +393,22 @@ function ActionPanel() {
             }, `${currentPlayer.name}'s Turn`)
         ]),
 
-        // Take Action Section (for current space)
-        actionState.canTakeAction && React.createElement('div', {
-            key: 'take-action-section',
-            className: 'take-action-section'
-        }, [
-            React.createElement('h5', {
-                key: 'action-title',
-                className: 'subsection-title'
-            }, '⚡ Current Space Action'),
-            
-            React.createElement('button', {
-                key: 'take-action',
-                className: 'take-action-button',
-                onClick: handleTakeAction
-            }, 'Take Action')
-        ]),
+        // Take Action Section removed - space effects now auto-trigger on move
 
-        // Dice Roll Section (when active)
-        actionState.showDiceRoll && React.createElement('div', {
+        // Unified Dice Roll Section (when dice is required or active)
+        (actionState.showDiceRoll || actionState.diceRequired) && React.createElement('div', {
             key: 'dice-roll-section',
             className: 'dice-roll-section'
         }, [
             React.createElement('h5', {
                 key: 'dice-title',
                 className: 'subsection-title'
-            }, '🎲 Dice Roll'),
+            }, '🎲 Dice Roll Required'),
+            
+            actionState.diceRequired && !actionState.showDiceRoll && React.createElement('p', {
+                key: 'dice-instruction',
+                className: 'dice-instruction'
+            }, 'This space requires a dice roll to determine the outcome.'),
             
             React.createElement('div', {
                 key: 'dice-container',
@@ -407,8 +416,8 @@ function ActionPanel() {
             }, [
                 React.createElement('div', {
                     key: 'dice-display',
-                    className: 'dice-display-large'
-                }, actionState.diceRollValue || '?'),
+                    className: `dice-display-large ${actionState.rolling ? 'rolling' : ''}`
+                }, actionState.rolling ? '🎲' : (actionState.diceRollValue || '?')),
                 
                 actionState.diceOutcome && React.createElement('div', {
                     key: 'outcome',
@@ -423,14 +432,9 @@ function ActionPanel() {
                 !actionState.hasRolled && React.createElement('button', {
                     key: 'roll',
                     className: 'dice-button',
-                    onClick: handleDiceRoll
-                }, '🎲 Roll Dice'),
-                
-                actionState.hasRolled && React.createElement('button', {
-                    key: 'apply',
-                    className: 'apply-outcome-button',
-                    onClick: handleApplyOutcome
-                }, 'Apply Outcome')
+                    onClick: handleDiceRoll,
+                    disabled: actionState.rolling
+                }, actionState.rolling ? '🎲 Rolling...' : '🎲 Roll Dice')
             ])
         ]),
 
@@ -471,7 +475,7 @@ function ActionPanel() {
             )
         ]),
 
-        // Selected Move Details
+        // Selected Move Details (simplified - no confirm/cancel buttons)
         actionState.showMoveDetails && actionState.selectedMove && React.createElement('div', {
             key: 'move-details',
             className: 'move-details'
@@ -479,7 +483,7 @@ function ActionPanel() {
             React.createElement('h5', {
                 key: 'details-title',
                 className: 'subsection-title'
-            }, '📋 Move Details'),
+            }, '📋 Selected Move'),
             
             React.createElement('div', {
                 key: 'details-content',
@@ -498,22 +502,7 @@ function ActionPanel() {
                     if (!spaceData) return null;
                     
                     return [
-                        spaceData.Event && React.createElement('p', {
-                            key: 'event',
-                            className: 'space-event'
-                        }, [
-                            React.createElement('strong', null, 'Event: '),
-                            spaceData.Event
-                        ]),
-                        
-                        spaceData.Action && React.createElement('p', {
-                            key: 'action',
-                            className: 'space-action'
-                        }, [
-                            React.createElement('strong', null, 'Action: '),
-                            spaceData.Action
-                        ]),
-                        
+                        // Only show Time Cost (unique info not displayed elsewhere)
                         spaceData.Time && React.createElement('p', {
                             key: 'time-cost',
                             className: 'time-cost'
@@ -525,80 +514,15 @@ function ActionPanel() {
                 })()
             ]),
             
-            // Action Buttons
-            React.createElement('div', {
-                key: 'action-buttons',
-                className: 'action-buttons'
-            }, [
-                React.createElement('button', {
-                    key: 'confirm-move',
-                    className: 'confirm-button',
-                    onClick: handleMoveConfirm
-                }, 'Confirm Move'),
-                
-                React.createElement('button', {
-                    key: 'cancel-move',
-                    className: 'cancel-button',
-                    onClick: () => setActionState(prev => ({
-                        ...prev,
-                        selectedMove: null,
-                        showMoveDetails: false
-                    }))
-                }, 'Cancel')
-            ])
+            React.createElement('p', {
+                key: 'instruction',
+                className: 'move-instruction'
+            }, 'Click "End Turn" to execute this move, or "Negotiate" to clear selection.')
         ]),
 
-        // Dice Rolling Section
-        actionState.diceRequired && React.createElement('div', {
-            key: 'dice-section',
-            className: 'dice-section'
-        }, [
-            React.createElement('h5', {
-                key: 'dice-title',
-                className: 'subsection-title'
-            }, '🎲 Dice Required'),
-            
-            React.createElement('p', {
-                key: 'dice-instruction',
-                className: 'dice-instruction'
-            }, 'This space requires a dice roll to determine the outcome.'),
-            
-            React.createElement('button', {
-                key: 'roll-dice',
-                className: 'dice-button',
-                onClick: handleDiceRoll,
-                disabled: actionState.hasRolled
-            }, actionState.hasRolled ? 'Rolled!' : '🎲 Roll Dice')
-        ]),
+        // Duplicate dice section removed - now using unified dice interface above
 
-        // Negotiation Section
-        actionState.showNegotiate && React.createElement('div', {
-            key: 'negotiate-section',
-            className: 'negotiate-section'
-        }, [
-            React.createElement('h5', {
-                key: 'negotiate-title',
-                className: 'subsection-title'
-            }, '🤝 Negotiation'),
-            
-            React.createElement('p', {
-                key: 'negotiate-instruction',
-                className: 'negotiate-instruction'
-            }, 'Choose how to handle this situation:'),
-            
-            React.createElement('div', {
-                key: 'negotiate-options',
-                className: 'negotiate-options'
-            }, 
-                actionState.negotiationOptions.map(option => 
-                    React.createElement('button', {
-                        key: option,
-                        className: 'negotiate-button',
-                        onClick: () => handleNegotiate(option)
-                    }, option)
-                )
-            )
-        ]),
+        // Old negotiation section removed - using negotiate button in turn controls instead
 
         // Turn Controls
         React.createElement('div', {
@@ -607,16 +531,23 @@ function ActionPanel() {
         }, [
             React.createElement('button', {
                 key: 'end-turn',
-                className: `end-turn-button ${!actionState.canEndTurn ? 'disabled' : ''}`,
+                className: 'end-turn-button',
                 onClick: handleEndTurn,
-                disabled: !actionState.canEndTurn,
-                title: !actionState.canEndTurn ? 'Complete required actions first' : 'End your turn'
-            }, 'End Turn'),
+                title: actionState.selectedMove ? 'Execute selected move and end turn' : 'End turn without moving'
+            }, actionState.selectedMove ? 'Execute Move & End Turn' : 'End Turn'),
             
+            React.createElement('button', {
+                key: 'negotiate',
+                className: 'negotiate-button',
+                onClick: handleNegotiate,
+                disabled: !actionState.selectedMove,
+                title: 'Clear selection with time penalty (-1 time)'
+            }, 'Negotiate (-1 Time)'),
+
             React.createElement('button', {
                 key: 'view-rules',
                 className: 'secondary-button',
-                onClick: () => gameStateManager.emit('showRules')
+                onClick: showRulesModal
             }, 'View Rules'),
 
             // Debug info for turn state (only show in debug mode)
@@ -625,9 +556,332 @@ function ActionPanel() {
                 className: 'debug-turn-state',
                 style: { fontSize: '10px', color: '#666', marginTop: '8px' }
             }, [
-                React.createElement('div', {key: 'moved'}, `Moved: ${actionState.hasMoved}`),
-                React.createElement('div', {key: 'dice'}, `Dice Required: ${actionState.diceRequired}, Rolled: ${actionState.hasRolled}`),
-                React.createElement('div', {key: 'can-end'}, `Can End Turn: ${actionState.canEndTurn}`)
+                React.createElement('div', {key: 'selected'}, `Selected: ${actionState.selectedMove || 'None'}`),
+                React.createElement('div', {key: 'dice'}, `Dice Required: ${actionState.diceRequired}, Rolled: ${actionState.hasRolled}`)
+            ])
+        ]),
+
+        // Rules Modal
+        actionState.showRulesModal && React.createElement('div', {
+            key: 'rules-modal',
+            className: 'rules-modal-overlay',
+            onClick: hideRulesModal,
+            style: {
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 10000
+            }
+        }, [
+            React.createElement('div', {
+                key: 'rules-modal-content',
+                className: 'rules-modal-content',
+                onClick: (e) => e.stopPropagation(),
+                style: {
+                    backgroundColor: 'white',
+                    padding: '40px',
+                    borderRadius: '15px',
+                    maxWidth: '800px',
+                    maxHeight: '80vh',
+                    overflow: 'auto',
+                    position: 'relative',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                    border: '3px solid var(--primary-color)'
+                }
+            }, [
+                React.createElement('button', {
+                    key: 'close-button',
+                    className: 'close-button',
+                    onClick: hideRulesModal,
+                    style: {
+                        position: 'absolute',
+                        top: '15px',
+                        right: '20px',
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '28px',
+                        cursor: 'pointer',
+                        color: '#666',
+                        fontWeight: 'bold'
+                    }
+                }, '×'),
+                
+                React.createElement('div', {
+                    key: 'rules-content',
+                    className: 'rules-content'
+                }, (() => {
+                    const rulesData = getRulesData();
+                    if (!rulesData || !rulesData.first) {
+                        return React.createElement('div', null, 'Rules not available - CSV data not loaded.');
+                    }
+                    
+                    // Display Event, Action, and Outcome from both First and Subsequent versions as separate fields
+                    
+                    return [
+                        React.createElement('h1', {
+                            key: 'title',
+                            style: {
+                                color: 'var(--primary-color)',
+                                marginBottom: '30px',
+                                textAlign: 'center',
+                                fontSize: '28px',
+                                borderBottom: '3px solid var(--primary-color)',
+                                paddingBottom: '15px'
+                            }
+                        }, '📋 Project Management Game - Quick Play Guide'),
+                        
+                        // Two-column layout for First and Subsequent versions
+                        React.createElement('div', {
+                            key: 'rules-columns',
+                            style: {
+                                display: 'grid',
+                                gridTemplateColumns: '1fr 1fr',
+                                gap: '20px',
+                                marginBottom: '30px'
+                            }
+                        }, [
+                            // First version column
+                            React.createElement('div', {
+                                key: 'first-column',
+                                style: {
+                                    padding: '15px',
+                                    backgroundColor: '#f8f9fa',
+                                    borderRadius: '12px',
+                                    border: '2px solid #e9ecef'
+                                }
+                            }, [
+                                React.createElement('h3', {
+                                    key: 'first-title',
+                                    style: {
+                                        color: 'var(--primary-color)',
+                                        marginBottom: '15px',
+                                        textAlign: 'center',
+                                        fontSize: '18px',
+                                        borderBottom: '2px solid var(--primary-color)',
+                                        paddingBottom: '8px'
+                                    }
+                                }, '📚 Introduction & Rules'),
+                                
+                                rulesData.first.Event && React.createElement('div', {
+                                    key: 'event-first',
+                                    style: { padding: '10px', backgroundColor: '#e1f5fe', borderRadius: '8px', marginBottom: '12px' }
+                                }, [
+                                    React.createElement('strong', {style: {color: '#0277bd'}}, '📖 Event: '),
+                                    rulesData.first.Event
+                                ]),
+                                
+                                rulesData.first.Action && React.createElement('div', {
+                                    key: 'action-first',
+                                    style: { padding: '10px', backgroundColor: '#f3e5f5', borderRadius: '8px', marginBottom: '12px' }
+                                }, [
+                                    React.createElement('strong', {style: {color: '#7b1fa2'}}, '⚡ Action: '),
+                                    rulesData.first.Action
+                                ]),
+                                
+                                rulesData.first.Outcome && React.createElement('div', {
+                                    key: 'outcome-first',
+                                    style: { padding: '10px', backgroundColor: '#e8f5e8', borderRadius: '8px', marginBottom: '12px' }
+                                }, [
+                                    React.createElement('strong', {style: {color: '#388e3c'}}, '🎯 Outcome: '),
+                                    rulesData.first.Outcome
+                                ])
+                            ]),
+                            
+                            // Subsequent version column
+                            React.createElement('div', {
+                                key: 'subsequent-column',
+                                style: {
+                                    padding: '15px',
+                                    backgroundColor: '#f8f9fa',
+                                    borderRadius: '12px',
+                                    border: '2px solid #e9ecef'
+                                }
+                            }, [
+                                React.createElement('h3', {
+                                    key: 'subsequent-title',
+                                    style: {
+                                        color: 'var(--secondary-color)',
+                                        marginBottom: '15px',
+                                        textAlign: 'center',
+                                        fontSize: '18px',
+                                        borderBottom: '2px solid var(--secondary-color)',
+                                        paddingBottom: '8px'
+                                    }
+                                }, '🎮 Story & Strategy'),
+                                
+                                rulesData.subsequent && rulesData.subsequent.Event ? React.createElement('div', {
+                                    key: 'event-subsequent',
+                                    style: { padding: '10px', backgroundColor: '#e1f5fe', borderRadius: '8px', marginBottom: '12px' }
+                                }, [
+                                    React.createElement('strong', {style: {color: '#0277bd'}}, '📖 Event: '),
+                                    rulesData.subsequent.Event
+                                ]) : React.createElement('div', {
+                                    key: 'event-placeholder',
+                                    style: { padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '8px', marginBottom: '12px', fontStyle: 'italic', color: '#999' }
+                                }, 'No additional event information'),
+                                
+                                rulesData.subsequent && rulesData.subsequent.Action ? React.createElement('div', {
+                                    key: 'action-subsequent',
+                                    style: { padding: '10px', backgroundColor: '#f3e5f5', borderRadius: '8px', marginBottom: '12px' }
+                                }, [
+                                    React.createElement('strong', {style: {color: '#7b1fa2'}}, '⚡ Action: '),
+                                    rulesData.subsequent.Action
+                                ]) : React.createElement('div', {
+                                    key: 'action-placeholder',
+                                    style: { padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '8px', marginBottom: '12px', fontStyle: 'italic', color: '#999' }
+                                }, 'No additional action information'),
+                                
+                                rulesData.subsequent && rulesData.subsequent.Outcome ? React.createElement('div', {
+                                    key: 'outcome-subsequent',
+                                    style: { padding: '10px', backgroundColor: '#e8f5e8', borderRadius: '8px', marginBottom: '12px' }
+                                }, [
+                                    React.createElement('strong', {style: {color: '#388e3c'}}, '🎯 Outcome: '),
+                                    rulesData.subsequent.Outcome
+                                ]) : React.createElement('div', {
+                                    key: 'outcome-placeholder',
+                                    style: { padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '8px', marginBottom: '12px', fontStyle: 'italic', color: '#999' }
+                                }, 'No additional outcome information')
+                            ])
+                        ]),
+                        
+                        React.createElement('div', {
+                            key: 'card-types',
+                            style: {
+                                backgroundColor: 'white',
+                                padding: '20px',
+                                borderRadius: '10px',
+                                border: '2px solid var(--border-color)'
+                            }
+                        }, [
+                            React.createElement('h2', {
+                                key: 'cards-title',
+                                style: { color: 'var(--primary-color)', marginBottom: '20px', textAlign: 'center' }
+                            }, '🃏 Card Types & Resources'),
+                            
+                            React.createElement('div', {
+                                key: 'cards-grid',
+                                style: {
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 1fr',
+                                    gap: '20px'
+                                }
+                            }, [
+                                // Left column - Card Types
+                                React.createElement('div', {
+                                    key: 'card-types-column',
+                                    style: {
+                                        display: 'grid',
+                                        gap: '12px'
+                                    }
+                                }, [
+                                    React.createElement('h3', {
+                                        key: 'card-types-title',
+                                        style: { 
+                                            color: 'var(--primary-color)', 
+                                            marginBottom: '10px',
+                                            textAlign: 'center',
+                                            fontSize: '16px',
+                                            borderBottom: '2px solid var(--primary-color)',
+                                            paddingBottom: '5px'
+                                        }
+                                    }, '🃏 Card Types'),
+                                    
+                                    React.createElement('div', {
+                                        key: 'w-cards',
+                                        style: { padding: '10px', backgroundColor: '#e3f2fd', borderRadius: '8px' }
+                                    }, [
+                                        React.createElement('strong', {style: {color: '#1976d2'}}, '🔧 W Cards (Work): '),
+                                        rulesData.first.w_card
+                                    ]),
+                                    React.createElement('div', {
+                                        key: 'b-cards',
+                                        style: { padding: '10px', backgroundColor: '#e8f5e8', borderRadius: '8px' }
+                                    }, [
+                                        React.createElement('strong', {style: {color: '#388e3c'}}, '💼 B Cards (Business): '),
+                                        rulesData.first.b_card
+                                    ]),
+                                    React.createElement('div', {
+                                        key: 'i-cards',
+                                        style: { padding: '10px', backgroundColor: '#fff3e0', borderRadius: '8px' }
+                                    }, [
+                                        React.createElement('strong', {style: {color: '#f57c00'}}, '🔍 I Cards (Investigation): '),
+                                        rulesData.first.i_card
+                                    ]),
+                                    React.createElement('div', {
+                                        key: 'l-cards',
+                                        style: { padding: '10px', backgroundColor: '#ffebee', borderRadius: '8px' }
+                                    }, [
+                                        React.createElement('strong', {style: {color: '#d32f2f'}}, '⚖️ L Cards (Legal): '),
+                                        rulesData.first.l_card
+                                    ]),
+                                    React.createElement('div', {
+                                        key: 'e-cards',
+                                        style: { padding: '10px', backgroundColor: '#f3e5f5', borderRadius: '8px' }
+                                    }, [
+                                        React.createElement('strong', {style: {color: '#7b1fa2'}}, '⚠️ E Cards (Emergency): '),
+                                        rulesData.first.e_card
+                                    ])
+                                ]),
+                                
+                                // Right column - Resources & Game Elements
+                                React.createElement('div', {
+                                    key: 'resources-column',
+                                    style: {
+                                        display: 'grid',
+                                        gap: '12px'
+                                    }
+                                }, [
+                                    React.createElement('h3', {
+                                        key: 'resources-title',
+                                        style: { 
+                                            color: 'var(--secondary-color)', 
+                                            marginBottom: '10px',
+                                            textAlign: 'center',
+                                            fontSize: '16px',
+                                            borderBottom: '2px solid var(--secondary-color)',
+                                            paddingBottom: '5px'
+                                        }
+                                    }, '💰 Resources & Game Elements'),
+                                    
+                                    React.createElement('div', {
+                                        key: 'time',
+                                        style: { padding: '10px', backgroundColor: '#fce4ec', borderRadius: '8px' }
+                                    }, [
+                                        React.createElement('strong', {style: {color: '#c2185b'}}, '⏰ Time: '),
+                                        rulesData.first.Time
+                                    ]),
+                                    React.createElement('div', {
+                                        key: 'fee',
+                                        style: { padding: '10px', backgroundColor: '#f1f8e9', borderRadius: '8px' }
+                                    }, [
+                                        React.createElement('strong', {style: {color: '#689f38'}}, '💰 Fees: '),
+                                        rulesData.first.Fee
+                                    ]),
+                                    React.createElement('div', {
+                                        key: 'paths',
+                                        style: { padding: '10px', backgroundColor: '#e8eaf6', borderRadius: '8px' }
+                                    }, [
+                                        React.createElement('strong', {style: {color: '#5e35b1'}}, '🛤️ Paths: '),
+                                        rulesData.first.space_1
+                                    ]),
+                                    React.createElement('div', {
+                                        key: 'negotiate',
+                                        style: { padding: '10px', backgroundColor: '#e0f2f1', borderRadius: '8px' }
+                                    }, [
+                                        React.createElement('strong', {style: {color: '#00695c'}}, '🤝 Negotiate: '),
+                                        rulesData.first.Negotiate
+                                    ])
+                                ])
+                            ])
+                        ])
+                    ];
+                })())
             ])
         ])
     ]);

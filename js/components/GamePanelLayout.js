@@ -49,10 +49,11 @@ function GamePanelLayout() {
     return React.createElement('div', {
         className: `game-panel-layout ${layoutState.isMobile ? 'mobile' : 'desktop'}`
     }, [
-        // Main game board area
+        // Main game board area - CENTER AREA (Game Board)
         React.createElement('div', {
             key: 'main-board',
-            className: 'main-board-area'
+            className: 'main-board-area',
+            'data-panel-name': 'center-board'
         }, [
             window.GameBoard ? React.createElement(GameBoard, {
                 key: 'game-board'
@@ -62,10 +63,11 @@ function GamePanelLayout() {
             }, 'Loading game board...')
         ]),
 
-        // Mobile: Tabbed bottom panel
+        // Mobile: Tabbed bottom panel - MOBILE TABS AREA
         layoutState.isMobile ? React.createElement('div', {
             key: 'mobile-panels',
-            className: `mobile-panel-container ${layoutState.bottomPanelExpanded ? 'expanded' : 'collapsed'}`
+            className: `mobile-panel-container ${layoutState.bottomPanelExpanded ? 'expanded' : 'collapsed'}`,
+            'data-panel-name': 'mobile-tabs'
         }, [
             // Tab navigation
             React.createElement('div', {
@@ -123,10 +125,11 @@ function GamePanelLayout() {
                 )
             ])
         ]) : [
-            // Desktop: Side panels
+            // Desktop: Side panels - LEFT PANEL (Player Status)
             React.createElement('div', {
                 key: 'left-panel',
-                className: `side-panel left-panel ${layoutState.leftPanelExpanded ? 'expanded' : 'collapsed'}`
+                className: `side-panel left-panel ${layoutState.leftPanelExpanded ? 'expanded' : 'collapsed'}`,
+                'data-panel-name': 'left-status'
             }, [
                 React.createElement('button', {
                     key: 'toggle',
@@ -142,9 +145,11 @@ function GamePanelLayout() {
                 )
             ]),
 
+            // RIGHT PANEL (Results & Space Explorer)
             React.createElement('div', {
                 key: 'right-panel',
-                className: `side-panel right-panel ${layoutState.rightPanelExpanded ? 'expanded' : 'collapsed'}`
+                className: `side-panel right-panel ${layoutState.rightPanelExpanded ? 'expanded' : 'collapsed'}`,
+                'data-panel-name': 'right-results'
             }, [
                 React.createElement('button', {
                     key: 'toggle',
@@ -160,24 +165,7 @@ function GamePanelLayout() {
                 )
             ]),
 
-            // Bottom action panel for desktop
-            React.createElement('div', {
-                key: 'bottom-panel',
-                className: `bottom-panel ${layoutState.bottomPanelExpanded ? 'expanded' : 'collapsed'}`
-            }, [
-                React.createElement('button', {
-                    key: 'toggle',
-                    className: 'panel-toggle',
-                    onClick: () => togglePanel('bottom'),
-                    'aria-label': 'Toggle action panel'
-                }, layoutState.bottomPanelExpanded ? '▼' : '▲'),
-                
-                layoutState.bottomPanelExpanded && (window.ActionPanel ?
-                    React.createElement(ActionPanel, {
-                        key: 'action-panel'
-                    }) : React.createElement('div', {key: 'action-loading'}, 'Loading actions...')
-                )
-            ])
+            // BOTTOM PANEL REMOVED - Actions now integrated into left panel
         ]
     ]);
 }

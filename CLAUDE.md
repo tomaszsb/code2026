@@ -158,19 +158,22 @@ For detailed information see:
 - **Chain Effects**: Sequential card bonuses and phase progression rewards
 
 #### 💫 **Professional UI Experience with Modern Panel Layout**
-- **Three-Panel System**: Organized layout with player status (left), actions (bottom), and results (right)
+- **Streamlined Two-Panel System**: Player status (left) + Results/Explorer (right), actions integrated into left panel
 - **Responsive Design**: Desktop panels and mobile tabbed interface with smooth transitions
 - **Interactive Feedback System**: Toast notifications with success/warning/error messages
-- **Context-Sensitive Help**: Comprehensive tooltip system with game-specific guidance
+- **Context-Sensitive Help**: Comprehensive rules modal with CSV-driven content and two-column layout
 - **Visual Movement System**: Smooth animations, path highlighting, position indicators
 - **Rich Player Dashboard**: Financial analysis, scope tracking, combo history, phase progress
 - **Enhanced Visual Feedback**: Button ripple effects, loading states, progress indicators
-- **Integrated Action System**: Take Action button, dice rolling, and turn management in bottom panel
+- **Integrated Action System**: Choice selection, dice rolling, negotiate button, and turn management in left panel
 
 #### 🎮 **Complete Game Features**
 - **Interactive Game Board**: Clickable spaces with visual feedback and state indicators
 - **Enhanced Space Explorer**: Comprehensive space information with dice alerts and movement navigation
 - **Complete Card Management**: 5 card types with drag-and-drop interface and effect animations
+- **Streamlined Turn System**: Choice selection → End Turn to execute → Negotiate to clear with penalty
+- **Enhanced Rules System**: Beautiful modal with CSV-driven content, two-column layout for rules comparison
+- **Automatic Dice Processing**: Rolling animation, auto-apply outcomes, single card reward processing
 - **Full Gameplay Loop**: Turn management, win condition detection, real-time timer
 - **Production Systems**: Auto-save/load, import/export, comprehensive error handling
 

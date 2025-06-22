@@ -304,6 +304,19 @@ function PlayerStatusPanel() {
             )
         ]),
 
+        // Action Panel Section - Integrated into Player Status
+        React.createElement('div', {
+            key: 'action-section',
+            className: 'action-section'
+        }, [
+            window.ActionPanel ? React.createElement(ActionPanel, {
+                key: 'action-panel'
+            }) : React.createElement('div', {
+                key: 'action-loading',
+                className: 'action-loading'
+            }, 'Loading actions...')
+        ]),
+
         // Card Details Modal
         panelState.showCardDetails && React.createElement('div', {
             key: 'card-modal',

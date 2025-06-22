@@ -7,13 +7,33 @@
     position: relative;
 }
 
+/* DEBUG BORDERS - Visual identification of panel boundaries */
+[data-panel-name] {
+    border: 3px solid #000000 !important;
+    position: relative;
+}
+
+[data-panel-name]:before {
+    content: attr(data-panel-name);
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    background: #000000;
+    color: #ffffff;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    z-index: 1000;
+    border-radius: 2px;
+    font-family: monospace;
+}
+
 /* Desktop Layout */
 .game-panel-layout.desktop {
-    grid-template-columns: 320px 1fr 320px;
-    grid-template-rows: 1fr auto;
+    grid-template-columns: 420px 1fr 320px;
+    grid-template-rows: 1fr;
     grid-template-areas: 
-        "left-panel main-board right-panel"
-        "bottom-panel bottom-panel bottom-panel";
+        "left-panel main-board right-panel";
     gap: 8px;
     padding: 8px;
 }
@@ -53,6 +73,10 @@
 
 .side-panel.expanded {
     width: 320px;
+}
+
+.side-panel.left-panel.expanded {
+    width: 420px;
 }
 
 /* Bottom Panel */
@@ -379,6 +403,13 @@
     line-height: 1.2;
 }
 
+/* Action Section - Integrated into Player Status Panel */
+.action-section {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 2px solid var(--border-color);
+}
+
 /* Action Panel */
 .action-header {
     margin-bottom: 16px;
@@ -560,6 +591,20 @@
     font-size: 24px;
     font-weight: bold;
     box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+}
+
+.dice-display-large.rolling {
+    animation: diceRoll 0.1s infinite;
+    background: var(--primary-color);
+}
+
+@keyframes diceRoll {
+    0% { transform: rotate(0deg) scale(1); }
+    25% { transform: rotate(90deg) scale(1.1); }
+    50% { transform: rotate(180deg) scale(1); }
+    75% { transform: rotate(270deg) scale(1.1); }
+    100% { transform: rotate(360deg) scale(1); }
 }
 
 .dice-outcome-text {
