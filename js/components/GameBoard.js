@@ -15,6 +15,9 @@ function GameBoard() {
     
     const currentPlayer = gameState.players[gameState.currentPlayer];
     
+    // Check if panel layout is active
+    const isPanelLayoutActive = window.GamePanelLayout && gameState.players && gameState.players.length > 0;
+    
     // Update available moves when current player or position changes
     useEffect(() => {
         if (currentPlayer) {
@@ -177,6 +180,18 @@ function GameBoard() {
         }
     };
     
+    // If panel layout is active, only render the visual board
+    if (isPanelLayoutActive) {
+        return React.createElement(VisualBoard, {
+            gameState,
+            onSpaceClick: handleSpaceClick,
+            availableMoves,
+            boardState,
+            currentPlayer
+        });
+    }
+
+    // Full GameBoard UI for fallback/original mode
     return React.createElement('div', 
         { className: 'layout-grid layout-grid--main' },
         

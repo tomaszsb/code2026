@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Game State</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug-info { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        .warning { background: #fff3e0; color: #ef6c00; }
+    </style>
+</head>
+<body>
+    <h1>Game State Debugger</h1>
+    <div id="debug-output"></div>
+
+    <!-- React via CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Core Systems -->
+    <script src="js/data/CSVDatabase.js"></script>
+    <script src="js/data/GameStateManager.js"></script>
+    <script src="js/utils/ComponentUtils.js"></script>
+
+    <script type="text/babel">
+        function DebugApp() {
+            const [debugInfo, setDebugInfo] = React.useState({
+                csvLoaded: false,
+                gameStateReady: false,
+                componentsLoaded: {},
+                gameState: null,
+                errors: []
+            });
+
+            React.useEffect(() => {
+                const checkSystems = async () => {
+                    const info = { ...debugInfo };
+                    
+                    // Check CSV Database
+                    if (window.CSVDatabase) {
+                        try {
+                            await window.CSVDatabase.loadAll();
+                            info.csvLoaded = true;
+                        } catch (error) {
+                            info.errors.push(`CSV Error: ${error.message}`);
+                        }
+                    } else {
+                        info.errors.push('CSVDatabase not available');
+                    }
+
+                    // Check GameStateManager
+                    if (window.GameStateManager) {
+                        info.gameStateReady = true;
+                        info.gameState = window.GameStateManager.getState();
+                    } else {
+                        info.errors.push('GameStateManager not available');
+                    }
+
+                    // Check component availability
+                    const componentsToCheck = [
+                        'GameBoard', 'GamePanelLayout', 'PlayerStatusPanel', 
+                        'ActionPanel', 'ResultsPanel', 'App'
+                    ];
+                    
+                    componentsToCheck.forEach(comp => {
+                        info.componentsLoaded[comp] = typeof window[comp] !== 'undefined';
+                    });
+
+                    setDebugInfo(info);
+                };
+
+                checkSystems();
+            }, []);
+
+            // Simulate adding players for testing
+            const addTestPlayers = () => {
+                if (window.GameStateManager) {
+                    const testPlayers = [
+                        { id: 1, name: 'Alice', color: '#4CAF50', position: 'INITIATION-START', cards: [], money: 100000, time: 100, scope: 0 },
+                        { id: 2, name: 'Bob', color: '#2196F3', position: 'INITIATION-START', cards: [], money: 100000, time: 100, scope: 0 }
+                    ];
+                    
+                    window.GameStateManager.setState({ 
+                        players: testPlayers, 
+                        gamePhase: 'PLAYING',
+                        currentPlayer: 0 
+                    });
+                    
+                    setDebugInfo(prev => ({
+                        ...prev,
+                        gameState: window.GameStateManager.getState()
+                    }));
+                }
+            };
+
+            return React.createElement('div', null, [
+                React.createElement('div', {
+                    key: 'csv-status',
+                    className: `debug-info ${debugInfo.csvLoaded ? 'success' : 'error'}`
+                }, `CSV Database: ${debugInfo.csvLoaded ? 'Loaded' : 'Not Loaded'}`),
+
+                React.createElement('div', {
+                    key: 'gamestate-status',
+                    className: `debug-info ${debugInfo.gameStateReady ? 'success' : 'error'}`
+                }, `GameStateManager: ${debugInfo.gameStateReady ? 'Ready' : 'Not Ready'}`),
+
+                React.createElement('div', {
+                    key: 'components-status',
+                    className: 'debug-info'
+                }, [
+                    React.createElement('h3', {key: 'title'}, 'Components Status:'),
+                    Object.entries(debugInfo.componentsLoaded).map(([comp, loaded]) =>
+                        React.createElement('p', {
+                            key: comp,
+                            style: { color: loaded ? 'green' : 'red' }
+                        }, `${comp}: ${loaded ? 'Loaded' : 'Missing'}`)
+                    )
+                ]),
+
+                debugInfo.gameState && React.createElement('div', {
+                    key: 'gamestate-data',
+                    className: 'debug-info'
+                }, [
+                    React.createElement('h3', {key: 'title'}, 'Game State:'),
+                    React.createElement('p', {key: 'phase'}, `Phase: ${debugInfo.gameState.gamePhase}`),
+                    React.createElement('p', {key: 'players'}, `Players: ${debugInfo.gameState.players.length}`),
+                    React.createElement('p', {key: 'current'}, `Current Player: ${debugInfo.gameState.currentPlayer}`)
+                ]),
+
+                React.createElement('button', {
+                    key: 'add-players',
+                    onClick: addTestPlayers,
+                    style: { padding: '10px 20px', margin: '10px 0', cursor: 'pointer' }
+                }, 'Add Test Players'),
+
+                debugInfo.errors.length > 0 && React.createElement('div', {
+                    key: 'errors',
+                    className: 'debug-info error'
+                }, [
+                    React.createElement('h3', {key: 'title'}, 'Errors:'),
+                    debugInfo.errors.map((error, i) =>
+                        React.createElement('p', {key: i}, error)
+                    )
+                ])
+            ]);
+        }
+
+        // Render debug app
+        const { createRoot } = ReactDOM;
+        const root = createRoot(document.getElementById('debug-output'));
+        root.render(React.createElement(DebugApp));
+    </script>
+</body>
+</html>

@@ -35,11 +35,16 @@ function App({ debugMode = false, logLevel = 'info' }) {
     
     // Debug log to track state changes
     if (debugMode) {
+        console.log('App render - gameState:', gameState);
         console.log('App render - gameState.players.length:', gameState.players.length);
+        console.log('App render - gameState.gamePhase:', gameState.gamePhase);
     }
     
     // Determine which screen to show
     const showPlayerSetup = !gameState.players || gameState.players.length === 0;
+    
+    // Additional debug logging
+    console.log('App: showPlayerSetup =', showPlayerSetup, 'gamePhase =', gameState.gamePhase, 'players =', gameState.players?.length || 0);
     
     // Main application
     return React.createElement(ErrorBoundary, null,
@@ -70,7 +75,10 @@ function App({ debugMode = false, logLevel = 'info' }) {
             // Main game UI based on current state
             showPlayerSetup
                 ? React.createElement(EnhancedPlayerSetup)
-                : React.createElement(GameBoard),
+                : (window.GamePanelLayout ? 
+                    React.createElement(GamePanelLayout) :
+                    React.createElement(GameBoard)
+                  ),
             
             // Debug overlay
             debugMode && React.createElement(DebugInfo, { enabled: true })

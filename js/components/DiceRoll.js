@@ -87,6 +87,11 @@ function DiceRoll() {
         return null;
     }
 
+    // Don't render UI when panel layout is active - let ActionPanel handle the UI
+    if (window.GamePanelLayout && gameState.players && gameState.players.length > 0) {
+        return null;
+    }
+
     const currentPlayer = gameState.players[state.playerId];
     if (!currentPlayer) return null;
 
