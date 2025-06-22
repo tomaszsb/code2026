@@ -18,7 +18,7 @@ class CardDisplay extends React.Component {
                 icon: '🔧'
             },
             'B': {
-                name: 'Business',
+                name: 'Bank',
                 color: 'var(--secondary-green)',
                 bgColor: '#e8f5e8',
                 borderColor: 'var(--secondary-green)',
@@ -32,14 +32,14 @@ class CardDisplay extends React.Component {
                 icon: '🔍'
             },
             'L': {
-                name: 'Legal',
+                name: 'Life',
                 color: 'var(--error-red)',
                 bgColor: '#ffebee',
                 borderColor: 'var(--error-red)',
                 icon: '⚖️'
             },
             'E': {
-                name: 'Emergency',
+                name: 'Expeditor',
                 color: 'var(--warning-amber)',
                 bgColor: '#fff8e1',
                 borderColor: 'var(--warning-amber)',
@@ -56,8 +56,13 @@ class CardDisplay extends React.Component {
         if (card.money_effect) {
             return `$${parseInt(card.money_effect).toLocaleString()}`;
         }
+        if (card.money_cost) {
+            const cost = parseInt(card.money_cost);
+            return cost !== 0 ? `$${Math.abs(cost).toLocaleString()}` : null;
+        }
         if (card.time_effect) {
-            return `${card.time_effect} days`;
+            const timeValue = parseInt(card.time_effect);
+            return timeValue !== 0 ? `${Math.abs(timeValue)} days` : null;
         }
         return null;
     }
@@ -196,6 +201,7 @@ class CardDisplay extends React.Component {
     renderCardEffects(card) {
         const effects = [];
         
+        // Bank cards - loan information
         if (card.loan_amount) {
             effects.push({
                 label: 'Loan Amount',
@@ -212,20 +218,68 @@ class CardDisplay extends React.Component {
             });
         }
         
+        // General money effects
         if (card.money_effect) {
+            const amount = parseInt(card.money_effect);
             effects.push({
-                label: 'Money Effect',
-                value: `$${parseInt(card.money_effect).toLocaleString()}`,
+                label: amount > 0 ? 'Money Gain' : 'Money Cost',
+                value: `$${Math.abs(amount).toLocaleString()}`,
                 type: 'money'
             });
         }
         
+        // Expeditor cards - money cost
+        if (card.money_cost) {
+            const cost = parseInt(card.money_cost);
+            if (cost !== 0) {
+                effects.push({
+                    label: cost > 0 ? 'Money Gain' : 'Money Cost',
+                    value: `$${Math.abs(cost).toLocaleString()}`,
+                    type: 'money'
+                });
+            }
+        }
+        
+        // Time effects (for expeditor cards)
         if (card.time_effect) {
+            const timeValue = parseInt(card.time_effect);
+            if (timeValue !== 0) {
+                effects.push({
+                    label: timeValue > 0 ? 'Time Added' : 'Time Reduced',
+                    value: `${Math.abs(timeValue)} days`,
+                    type: 'time'
+                });
+            }
+        }
+        
+        // Immediate effects (for expeditor cards)
+        if (card.immediate_effect && card.immediate_effect !== 'Apply Card') {
             effects.push({
-                label: 'Time Effect',
-                value: `${card.time_effect} days`,
-                type: 'time'
+                label: 'Effect',
+                value: card.immediate_effect,
+                type: 'effect'
             });
+        }
+        
+        // Turn effects (special conditions)
+        if (card.turn_effect) {
+            effects.push({
+                label: 'Special Effect',
+                value: card.turn_effect,
+                type: 'effect'
+            });
+        }
+        
+        // Work cost (for work cards)
+        if (card.work_cost) {
+            const workCost = parseInt(card.work_cost);
+            if (workCost > 0) {
+                effects.push({
+                    label: 'Work Cost',
+                    value: `$${workCost.toLocaleString()}`,
+                    type: 'money'
+                });
+            }
         }
         
         if (card.draw_cards) {

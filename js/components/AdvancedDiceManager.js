@@ -21,8 +21,12 @@ function AdvancedDiceManager() {
     });
 
     // Handle player movement to check for dice requirements
-    useEventListener('playerMoved', ({ player }) => {
-        checkDiceRequirements(player);
+    useEventListener('playerMoved', ({ player, playerId }) => {
+        // Handle both event formats: some emit player object, some emit playerId
+        const targetPlayer = player || (playerId && gameState.players?.find(p => p.id === playerId));
+        if (targetPlayer) {
+            checkDiceRequirements(targetPlayer);
+        }
     });
 
     // Perform dice roll with advanced processing
@@ -112,7 +116,8 @@ function AdvancedDiceManager() {
         }
         
         // Get base outcome from CSV
-        const baseOutcome = CSVDatabase.dice.getRollOutcome(spaceName, visitType, rollValue);
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return null;
+        const baseOutcome = window.CSVDatabase.dice.getRollOutcome(spaceName, visitType, rollValue);
         
         if (!baseOutcome) {
             return [{
@@ -353,7 +358,7 @@ function AdvancedDiceManager() {
 
     // Process outcome effects on game state
     const processOutcomeEffects = (outcomes, playerId, rollRecord) => {
-        const player = gameState.players.find(p => p.id === playerId);
+        const player = gameState.players?.find(p => p.id === playerId);
         if (!player) return;
 
         outcomes.forEach(outcome => {
@@ -493,7 +498,8 @@ function AdvancedDiceManager() {
             return;
         }
 
-        const spaceData = CSVDatabase.spaces.find(player.position, player.visitType || 'First');
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return null;
+        const spaceData = window.CSVDatabase.spaces.find(player.position, player.visitType || 'First');
         
         if (spaceData && spaceData.Event && spaceData.Event.toLowerCase().includes('roll dice')) {
             // Auto-trigger dice roll requirement

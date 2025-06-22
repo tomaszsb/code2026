@@ -190,11 +190,11 @@ class HandManager extends React.Component {
         // Sort selected cards by priority for play
         const organizedSelected = [...selectedCards].sort((a, b) => {
             const getPriority = (card) => {
-                if (card.card_type === 'E') return 0; // Emergency cards first
+                if (card.card_type === 'E') return 0; // Expeditor cards first
                 if (card.card_type === 'B') return 1; // Business cards next
                 if (card.card_type === 'W') return 2; // Work cards
                 if (card.card_type === 'I') return 3; // Inspection cards
-                if (card.card_type === 'L') return 4; // Legal cards last
+                if (card.card_type === 'L') return 4; // Life cards last
                 return 5;
             };
             return getPriority(a) - getPriority(b);
@@ -280,10 +280,10 @@ class HandManager extends React.Component {
                     }, [
                         React.createElement('option', { key: 'all', value: 'all' }, 'All'),
                         React.createElement('option', { key: 'W', value: 'W' }, 'Work'),
-                        React.createElement('option', { key: 'B', value: 'B' }, 'Business'),
+                        React.createElement('option', { key: 'B', value: 'B' }, 'Bank'),
                         React.createElement('option', { key: 'I', value: 'I' }, 'Inspection'),
-                        React.createElement('option', { key: 'L', value: 'L' }, 'Legal'),
-                        React.createElement('option', { key: 'E', value: 'E' }, 'Emergency')
+                        React.createElement('option', { key: 'L', value: 'L' }, 'Life'),
+                        React.createElement('option', { key: 'E', value: 'E' }, 'Expeditor')
                     ])
                 ]),
 

@@ -16,7 +16,7 @@ function ResultsPanel() {
 
     // Listen for game events
     useEventListener('diceRolled', ({ playerId, roll, space, result }) => {
-        const player = gameState.players.find(p => p.id === playerId);
+        const player = gameState.players?.find(p => p.id === playerId);
         setResultsState(prev => ({
             ...prev,
             lastDiceRoll: {
@@ -32,27 +32,27 @@ function ResultsPanel() {
     });
 
     useEventListener('playerMoved', ({ playerId, fromSpace, toSpace }) => {
-        const player = gameState.players.find(p => p.id === playerId);
+        const player = gameState.players?.find(p => p.id === playerId);
         addAction(`${player?.name} moved from ${fromSpace} to ${toSpace}`, 'movement');
     });
 
     useEventListener('cardDrawn', ({ playerId, card, cardType }) => {
-        const player = gameState.players.find(p => p.id === playerId);
+        const player = gameState.players?.find(p => p.id === playerId);
         addAction(`${player?.name} drew a ${cardType} card`, 'card');
     });
 
     useEventListener('cardPlayed', ({ playerId, card }) => {
-        const player = gameState.players.find(p => p.id === playerId);
+        const player = gameState.players?.find(p => p.id === playerId);
         addAction(`${player?.name} played ${card.card_name || 'a card'}`, 'card');
     });
 
     useEventListener('negotiationChosen', ({ playerId, option, space }) => {
-        const player = gameState.players.find(p => p.id === playerId);
+        const player = gameState.players?.find(p => p.id === playerId);
         addAction(`${player?.name} chose to ${option} at ${space}`, 'negotiation');
     });
 
     useEventListener('turnEnded', ({ playerId }) => {
-        const player = gameState.players.find(p => p.id === playerId);
+        const player = gameState.players?.find(p => p.id === playerId);
         addAction(`${player?.name} ended their turn`, 'turn');
     });
 

@@ -25,12 +25,15 @@ function LogicSpaceManager() {
         }
 
         // Query CSV for current space data
-        const spaceData = CSVDatabase.spaces.find(player.position, player.visitType || 'First');
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
+        const spaceData = window.CSVDatabase.spaces.find(player.position, player.visitType || 'First');
         
         if (spaceData && spaceData.Event) {
-            // Check if Event contains logic decision markers
+            // Check if Event contains logic decision markers OR if space name indicates decision
             const event = spaceData.Event.toLowerCase();
-            if (event.includes('yes/no') || event.includes('choose') || event.includes('decision')) {
+            const spaceName = spaceData.space_name || '';
+            if (event.includes('yes/no') || event.includes('choose') || event.includes('decision') || 
+                spaceName.includes('DECISION-CHECK') || spaceName.includes('DECISION')) {
                 setState(prevState => ({
                     ...prevState,
                     isVisible: true,
@@ -43,9 +46,11 @@ function LogicSpaceManager() {
     };
 
     // Handle player movement events
-    useEventListener('playerMoved', ({ player }) => {
-        if (player && player.id === gameState.currentPlayer) {
-            checkForLogicSpace(player);
+    useEventListener('playerMoved', ({ player, playerId }) => {
+        // Handle both event formats: some emit player object, some emit playerId
+        const targetPlayer = player || (playerId && gameState.players?.find(p => p.id === playerId));
+        if (targetPlayer && targetPlayer.id === gameState.currentPlayer) {
+            checkForLogicSpace(targetPlayer);
         }
     });
 
@@ -59,7 +64,8 @@ function LogicSpaceManager() {
             return;
         }
         
-        const spaceData = CSVDatabase.spaces.find(
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
+        const spaceData = window.CSVDatabase.spaces.find(
             state.currentPlayer.position, 
             state.currentPlayer.visitType || 'First'
         );
@@ -94,7 +100,29 @@ function LogicSpaceManager() {
         const spaceName = spaceData.space_name;
         const event = spaceData.Event;
 
-        // Logic for specific known spaces - can be expanded based on CSV data
+        // Handle PM-DECISION-CHECK specifically
+        if (spaceName === 'PM-DECISION-CHECK') {
+            // Get available destinations from CSV data (space_1, space_2, etc.)
+            const destinations = [];
+            for (let i = 1; i <= 5; i++) {
+                const spaceKey = `space_${i}`;
+                if (spaceData[spaceKey] && spaceData[spaceKey].trim()) {
+                    destinations.push({
+                        id: spaceData[spaceKey],
+                        name: spaceData[spaceKey].replace(/-/g, ' ')
+                    });
+                }
+            }
+            
+            if (destinations.length > 0) {
+                return { 
+                    type: 'chooseDestination', 
+                    destinations: destinations
+                };
+            }
+        }
+
+        // Logic for other decision spaces
         if (spaceName.includes('LOGIC') || event.includes('yes/no')) {
             // Extract destination logic from Action field if available
             const action = spaceData.Action || '';

@@ -9,7 +9,8 @@ function PlayerStatusPanel() {
     const [panelState, setPanelState] = useState({
         showCardDetails: false,
         selectedCard: null,
-        cardsExpanded: true
+        cardsExpanded: true,
+        cardFlipped: false
     });
 
     const currentPlayer = gameState.players[gameState.currentPlayer];
@@ -49,21 +50,32 @@ function PlayerStatusPanel() {
         return count;
     };
     
-    // Get icon for card type
+    // Get icon and color for card type (consistent with rules modal)
     const getCardTypeIcon = (cardType) => {
         const icons = {
             'W': '🔧', // Work
-            'B': '💼', // Business
-            'I': '🔍', // Investigation
-            'L': '⚖️', // Legal
-            'E': '⚠️'  // Emergency
+            'B': '💼', // Bank
+            'I': '🔍', // Investor
+            'L': '⚖️', // Life
+            'E': '⚠️'  // Expeditor
         };
         return icons[cardType] || '🃏';
+    };
+
+    const getCardTypeColor = (cardType) => {
+        const colors = {
+            'W': { bg: '#e3f2fd', text: '#1976d2' }, // Work - blue
+            'B': { bg: '#e8f5e8', text: '#388e3c' }, // Bank - green
+            'I': { bg: '#fff3e0', text: '#f57c00' }, // Investor - orange
+            'L': { bg: '#ffebee', text: '#d32f2f' }, // Life - red
+            'E': { bg: '#f3e5f5', text: '#7b1fa2' }  // Expeditor - purple
+        };
+        return colors[cardType] || { bg: '#f5f5f5', text: '#666' };
     };
     
     // Get current space information
     const getCurrentSpaceInfo = () => {
-        if (!currentPlayer) return null;
+        if (!currentPlayer || !window.CSVDatabase || !window.CSVDatabase.loaded) return null;
         
         const spaceData = window.CSVDatabase.spaces.find(
             currentPlayer.position, 
@@ -89,7 +101,15 @@ function PlayerStatusPanel() {
         setPanelState(prev => ({
             ...prev,
             selectedCard: null,
-            showCardDetails: false
+            showCardDetails: false,
+            cardFlipped: false
+        }));
+    };
+
+    const flipCard = () => {
+        setPanelState(prev => ({
+            ...prev,
+            cardFlipped: !prev.cardFlipped
         }));
     };
 
@@ -234,16 +254,57 @@ function PlayerStatusPanel() {
                 
                 React.createElement('div', {
                     key: 'scope',
-                    className: 'resource-item'
+                    className: 'resource-item scope-section'
                 }, [
                     React.createElement('span', {
-                        key: 'scope-label',
-                        className: 'resource-label'
-                    }, 'Scope:'),
-                    React.createElement('span', {
-                        key: 'scope-value',
-                        className: 'resource-value'
-                    }, `${currentPlayer.scope || 0}%`)
+                        key: 'scope-header',
+                        className: 'scope-main-header'
+                    }, [
+                        React.createElement('span', {
+                            key: 'scope-label',
+                            className: 'resource-label'
+                        }, 'Project Scope'),
+                        React.createElement('span', {
+                            key: 'scope-count',
+                            className: 'resource-value'
+                        }, `${(currentPlayer.scopeItems?.length || 0)} work types`)
+                    ]),
+                    // Detailed scope breakdown
+                    currentPlayer.scopeItems && currentPlayer.scopeItems.length > 0 && 
+                    React.createElement('div', {
+                        key: 'scope-details',
+                        className: 'scope-details'
+                    }, [
+                        React.createElement('div', {
+                            key: 'scope-header',
+                            className: 'scope-header'
+                        }, [
+                            React.createElement('span', {key: 'work-type-header'}, 'Work Type'),
+                            React.createElement('span', {key: 'cost-header'}, 'Est. Cost')
+                        ]),
+                        ...currentPlayer.scopeItems.map((item, index) => 
+                            React.createElement('div', {
+                                key: `scope-item-${index}`,
+                                className: 'scope-item'
+                            }, [
+                                React.createElement('span', {
+                                    key: 'work-type',
+                                    className: 'work-type'
+                                }, item.count > 1 ? `${item.workType} (${item.count})` : item.workType),
+                                React.createElement('span', {
+                                    key: 'cost',
+                                    className: 'cost'
+                                }, `$${item.cost.toLocaleString()}`)
+                            ])
+                        ),
+                        currentPlayer.scopeTotalCost > 0 && React.createElement('div', {
+                            key: 'scope-total',
+                            className: 'scope-total'
+                        }, [
+                            React.createElement('span', {key: 'total-label'}, 'Total:'),
+                            React.createElement('span', {key: 'total-cost'}, `$${currentPlayer.scopeTotalCost.toLocaleString()}`)
+                        ])
+                    ])
                 ])
             ])
         ]),
@@ -280,23 +341,43 @@ function PlayerStatusPanel() {
                 className: 'cards-container'
             }, 
                 getAllCards(currentPlayer.cards).length > 0 ? 
-                    getAllCards(currentPlayer.cards).map((card, index) => 
-                        React.createElement('div', {
+                    getAllCards(currentPlayer.cards).map((card, index) => {
+                        const cardColors = getCardTypeColor(card.card_type);
+                        return React.createElement('div', {
                             key: `card-${index}`,
                             className: 'card-mini',
                             onClick: () => handleCardSelect(card),
-                            title: card.card_name || `${card.card_type} Card`
+                            title: card.card_name || `${card.card_type} Card`,
+                            style: {
+                                backgroundColor: cardColors.bg,
+                                border: `2px solid ${cardColors.text}`,
+                                borderRadius: '8px',
+                                padding: '8px',
+                                margin: '4px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease'
+                            }
                         }, [
                             React.createElement('div', {
                                 key: 'card-type',
-                                className: `card-type-indicator ${card.card_type}`
+                                className: `card-type-indicator ${card.card_type}`,
+                                style: {
+                                    color: cardColors.text,
+                                    fontWeight: 'bold',
+                                    fontSize: '12px'
+                                }
                             }, card.card_type),
                             React.createElement('div', {
                                 key: 'card-name',
-                                className: 'card-name-mini'
+                                className: 'card-name-mini',
+                                style: {
+                                    color: cardColors.text,
+                                    fontSize: '10px',
+                                    marginTop: '4px'
+                                }
                             }, (card.card_name || 'Unknown').substring(0, 10) + '...')
-                        ])
-                    ) :
+                        ]);
+                    }) :
                     React.createElement('p', {
                         key: 'no-cards',
                         className: 'no-cards-message'
@@ -366,29 +447,53 @@ function PlayerStatusPanel() {
                     }
                 }, '×'),
                 
-                panelState.selectedCard ? (
-                    React.createElement('div', {
-                        key: 'game-card',
+                panelState.selectedCard ? (() => {
+                    const cardColors = getCardTypeColor(panelState.selectedCard.card_type);
+                    return React.createElement('div', {
+                        key: 'card-container',
                         style: {
                             width: '400px',
                             height: '600px',
-                            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                            border: '3px solid #007bff',
-                            borderRadius: '15px',
-                            position: 'relative',
-                            boxShadow: '0 8px 32px rgba(0,123,255,0.3)',
-                            overflow: 'hidden'
-                        }
+                            perspective: '1000px',
+                            cursor: 'pointer'
+                        },
+                        onClick: flipCard
                     }, [
+                        React.createElement('div', {
+                            key: 'card-flipper',
+                            style: {
+                                width: '100%',
+                                height: '100%',
+                                position: 'relative',
+                                transformStyle: 'preserve-3d',
+                                transform: panelState.cardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                                transition: 'transform 0.6s ease-in-out'
+                            }
+                        }, [
+                            // Front side (card details)
+                            React.createElement('div', {
+                                key: 'card-front',
+                                style: {
+                                    position: 'absolute',
+                                    width: '100%',
+                                    height: '100%',
+                                    backfaceVisibility: 'hidden',
+                                    background: `linear-gradient(135deg, ${cardColors.bg} 0%, ${cardColors.bg}dd 100%)`,
+                                    border: `3px solid ${cardColors.text}`,
+                                    borderRadius: '15px',
+                                    boxShadow: `0 8px 32px ${cardColors.text}33`,
+                                    overflow: 'hidden'
+                                }
+                            }, [
                         // Card header with type
                         React.createElement('div', {
                             key: 'header',
                             style: {
-                                background: 'linear-gradient(135deg, #007bff, #0056b3)',
+                                background: `linear-gradient(135deg, ${cardColors.text}, ${cardColors.text}dd)`,
                                 color: 'white',
                                 padding: '15px 20px',
                                 textAlign: 'center',
-                                borderBottom: '2px solid #0056b3'
+                                borderBottom: `2px solid ${cardColors.text}`
                             }
                         }, [
                             React.createElement('div', {
@@ -409,15 +514,36 @@ function PlayerStatusPanel() {
                             }, panelState.selectedCard.card_id)
                         ]),
                         
-                        // Card name
+                        // Card name with small graphic on left
                         React.createElement('div', {
                             key: 'name',
                             style: {
                                 padding: '20px',
-                                textAlign: 'center',
-                                borderBottom: '1px solid #dee2e6'
+                                borderBottom: '1px solid #dee2e6',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '15px'
                             }
                         }, [
+                            // Small graphic on left
+                            React.createElement('div', {
+                                key: 'small-graphic',
+                                style: {
+                                    width: '60px',
+                                    height: '60px',
+                                    background: 'linear-gradient(45deg, #f8f9fa, #e9ecef)',
+                                    borderRadius: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    border: '2px dashed #ced4da',
+                                    color: '#6c757d',
+                                    fontSize: '24px',
+                                    flexShrink: 0
+                                }
+                            }, getCardTypeIcon(panelState.selectedCard.card_type)),
+                            
+                            // Card title
                             React.createElement('h3', {
                                 key: 'title',
                                 style: {
@@ -425,114 +551,357 @@ function PlayerStatusPanel() {
                                     fontSize: '18px',
                                     fontWeight: 'bold',
                                     color: '#212529',
-                                    lineHeight: '1.3'
+                                    lineHeight: '1.3',
+                                    textAlign: 'left'
                                 }
                             }, panelState.selectedCard.card_name || 'Unknown Card')
                         ]),
                         
-                        // Card image placeholder
+                        // Scrollable card content area
                         React.createElement('div', {
-                            key: 'image',
-                            style: {
-                                height: '180px',
-                                background: 'linear-gradient(45deg, #f8f9fa, #e9ecef)',
-                                margin: '20px',
-                                borderRadius: '10px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                border: '2px dashed #ced4da',
-                                color: '#6c757d',
-                                fontSize: '48px'
-                            }
-                        }, getCardTypeIcon(panelState.selectedCard.card_type)),
-                        
-                        // Card effects
-                        React.createElement('div', {
-                            key: 'effects',
+                            key: 'card-content',
                             style: {
                                 padding: '20px',
-                                flex: 1
+                                maxHeight: '300px',
+                                overflowY: 'auto',
+                                fontSize: '13px'
                             }
-                        }, [
-                            React.createElement('div', {
-                                key: 'immediate-effect',
-                                style: {
-                                    background: '#f8f9fa',
-                                    border: '1px solid #dee2e6',
-                                    borderRadius: '8px',
-                                    padding: '15px',
-                                    marginBottom: '15px'
-                                }
-                            }, [
-                                React.createElement('div', {
-                                    key: 'effect-label',
-                                    style: {
-                                        fontSize: '12px',
-                                        fontWeight: 'bold',
-                                        color: '#495057',
-                                        marginBottom: '8px',
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '1px'
-                                    }
-                                }, 'Effect'),
-                                React.createElement('div', {
-                                    key: 'effect-text',
-                                    style: {
-                                        fontSize: '14px',
-                                        color: '#212529',
-                                        lineHeight: '1.4'
-                                    }
-                                }, panelState.selectedCard.immediate_effect || 'No effect specified')
-                            ]),
+                        }, (() => {
+                            const card = panelState.selectedCard;
+                            const isWCard = card.card_type === 'W';
                             
-                            // Work cost if available
-                            panelState.selectedCard.work_cost && React.createElement('div', {
-                                key: 'cost',
+                            if (isWCard) {
+                                // Simplified view for W cards (as requested)
+                                return [
+                                    // Costs section
+                                    React.createElement('div', {
+                                        key: 'costs-section',
+                                        style: {
+                                            background: '#fff3cd',
+                                            border: '1px solid #ffeaa7',
+                                            borderRadius: '8px',
+                                            padding: '15px',
+                                            marginBottom: '15px'
+                                        }
+                                    }, [
+                                        React.createElement('div', {
+                                            key: 'costs-title',
+                                            style: {
+                                                fontSize: '12px',
+                                                fontWeight: 'bold',
+                                                color: '#856404',
+                                                marginBottom: '10px',
+                                                textTransform: 'uppercase'
+                                            }
+                                        }, 'Costs & Requirements'),
+                                        
+                                        // Work Cost
+                                        card.work_cost && React.createElement('div', {
+                                            key: 'work-cost',
+                                            style: { marginBottom: '8px' }
+                                        }, [
+                                            React.createElement('strong', {key: 'label'}, 'Work Cost: '),
+                                            `$${parseInt(card.work_cost).toLocaleString()}`
+                                        ]),
+                                        
+                                        // Money Cost
+                                        card.money_cost && React.createElement('div', {
+                                            key: 'money-cost',
+                                            style: { marginBottom: '8px' }
+                                        }, [
+                                            React.createElement('strong', {key: 'label'}, 'Money Cost: '),
+                                            card.money_cost
+                                        ])
+                                    ]),
+                                    
+                                    // Restrictions section
+                                    React.createElement('div', {
+                                        key: 'restrictions-section',
+                                        style: {
+                                            background: '#ffebee',
+                                            border: '1px solid #f44336',
+                                            borderRadius: '8px',
+                                            padding: '15px',
+                                            marginBottom: '15px'
+                                        }
+                                    }, [
+                                        React.createElement('div', {
+                                            key: 'restrictions-title',
+                                            style: {
+                                                fontSize: '12px',
+                                                fontWeight: 'bold',
+                                                color: '#d32f2f',
+                                                marginBottom: '10px',
+                                                textTransform: 'uppercase'
+                                            }
+                                        }, 'Restrictions & Limits'),
+                                        
+                                        // Work Type Restriction
+                                        card.work_type_restriction && React.createElement('div', {
+                                            key: 'work-type',
+                                            style: { marginBottom: '8px' }
+                                        }, [
+                                            React.createElement('strong', {key: 'label'}, 'Work Type: '),
+                                            card.work_type_restriction
+                                        ]),
+                                        
+                                        // Space Restriction
+                                        card.space_restriction && React.createElement('div', {
+                                            key: 'space-restriction',
+                                            style: { marginBottom: '8px' }
+                                        }, [
+                                            React.createElement('strong', {key: 'label'}, 'Space: '),
+                                            card.space_restriction
+                                        ])
+                                    ])
+                                ];
+                            } else {
+                                // Full information view for non-W cards (B, I, L, E)
+                                const sections = [];
+                                
+                                // Description section
+                                if (card.description) {
+                                    sections.push(React.createElement('div', {
+                                        key: 'description-section',
+                                        style: {
+                                            background: '#e3f2fd',
+                                            border: '1px solid #2196f3',
+                                            borderRadius: '8px',
+                                            padding: '15px',
+                                            marginBottom: '15px'
+                                        }
+                                    }, [
+                                        React.createElement('div', {
+                                            key: 'desc-title',
+                                            style: {
+                                                fontSize: '12px',
+                                                fontWeight: 'bold',
+                                                color: '#1976d2',
+                                                marginBottom: '10px',
+                                                textTransform: 'uppercase'
+                                            }
+                                        }, 'Description'),
+                                        React.createElement('div', {
+                                            key: 'desc-text',
+                                            style: { lineHeight: '1.4' }
+                                        }, card.description)
+                                    ]));
+                                }
+                                
+                                // Effects section
+                                const effects = [];
+                                if (card.loan_amount) effects.push(['Loan Amount', `$${parseInt(card.loan_amount).toLocaleString()}`]);
+                                if (card.loan_rate) effects.push(['Interest Rate', `${card.loan_rate}%`]);
+                                if (card.money_effect) effects.push(['Money Effect', card.money_effect]);
+                                if (card.money_cost) effects.push(['Money Cost', card.money_cost]);
+                                if (card.time_effect) effects.push(['Time Effect', `${card.time_effect} days`]);
+                                if (card.immediate_effect) effects.push(['Immediate Effect', card.immediate_effect]);
+                                if (card.turn_effect) effects.push(['Turn Effect', card.turn_effect]);
+                                if (card.investment_amount) effects.push(['Investment Amount', `$${parseInt(card.investment_amount).toLocaleString()}`]);
+                                
+                                if (effects.length > 0) {
+                                    sections.push(React.createElement('div', {
+                                        key: 'effects-section',
+                                        style: {
+                                            background: '#e8f5e8',
+                                            border: '1px solid #4caf50',
+                                            borderRadius: '8px',
+                                            padding: '15px',
+                                            marginBottom: '15px'
+                                        }
+                                    }, [
+                                        React.createElement('div', {
+                                            key: 'effects-title',
+                                            style: {
+                                                fontSize: '12px',
+                                                fontWeight: 'bold',
+                                                color: '#388e3c',
+                                                marginBottom: '10px',
+                                                textTransform: 'uppercase'
+                                            }
+                                        }, 'Card Effects'),
+                                        ...effects.map(([label, value], index) => 
+                                            React.createElement('div', {
+                                                key: `effect-${index}`,
+                                                style: { marginBottom: '8px' }
+                                            }, [
+                                                React.createElement('strong', {key: 'label'}, `${label}: `),
+                                                value
+                                            ])
+                                        )
+                                    ]));
+                                }
+                                
+                                // Additional Information section
+                                const additionalInfo = [];
+                                if (card.flavor_text) additionalInfo.push(['Flavor Text', card.flavor_text]);
+                                if (card.target) additionalInfo.push(['Target', card.target]);
+                                if (card.scope) additionalInfo.push(['Scope', card.scope]);
+                                if (card.duration) additionalInfo.push(['Duration', card.duration]);
+                                if (card.activation_timing) additionalInfo.push(['Activation', card.activation_timing]);
+                                if (card.phase_restriction) additionalInfo.push(['Phase Restriction', card.phase_restriction]);
+                                if (card.space_restriction) additionalInfo.push(['Space Restriction', card.space_restriction]);
+                                if (card.work_type_restriction) additionalInfo.push(['Work Type', card.work_type_restriction]);
+                                
+                                if (additionalInfo.length > 0) {
+                                    sections.push(React.createElement('div', {
+                                        key: 'additional-section',
+                                        style: {
+                                            background: '#fff3e0',
+                                            border: '1px solid #ff9800',
+                                            borderRadius: '8px',
+                                            padding: '15px',
+                                            marginBottom: '15px'
+                                        }
+                                    }, [
+                                        React.createElement('div', {
+                                            key: 'additional-title',
+                                            style: {
+                                                fontSize: '12px',
+                                                fontWeight: 'bold',
+                                                color: '#f57c00',
+                                                marginBottom: '10px',
+                                                textTransform: 'uppercase'
+                                            }
+                                        }, 'Additional Information'),
+                                        ...additionalInfo.map(([label, value], index) => 
+                                            React.createElement('div', {
+                                                key: `info-${index}`,
+                                                style: { marginBottom: '8px' }
+                                            }, [
+                                                React.createElement('strong', {key: 'label'}, `${label}: `),
+                                                value
+                                            ])
+                                        )
+                                    ]));
+                                }
+                                
+                                // Usage & Stacking section
+                                const usageInfo = [];
+                                if (card.usage_limit) usageInfo.push(['Usage Limit', card.usage_limit]);
+                                if (card.stacking_limit) usageInfo.push(['Stacking Limit', card.stacking_limit]);
+                                if (card.cooldown) usageInfo.push(['Cooldown', card.cooldown]);
+                                if (card.combo_requirement) usageInfo.push(['Combo Requirement', card.combo_requirement]);
+                                if (card.prerequisite) usageInfo.push(['Prerequisite', card.prerequisite]);
+                                
+                                if (usageInfo.length > 0) {
+                                    sections.push(React.createElement('div', {
+                                        key: 'usage-section',
+                                        style: {
+                                            background: '#f3e5f5',
+                                            border: '1px solid #9c27b0',
+                                            borderRadius: '8px',
+                                            padding: '15px',
+                                            marginBottom: '15px'
+                                        }
+                                    }, [
+                                        React.createElement('div', {
+                                            key: 'usage-title',
+                                            style: {
+                                                fontSize: '12px',
+                                                fontWeight: 'bold',
+                                                color: '#7b1fa2',
+                                                marginBottom: '10px',
+                                                textTransform: 'uppercase'
+                                            }
+                                        }, 'Usage & Stacking Limits'),
+                                        ...usageInfo.map(([label, value], index) => 
+                                            React.createElement('div', {
+                                                key: `usage-${index}`,
+                                                style: { marginBottom: '8px' }
+                                            }, [
+                                                React.createElement('strong', {key: 'label'}, `${label}: `),
+                                                value
+                                            ])
+                                        )
+                                    ]));
+                                }
+                                
+                                return sections;
+                            }
+                        })()),
+                        
+                                // Card footer
+                                React.createElement('div', {
+                                    key: 'footer',
+                                    style: {
+                                        background: '#f8f9fa',
+                                        padding: '10px 20px',
+                                        borderTop: '1px solid #dee2e6',
+                                        fontSize: '11px',
+                                        color: '#6c757d',
+                                        textAlign: 'center'
+                                    }
+                                }, [
+                                    React.createElement('div', {key: 'rarity'}, `${panelState.selectedCard.rarity || 'Common'} • ${panelState.selectedCard.work_type_restriction || 'General'}`),
+                                    React.createElement('div', {key: 'phase'}, `Phase: ${panelState.selectedCard.phase_restriction || 'Any'}`)
+                                ])
+                            ]),
+
+                            // Back side (Unravel logo)
+                            React.createElement('div', {
+                                key: 'card-back',
                                 style: {
-                                    background: '#fff3cd',
-                                    border: '1px solid #ffeaa7',
-                                    borderRadius: '8px',
-                                    padding: '10px 15px',
-                                    marginBottom: '10px'
+                                    position: 'absolute',
+                                    width: '100%',
+                                    height: '100%',
+                                    backfaceVisibility: 'hidden',
+                                    transform: 'rotateY(180deg)',
+                                    background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)',
+                                    border: '3px solid #2c3e50',
+                                    borderRadius: '15px',
+                                    boxShadow: '0 8px 32px rgba(44, 62, 80, 0.3)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                    textAlign: 'center'
                                 }
                             }, [
-                                React.createElement('span', {
-                                    key: 'cost-label',
+                                React.createElement('img', {
+                                    key: 'unravel-logo',
+                                    src: './graphics/My ChatGPT image.png',
+                                    alt: 'Unravel Logo',
                                     style: {
-                                        fontSize: '12px',
-                                        fontWeight: 'bold',
-                                        color: '#856404'
+                                        maxWidth: '200px',
+                                        maxHeight: '200px',
+                                        marginBottom: '20px',
+                                        borderRadius: '10px'
+                                    },
+                                    onError: (e) => {
+                                        e.target.style.display = 'none';
                                     }
-                                }, 'Work Cost: '),
-                                React.createElement('span', {
-                                    key: 'cost-value',
+                                }),
+                                React.createElement('h3', {
+                                    key: 'back-title',
+                                    style: {
+                                        fontSize: '24px',
+                                        fontWeight: 'bold',
+                                        marginBottom: '10px',
+                                        textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                                    }
+                                }, 'UNRAVEL'),
+                                React.createElement('p', {
+                                    key: 'back-subtitle',
                                     style: {
                                         fontSize: '14px',
-                                        fontWeight: 'bold',
-                                        color: '#856404'
+                                        opacity: 0.8,
+                                        fontStyle: 'italic'
                                     }
-                                }, `$${parseInt(panelState.selectedCard.work_cost).toLocaleString()}`)
+                                }, 'Project Management Game'),
+                                React.createElement('p', {
+                                    key: 'flip-hint',
+                                    style: {
+                                        fontSize: '12px',
+                                        opacity: 0.6,
+                                        marginTop: '20px'
+                                    }
+                                }, 'Click to flip back')
                             ])
-                        ]),
-                        
-                        // Card footer
-                        React.createElement('div', {
-                            key: 'footer',
-                            style: {
-                                background: '#f8f9fa',
-                                padding: '10px 20px',
-                                borderTop: '1px solid #dee2e6',
-                                fontSize: '11px',
-                                color: '#6c757d',
-                                textAlign: 'center'
-                            }
-                        }, [
-                            React.createElement('div', {key: 'rarity'}, `${panelState.selectedCard.rarity || 'Common'} • ${panelState.selectedCard.work_type_restriction || 'General'}`),
-                            React.createElement('div', {key: 'phase'}, `Phase: ${panelState.selectedCard.phase_restriction || 'Any'}`)
                         ])
-                    ])
-                ) : React.createElement('div', {
+                    ]);
+                })() : React.createElement('div', {
                     key: 'no-card',
                     style: { textAlign: 'center', padding: '20px' }
                 }, 'No card selected')

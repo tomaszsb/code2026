@@ -337,10 +337,10 @@ function AdvancedCardManager() {
     const getCardTypeName = (cardType) => {
         const names = {
             'W': 'Work',
-            'B': 'Business',
+            'B': 'Bank',
             'I': 'Investment',
             'L': 'Life',
-            'E': 'Emergency'
+            'E': 'Expeditor'
         };
         return names[cardType] || 'Unknown';
     };

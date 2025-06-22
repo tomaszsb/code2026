@@ -297,6 +297,11 @@ class GameStateManager {
 
         player.cards[cardType].push(...cards);
         
+        // Update player scope if W cards were added
+        if (cardType === 'W') {
+            this.updatePlayerScope(playerId, players);
+        }
+        
         console.log(`GameStateManager: Player after adding cards:`, player);
         console.log(`GameStateManager: Player now has ${player.cards[cardType].length} ${cardType} cards`);
 
@@ -310,6 +315,39 @@ class GameStateManager {
         });
         
         console.log('GameStateManager: State updated and event emitted');
+    }
+
+    /**
+     * Clear cards added during current turn (for negotiation)
+     */
+    clearCardsAddedThisTurn(playerId) {
+        console.log(`GameStateManager: clearCardsAddedThisTurn called for player ${playerId}`);
+        
+        const players = [...this.state.players];
+        const player = players[playerId];
+        
+        if (!player) {
+            console.error(`GameStateManager: Player ${playerId} not found`);
+            return;
+        }
+
+        // Track cards before clearing
+        const cardsBefore = player.cards ? {...player.cards} : {};
+        console.log('GameStateManager: Player cards before clearing:', cardsBefore);
+
+        // Clear all cards (or implement more sophisticated tracking of "cards added this turn")
+        // For now, we'll clear all cards as a simple implementation
+        player.cards = {};
+        
+        this.setState({ players });
+        
+        this.emit('cardsCleared', {
+            player,
+            cardsBefore,
+            reason: 'Negotiation penalty'
+        });
+        
+        console.log('GameStateManager: All cards cleared for player', playerId);
     }
 
     /**
@@ -392,6 +430,52 @@ class GameStateManager {
     /**
      * DEBUGGING UTILITIES
      */
+
+    /**
+     * Update player scope based on W cards
+     */
+    updatePlayerScope(playerId, players = null) {
+        const playerArray = players || [...this.state.players];
+        const player = playerArray[playerId];
+        
+        if (!player) return;
+        
+        // Calculate scope based on W cards
+        const wCards = player.cards?.W || [];
+        const scopeItems = [];
+        let totalCost = 0;
+        
+        wCards.forEach(card => {
+            const workType = card.work_type_restriction || 'General Construction';
+            const workCost = parseInt(card.work_cost) || 0;
+            
+            // Find existing scope item with same work type
+            const existingItem = scopeItems.find(item => item.workType === workType);
+            if (existingItem) {
+                existingItem.cost += workCost;
+                existingItem.count += 1;
+            } else {
+                scopeItems.push({
+                    workType: workType,
+                    cost: workCost,
+                    count: 1
+                });
+            }
+            
+            totalCost += workCost;
+        });
+        
+        // Store scope items and total cost on player
+        player.scopeItems = scopeItems;
+        player.scopeTotalCost = totalCost;
+        
+        console.log(`GameStateManager: Updated player ${playerId} scope with ${scopeItems.length} work types, total cost: $${totalCost.toLocaleString()}`);
+        
+        // If players array was not passed in, update state
+        if (!players) {
+            this.setState({ players: playerArray });
+        }
+    }
 
     /**
      * Enable/disable debug mode

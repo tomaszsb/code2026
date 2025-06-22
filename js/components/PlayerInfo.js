@@ -383,10 +383,10 @@ function PlayerInfo({ player, isCurrentPlayer = false, compact = false }) {
                 }, Object.entries(cardDistribution).map(([type, count]) => {
                     const typeNames = {
                         'W': { name: 'Work', icon: '🔧', color: '#3b82f6' },
-                        'B': { name: 'Business', icon: '💼', color: '#10b981' },
+                        'B': { name: 'Bank', icon: '💼', color: '#10b981' },
                         'I': { name: 'Investment', icon: '🔍', color: '#f59e0b' },
                         'L': { name: 'Life', icon: '⚖️', color: '#ef4444' },
-                        'E': { name: 'Emergency', icon: '⚠️', color: '#f59e0b' }
+                        'E': { name: 'Expeditor', icon: '⚠️', color: '#f59e0b' }
                     };
                     const typeInfo = typeNames[type] || typeNames['W'];
                     

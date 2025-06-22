@@ -18,8 +18,13 @@ function TurnManager() {
     });
 
     // Handle player movement completion
-    useEventListener('playerMoved', ({ player, newSpace }) => {
-        handleMovementComplete(player, newSpace);
+    useEventListener('playerMoved', ({ player, playerId, newSpace, toSpace }) => {
+        // Handle both event formats: some emit player object, some emit playerId
+        const targetPlayer = player || (playerId && gameState.players?.find(p => p.id === playerId));
+        const targetSpace = newSpace || toSpace;
+        if (targetPlayer && targetSpace) {
+            handleMovementComplete(targetPlayer, targetSpace);
+        }
     });
 
     // Handle space action completion

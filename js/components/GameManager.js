@@ -57,6 +57,15 @@ function GameManager() {
         }
     });
     
+    // Handle clearing cards added during turn (for negotiation)
+    useEventListener('clearCardsAddedThisTurn', ({ playerId }) => {
+        try {
+            gameStateManager.clearCardsAddedThisTurn(playerId);
+        } catch (error) {
+            gameStateManager.handleError(error, 'Clear Cards');
+        }
+    });
+    
     /**
      * Process space effects when player lands on space
      */
@@ -77,15 +86,7 @@ function GameManager() {
             }
         }
         
-        // Process card actions
-        const cardTypes = ComponentUtils.getCardTypes(spaceData);
-        cardTypes.forEach(({ type, action }) => {
-            if (action) {
-                gameStateManager.emit('processCardAction', { playerId, cardType: type, action });
-            }
-        });
-        
-        // Check if dice roll required
+        // Check if dice roll required FIRST
         if (ComponentUtils.requiresDiceRoll(spaceData)) {
             gameStateManager.emit('showDiceRoll', { 
                 playerId, 
@@ -93,8 +94,21 @@ function GameManager() {
                 visitType: spaceData.visit_type 
             });
         } else {
-            // Show movement options
+            // For spaces without dice rolls, show movement options immediately
             showMovementOptions(playerId, spaceData);
+        }
+        
+        // Show available card actions for manual selection (regardless of dice requirement)
+        const cardTypes = ComponentUtils.getCardTypes(spaceData);
+        console.log(`GameManager: Found ${cardTypes.length} card actions for ${spaceData.space_name}:`, cardTypes);
+        if (cardTypes.length > 0) {
+            console.log(`GameManager: Emitting showCardActions for player ${playerId}`);
+            gameStateManager.emit('showCardActions', {
+                playerId,
+                spaceName: spaceData.space_name,
+                cardActions: cardTypes,
+                spaceData: spaceData
+            });
         }
     }
     
@@ -270,6 +284,9 @@ function GameManager() {
             }
         }
         
+        // Note: Card actions are now shown immediately when landing on space
+        // They should not be tied to dice outcomes
+        
         // Emit generic outcome event for custom handling
         gameStateManager.emit('diceOutcomeProcessed', {
             playerId,
@@ -288,19 +305,13 @@ function GameManager() {
         if (nextSpaces.length === 0) {
             // No movement options - end turn
             gameStateManager.emit('noMovementOptions', { playerId, spaceData });
-        } else if (nextSpaces.length === 1) {
-            // Only one option - move automatically
-            gameStateManager.emit('movePlayerRequest', {
-                playerId,
-                spaceName: nextSpaces[0],
-                visitType: 'First'
-            });
         } else {
-            // Multiple options - let player choose
-            gameStateManager.emit('showSpaceChoice', {
+            // Let player choose their next move regardless of number of options
+            // This prevents auto-movement and gives player control
+            gameStateManager.emit('availableMovesUpdated', {
                 playerId,
-                spaceOptions: nextSpaces,
-                source: 'space_movement'
+                availableMoves: nextSpaces,
+                spaceData
             });
         }
     }

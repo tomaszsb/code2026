@@ -7,8 +7,13 @@ function WinConditionManager() {
     const [gameState, gameStateManager] = useGameState();
 
     // Listen for player movements to check win conditions
-    useEventListener('playerMoved', ({ player, newSpace }) => {
-        checkWinCondition(player, newSpace);
+    useEventListener('playerMoved', ({ player, playerId, newSpace, toSpace }) => {
+        // Handle both event formats: some emit player object, some emit playerId
+        const targetPlayer = player || (playerId && gameState.players?.find(p => p.id === playerId));
+        const targetSpace = newSpace || toSpace;
+        if (targetPlayer && targetSpace) {
+            checkWinCondition(targetPlayer, targetSpace);
+        }
     });
 
     // Check if player has won the game
@@ -68,7 +73,7 @@ function WinConditionManager() {
         const maxTimeLimit = 365; // 1 year limit
         
         // Check if any player exceeded time limit
-        const playerOverTime = gameState.players.find(p => p.timeSpent > maxTimeLimit);
+        const playerOverTime = gameState.players?.find(p => p.timeSpent > maxTimeLimit);
         if (playerOverTime) {
             gameStateManager.emit('gameTimeout', {
                 player: playerOverTime,

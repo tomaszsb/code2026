@@ -34,13 +34,13 @@ class CardPlayInterface extends React.Component {
             {
                 id: 'play-area',
                 name: 'Play Area',
-                accepts: ['W', 'I', 'L', 'E'], // All except Business cards
+                accepts: ['W', 'I', 'L', 'E'], // All except Bank cards
                 description: 'Play cards to affect the game'
             },
             {
                 id: 'loan-area',
                 name: 'Loan Applications',
-                accepts: ['B'], // Only Business cards
+                accepts: ['B'], // Only Bank cards
                 description: 'Apply for loans and financing'
             },
             {

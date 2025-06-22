@@ -13,8 +13,12 @@ function PlayerMovementVisualizer() {
     });
 
     // Handle player movement events
-    useEventListener('playerMoved', ({ player, fromSpace, toSpace }) => {
-        visualizeMovement(player, fromSpace, toSpace);
+    useEventListener('playerMoved', ({ player, playerId, fromSpace, toSpace }) => {
+        // Handle both event formats: some emit player object, some emit playerId
+        const targetPlayer = player || (playerId && gameState.players?.find(p => p.id === playerId));
+        if (targetPlayer && fromSpace && toSpace) {
+            visualizeMovement(targetPlayer, fromSpace, toSpace);
+        }
     });
 
     // Handle movement path calculation
@@ -54,7 +58,7 @@ function PlayerMovementVisualizer() {
         // Show notification
         if (window.InteractiveFeedback) {
             window.InteractiveFeedback.info(
-                `${player.name} moved to ${toSpace}`,
+                `${player?.name || 'Player'} moved to ${toSpace}`,
                 3000
             );
         }
@@ -72,8 +76,9 @@ function PlayerMovementVisualizer() {
     // Calculate movement path between spaces
     const calculateMovementPath = (fromSpace, toSpace) => {
         // Use CSV data to find space connections
-        const fromSpaceData = CSVDatabase.spaces.find(fromSpace, 'First');
-        const toSpaceData = CSVDatabase.spaces.find(toSpace, 'First');
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return null;
+        const fromSpaceData = window.CSVDatabase.spaces.find(fromSpace, 'First');
+        const toSpaceData = window.CSVDatabase.spaces.find(toSpace, 'First');
         
         if (!fromSpaceData || !toSpaceData) return null;
 

@@ -83,20 +83,23 @@ function LoadingAndErrorHandler() {
         });
     });
 
-    useEventListener('playerMoved', ({ player, newSpace }) => {
-        if (window.AccessibilityUtils) {
-            window.AccessibilityUtils.gameAnnouncements.announceMovement(player.name, newSpace);
+    useEventListener('playerMoved', ({ player, playerId, newSpace, toSpace }) => {
+        // Handle both event formats: some emit player object, some emit playerId
+        const targetPlayer = player || (playerId && gameState.players?.find(p => p.id === playerId));
+        const targetSpace = newSpace || toSpace;
+        if (window.AccessibilityUtils && targetPlayer && targetSpace) {
+            window.AccessibilityUtils.gameAnnouncements.announceMovement(targetPlayer?.name || 'Player', targetSpace);
         }
     });
 
     useEventListener('turnStarted', ({ player }) => {
         if (window.AccessibilityUtils) {
-            window.AccessibilityUtils.gameAnnouncements.announcePlayerTurn(player.name);
+            window.AccessibilityUtils.gameAnnouncements.announcePlayerTurn(player?.name || 'Player');
         }
         
         addNotification({
             type: 'info',
-            message: `${player.name}'s turn`,
+            message: `${player?.name || 'Player'}'s turn`,
             duration: 2000
         });
     });
