@@ -44,29 +44,24 @@ function GameBoard() {
         }
     }, [currentPlayer?.position, currentPlayer?.visitType, currentPlayer?.id]);
     
-    // Handle space selection with movement logic
+    // Handle space selection - only updates Space Explorer, never moves player
     const handleSpaceClick = useCallback((spaceName) => {
         const spaceData = window.CSVDatabase.spaces.find(spaceName, 'First');
         
-        // Check if this is a valid move
+        // Check if this is a valid move (for display purposes only)
         const isValidMove = availableMoves.includes(spaceName);
         const isCurrentPosition = currentPlayer && currentPlayer.position === spaceName;
         
-        if (isValidMove && !isCurrentPosition) {
-            // Direct move to the space
-            handleMovePlayer(spaceName, 'First');
-        } else {
-            // Show space details in modal
-            setSelectedSpace({ name: spaceName, data: spaceData, isValidMove });
-            
-            // Update Space Explorer panel
-            gameStateManager.emit('spaceSelected', {
-                spaceName,
-                spaceData,
-                isValidMove,
-                player: currentPlayer
-            });
-        }
+        // Always just show space details and update Space Explorer - never move
+        setSelectedSpace({ name: spaceName, data: spaceData, isValidMove });
+        
+        // Update Space Explorer panel
+        gameStateManager.emit('spaceSelected', {
+            spaceName,
+            spaceData,
+            isValidMove,
+            player: currentPlayer
+        });
     }, [availableMoves, currentPlayer, gameStateManager]);
     
     // Handle player move with CSV-driven logic
@@ -271,7 +266,7 @@ function GameBoard() {
                     React.createElement(SpaceDisplay, {
                         spaceName: currentPlayer.position,
                         visitType: currentPlayer.visitType,
-                        onMoveRequest: handleMovePlayer
+                        onMoveRequest: null
                     })
                 )
             ),
@@ -408,17 +403,24 @@ function SpaceDisplay({ spaceName, visitType, onMoveRequest }) {
             { className: 'card card--compact' },
             React.createElement('h4', { className: 'heading-5 mb-2' }, 'Move Options'),
             React.createElement('div',
-                { className: 'flex flex-col gap-2' },
-                nextSpaces.map(spaceName => 
-                    React.createElement('button', 
-                        { 
-                            key: spaceName,
-                            onClick: () => onMoveRequest(spaceName),
-                            className: 'btn btn--success btn--sm'
-                        },
-                        spaceName
+                { className: 'text-body' },
+                React.createElement('p', { className: 'text-small mb-2' }, 'Available moves from this space:'),
+                React.createElement('div',
+                    { className: 'flex flex-col gap-1' },
+                    nextSpaces.map(spaceName => 
+                        React.createElement('div', 
+                            { 
+                                key: spaceName,
+                                className: 'text-small'
+                            },
+                            `• ${spaceName}`
+                        )
                     )
-                )
+                ),
+                React.createElement('p', { 
+                    className: 'text-small mt-2', 
+                    style: { fontStyle: 'italic', color: '#666' } 
+                }, 'Use the Action Panel to select and confirm moves')
             )
         )
     );
@@ -549,7 +551,7 @@ function SpaceModal({ space, onClose, onMove }) {
             React.createElement(SpaceDisplay, {
                 spaceName: space.name,
                 visitType: 'First',
-                onMoveRequest: onMove
+                onMoveRequest: null
             })
         )
     );

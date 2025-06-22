@@ -102,8 +102,15 @@ function GameManager() {
      * Process card actions (Draw, Replace, Remove, etc.)
      */
     function processCardAction(playerId, cardType, actionText) {
+        console.log(`GameManager: processCardAction called with playerId=${playerId}, cardType=${cardType}, actionText="${actionText}"`);
+        
         const action = ComponentUtils.parseCardAction(actionText);
-        if (!action) return;
+        console.log(`GameManager: Parsed action:`, action);
+        
+        if (!action) {
+            console.log('GameManager: No action parsed, returning');
+            return;
+        }
         
         switch (action.type) {
             case 'draw':
@@ -132,8 +139,18 @@ function GameManager() {
      * Draw random cards for player
      */
     function drawCardsForPlayer(playerId, cardType, amount) {
+        console.log(`GameManager: drawCardsForPlayer called with playerId=${playerId}, cardType=${cardType}, amount=${amount}`);
+        
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+            console.error('GameManager: CSVDatabase not loaded for card drawing');
+            return;
+        }
+        
         const availableCards = window.CSVDatabase.cards.byType(cardType);
+        console.log(`GameManager: Found ${availableCards.length} available ${cardType} cards`);
+        
         if (availableCards.length === 0) {
+            console.error(`GameManager: No ${cardType} cards available`);
             throw new Error(`No ${cardType} cards available`);
         }
         
@@ -143,7 +160,19 @@ function GameManager() {
             drawnCards.push(availableCards[randomIndex]);
         }
         
+        console.log(`GameManager: Drew ${drawnCards.length} cards:`, drawnCards.map(c => c.card_name || c.card_id));
+        
         gameStateManager.addCardsToPlayer(playerId, cardType, drawnCards);
+        
+        console.log(`GameManager: Added cards to player ${playerId}`);
+        
+        // Emit event for UI feedback
+        gameStateManager.emit('cardsDrawnForPlayer', {
+            playerId,
+            cardType,
+            cards: drawnCards,
+            amount: drawnCards.length
+        });
     }
     
     /**
@@ -183,14 +212,25 @@ function GameManager() {
      * Process dice roll outcomes from CSV data
      */
     function processDiceOutcome(playerId, outcome, spaceName, visitType) {
-        if (!outcome || outcome === 'No change') return;
+        console.log(`GameManager: processDiceOutcome called with playerId=${playerId}, outcome="${outcome}", spaceName=${spaceName}, visitType=${visitType}`);
+        
+        if (!outcome || outcome === 'No change') {
+            console.log('GameManager: No outcome to process or outcome is "No change"');
+            return;
+        }
         
         // Check if outcome is a card action
         if (outcome.includes('Draw') || outcome.includes('Replace') || outcome.includes('Remove')) {
             // Parse card action from outcome
             const cardType = ComponentUtils.parseCardTypeFromOutcome(outcome);
+            console.log(`GameManager: Parsed card type "${cardType}" from outcome "${outcome}"`);
+            
             if (cardType) {
                 processCardAction(playerId, cardType, outcome);
+            } else {
+                // If no specific card type, default to drawing any type of card
+                console.log(`GameManager: No specific card type found, defaulting to 'W' card for outcome "${outcome}"`);
+                processCardAction(playerId, 'W', outcome);
             }
         }
         // Check if outcome is a movement instruction

@@ -272,18 +272,33 @@ class GameStateManager {
      * Add cards to player hand
      */
     addCardsToPlayer(playerId, cardType, cards) {
+        console.log(`GameStateManager: addCardsToPlayer called with playerId=${playerId}, cardType=${cardType}, cards=`, cards);
+        
         const players = [...this.state.players];
         const player = players[playerId];
         
         if (!player) {
+            console.error(`GameStateManager: Player ${playerId} not found`);
             throw new Error(`Player ${playerId} not found`);
         }
 
+        console.log(`GameStateManager: Player before adding cards:`, player);
+
+        // Initialize cards object if it doesn't exist
+        if (!player.cards) {
+            console.log('GameStateManager: Initializing cards object for player');
+            player.cards = {};
+        }
+
         if (!player.cards[cardType]) {
+            console.log(`GameStateManager: Initializing ${cardType} cards array for player`);
             player.cards[cardType] = [];
         }
 
         player.cards[cardType].push(...cards);
+        
+        console.log(`GameStateManager: Player after adding cards:`, player);
+        console.log(`GameStateManager: Player now has ${player.cards[cardType].length} ${cardType} cards`);
 
         this.setState({ players });
         
@@ -293,6 +308,8 @@ class GameStateManager {
             cards,
             totalCards: player.cards[cardType].length
         });
+        
+        console.log('GameStateManager: State updated and event emitted');
     }
 
     /**

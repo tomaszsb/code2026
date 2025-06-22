@@ -236,18 +236,35 @@ function ActionPanel() {
     const handleDiceRoll = () => {
         const roll = Math.floor(Math.random() * 6) + 1;
         
+        // Check if CSV database is loaded
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+            console.error('ActionPanel: CSVDatabase not loaded for dice roll');
+            const fallbackOutcome = `Rolled ${roll} - CSV data not available`;
+            setActionState(prev => ({
+                ...prev,
+                hasRolled: true,
+                diceRollValue: roll,
+                diceOutcome: fallbackOutcome
+            }));
+            return;
+        }
+        
         // Get outcome from CSV
         const outcome = window.CSVDatabase.dice.getRollOutcome(
             currentPlayer.position, 
             currentPlayer.visitType || 'First', 
             roll
-        ) || `You rolled ${roll}`;
+        );
+        
+        const finalOutcome = outcome || `You rolled ${roll} - no specific outcome defined`;
+        
+        console.log(`ActionPanel: Dice roll ${roll} at ${currentPlayer.position}, outcome: "${finalOutcome}"`);
         
         setActionState(prev => ({
             ...prev,
             hasRolled: true,
             diceRollValue: roll,
-            diceOutcome: outcome
+            diceOutcome: finalOutcome
         }));
 
         gameStateManager.emit('diceRolled', {
@@ -269,7 +286,12 @@ function ActionPanel() {
     };
 
     const handleApplyOutcome = () => {
-        if (!actionState.diceOutcome) return;
+        if (!actionState.diceOutcome) {
+            console.error('ActionPanel: No dice outcome to apply');
+            return;
+        }
+        
+        console.log(`ActionPanel: Applying dice outcome: "${actionState.diceOutcome}" for player ${currentPlayer.id} at ${currentPlayer.position}`);
         
         // Process the dice outcome - use same event as original DiceRoll component
         gameStateManager.emit('processDiceOutcome', {

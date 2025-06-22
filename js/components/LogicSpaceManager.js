@@ -17,6 +17,12 @@ function LogicSpaceManager() {
     // Check if current space requires logic decisions
     const checkForLogicSpace = (player) => {
         if (!player || !player.position) return;
+        
+        // Ensure CSVDatabase is loaded before querying
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+            console.warn('LogicSpaceManager: CSVDatabase not loaded yet');
+            return;
+        }
 
         // Query CSV for current space data
         const spaceData = CSVDatabase.spaces.find(player.position, player.visitType || 'First');
@@ -47,6 +53,12 @@ function LogicSpaceManager() {
     const makeLogicChoice = (choice) => {
         if (!state.currentPlayer) return;
 
+        // Ensure CSVDatabase is loaded
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+            console.warn('LogicSpaceManager: CSVDatabase not loaded for logic choice');
+            return;
+        }
+        
         const spaceData = CSVDatabase.spaces.find(
             state.currentPlayer.position, 
             state.currentPlayer.visitType || 'First'

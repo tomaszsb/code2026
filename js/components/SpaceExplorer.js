@@ -109,22 +109,17 @@ function SpaceExplorer() {
             onExploreSpace: exploreSpace
         }),
         
-        // Movement actions
+        // Movement info (no direct movement button)
         isValidMove && React.createElement('div',
             { className: 'mt-6 pt-4 border-t border-neutral-200' },
-            React.createElement('button',
+            React.createElement('div',
                 {
-                    className: 'btn btn--success btn--full',
-                    onClick: () => {
-                        gameStateManager.emit('movePlayerRequest', {
-                            playerId: gameState.currentPlayer,
-                            spaceName,
-                            visitType: 'First'
-                        });
-                        clearSelection();
-                    }
+                    className: 'movement-info'
                 },
-                `Move to ${spaceName}`
+                React.createElement('p', {
+                    className: 'text-small',
+                    style: { fontStyle: 'italic', color: '#0066cc' }
+                }, `✓ This is a valid move from your current position`)
             )
         )
     );

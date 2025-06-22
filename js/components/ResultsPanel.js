@@ -151,6 +151,19 @@ function ResultsPanel() {
     return React.createElement('div', {
         className: 'results-panel'
     }, [
+        // Space Explorer Section
+        React.createElement('div', {
+            key: 'space-explorer-section',
+            className: 'space-explorer-section'
+        }, [
+            window.SpaceExplorer ? React.createElement(SpaceExplorer, {
+                key: 'space-explorer'
+            }) : React.createElement('div', {
+                key: 'explorer-loading',
+                className: 'explorer-loading'
+            }, 'Loading Space Explorer...')
+        ]),
+
         // Results Header
         React.createElement('div', {
             key: 'results-header',

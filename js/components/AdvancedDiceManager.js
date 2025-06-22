@@ -101,6 +101,16 @@ function AdvancedDiceManager() {
 
     // Process roll outcomes from CSV data
     const processRollOutcomes = (spaceName, visitType, rollValue, options) => {
+        // Ensure CSVDatabase is loaded
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+            console.warn('AdvancedDiceManager: CSVDatabase not loaded for roll outcomes');
+            return [{
+                type: 'default',
+                description: `Rolled ${rollValue} - CSV data not loaded`,
+                effects: { rollValue }
+            }];
+        }
+        
         // Get base outcome from CSV
         const baseOutcome = CSVDatabase.dice.getRollOutcome(spaceName, visitType, rollValue);
         
@@ -476,6 +486,12 @@ function AdvancedDiceManager() {
     // Check if current player position requires dice roll
     const checkDiceRequirements = (player) => {
         if (!player || !player.position) return;
+        
+        // Ensure CSVDatabase is loaded before querying
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+            console.warn('AdvancedDiceManager: CSVDatabase not loaded yet');
+            return;
+        }
 
         const spaceData = CSVDatabase.spaces.find(player.position, player.visitType || 'First');
         
