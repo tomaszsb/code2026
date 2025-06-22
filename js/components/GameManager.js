@@ -287,22 +287,6 @@ function GameManager() {
         });
     }
     
-    /**
-     * Process dice roll outcomes
-     */
-    function processDiceOutcome(playerId, outcome) {
-        // Dice outcomes vary by space - could be card actions, money, time, etc.
-        if (outcome.includes('Draw')) {
-            const match = outcome.match(/Draw (\d+)/);
-            if (match) {
-                // Default to W cards for basic draws
-                drawCardsForPlayer(playerId, 'W', parseInt(match[1]));
-            }
-        } else {
-            // Custom outcome - emit for UI to handle
-            gameStateManager.emit('customDiceOutcome', { playerId, outcome });
-        }
-    }
     
     // GameManager is a logic-only component - no render
     return null;

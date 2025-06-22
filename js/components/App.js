@@ -49,13 +49,27 @@ function App({ debugMode = false, logLevel = 'info' }) {
             // Game Manager - handles game logic
             React.createElement(GameManager),
             
+            // Advanced System Components (Professional UI & Enhanced Features)
+            React.createElement(InteractiveFeedbackComponent),
+            React.createElement(TooltipSystemComponent),
+            React.createElement(LogicSpaceManagerComponent),
+            React.createElement(AdvancedCardManagerComponent),
+            React.createElement(AdvancedDiceManagerComponent),
+            React.createElement(PlayerMovementVisualizerComponent),
+            
             // Game mechanics components
             React.createElement(DiceRoll),
             React.createElement(SpaceChoice),
+            React.createElement(TurnManager),
+            React.createElement(WinConditionManager),
+            React.createElement(GameEndScreen),
+            React.createElement(GameTimer),
+            React.createElement(GameSaveManager),
+            React.createElement(LoadingAndErrorHandler),
             
             // Main game UI based on current state
             showPlayerSetup
-                ? React.createElement(PlayerSetup)
+                ? React.createElement(EnhancedPlayerSetup)
                 : React.createElement(GameBoard),
             
             // Debug overlay

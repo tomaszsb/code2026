@@ -21,6 +21,7 @@ function getPhaseColor(phase) {
 }
 
 function SpaceExplorer() {
+    const { useState, useEffect, useCallback } = React;
     const [gameState, gameStateManager] = useGameState();
     const [selectedSpace, setSelectedSpace] = useState(null);
     const [spaceHistory, setSpaceHistory] = useState([]);
@@ -39,12 +40,12 @@ function SpaceExplorer() {
     });
     
     // Clear selection
-    const clearSelection = () => {
+    const clearSelection = useCallback(() => {
         setSelectedSpace(null);
-    };
+    }, []);
     
     // Explore related space
-    const exploreSpace = (spaceName) => {
+    const exploreSpace = useCallback((spaceName) => {
         const spaceData = window.CSVDatabase.spaces.find(spaceName, 'First');
         if (spaceData) {
             gameStateManager.emit('spaceSelected', {
@@ -54,7 +55,7 @@ function SpaceExplorer() {
                 player: gameState.players[gameState.currentPlayer]
             });
         }
-    };
+    }, [gameStateManager, gameState.players, gameState.currentPlayer]);
     
     if (!selectedSpace) {
         return React.createElement('div',

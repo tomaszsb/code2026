@@ -1,0 +1,436 @@
+/**
+ * Smooth Animations and Visual Polish
+ * Enhanced transitions, micro-interactions, and visual feedback
+ */
+
+/* Base transition settings */
+:root {
+    --transition-fast: 0.15s ease-out;
+    --transition-normal: 0.3s ease-out;
+    --transition-slow: 0.5s ease-out;
+    --bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enable smooth scrolling globally */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Smooth focus transitions */
+*:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    transition: outline var(--transition-fast);
+}
+
+/* Loading animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInFromBottom {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInFromRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes bounce {
+    0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
+    40%, 43% { transform: translate3d(0, -10px, 0); }
+    70% { transform: translate3d(0, -5px, 0); }
+    90% { transform: translate3d(0, -2px, 0); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+    20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+@keyframes glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(40, 167, 69, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(40, 167, 69, 0.8), 0 0 30px rgba(40, 167, 69, 0.6); }
+}
+
+/* App-level animations */
+.app-container {
+    animation: fadeIn var(--transition-slow) var(--smooth);
+}
+
+/* Board space animations */
+.board-space {
+    transition: all var(--transition-normal) var(--smooth);
+    will-change: transform, box-shadow, background-color;
+}
+
+.board-space:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transition: all var(--transition-fast) var(--smooth);
+}
+
+.board-space:active {
+    transform: translateY(0) scale(0.98);
+    transition: all 0.1s var(--smooth);
+}
+
+/* Available move animations */
+.board-space.available-move {
+    animation: glow 2s infinite ease-in-out;
+    transform: translateY(-1px);
+}
+
+.board-space.available-move:hover {
+    animation-play-state: paused;
+    transform: translateY(-4px) scale(1.02);
+}
+
+/* Current position animation */
+.board-space.current-position {
+    animation: bounce 2s infinite;
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.4);
+}
+
+/* Player movement animation */
+.player-piece {
+    transition: all var(--transition-normal) var(--bounce);
+}
+
+.player-piece.moving {
+    animation: bounce 0.6s ease-out;
+    transform: scale(1.2);
+}
+
+/* Space Explorer animations */
+.space-explorer {
+    animation: slideInFromRight var(--transition-normal) var(--smooth);
+}
+
+.space-explorer.closing {
+    animation: slideInFromRight var(--transition-normal) reverse var(--smooth);
+}
+
+.space-details {
+    animation: fadeIn var(--transition-normal) var(--smooth);
+}
+
+.space-details > * {
+    animation: fadeIn var(--transition-normal) var(--smooth);
+    animation-fill-mode: both;
+}
+
+.space-details > *:nth-child(1) { animation-delay: 0.1s; }
+.space-details > *:nth-child(2) { animation-delay: 0.2s; }
+.space-details > *:nth-child(3) { animation-delay: 0.3s; }
+.space-details > *:nth-child(4) { animation-delay: 0.4s; }
+
+/* Movement choice animations */
+.movement-choice {
+    transition: all var(--transition-fast) var(--smooth);
+    transform: translateX(0);
+}
+
+.movement-choice:hover {
+    transform: translateX(5px) scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.movement-choice:active {
+    transform: translateX(3px) scale(0.98);
+}
+
+/* Card animations */
+.game-card {
+    transition: all var(--transition-normal) var(--smooth);
+    will-change: transform, box-shadow;
+}
+
+.game-card:hover {
+    transform: translateY(-4px) rotate(1deg);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+    position: relative;
+}
+
+.game-card.playing {
+    animation: scaleIn var(--transition-normal) var(--bounce);
+}
+
+.game-card.played {
+    animation: slideInFromBottom var(--transition-normal) reverse var(--smooth);
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Card draw animation */
+.card-draw-effect {
+    animation: slideInFromBottom var(--transition-normal) var(--bounce);
+}
+
+/* Button animations */
+.btn {
+    transition: all var(--transition-fast) var(--smooth);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transition: width var(--transition-normal) var(--smooth), 
+                height var(--transition-normal) var(--smooth);
+    transform: translate(-50%, -50%);
+    z-index: 0;
+}
+
+.btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn:active {
+    transform: translateY(0) scale(0.98);
+    transition: all 0.1s var(--smooth);
+}
+
+/* Primary button special effects */
+.btn--primary:hover {
+    box-shadow: 0 4px 12px rgba(44, 85, 48, 0.3);
+}
+
+.btn--success:hover {
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.btn--danger:hover {
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+/* Dice roll animations */
+.dice {
+    transition: all var(--transition-fast) var(--smooth);
+}
+
+.dice.rolling {
+    animation: bounce 0.6s infinite ease-in-out;
+}
+
+.dice.stopped {
+    animation: scaleIn var(--transition-normal) var(--bounce);
+}
+
+/* Modal animations */
+.modal-overlay {
+    animation: fadeIn var(--transition-normal) var(--smooth);
+}
+
+.modal-content {
+    animation: scaleIn var(--transition-normal) var(--bounce);
+}
+
+.modal-overlay.closing {
+    animation: fadeIn var(--transition-normal) reverse var(--smooth);
+}
+
+.modal-content.closing {
+    animation: scaleIn var(--transition-normal) reverse var(--bounce);
+}
+
+/* Game Timer animations */
+.game-timer {
+    animation: slideInFromRight var(--transition-normal) var(--smooth);
+    transition: all var(--transition-fast) var(--smooth);
+}
+
+.game-timer:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.session-time {
+    transition: color var(--transition-fast) var(--smooth);
+}
+
+.timer-warning {
+    animation: shake 0.5s ease-in-out;
+}
+
+/* Loading states */
+.loading-dots {
+    display: inline-block;
+}
+
+.loading-dots::after {
+    content: '';
+    animation: loadingDots 1.5s infinite;
+}
+
+@keyframes loadingDots {
+    0%, 20% { content: ''; }
+    40% { content: '.'; }
+    60% { content: '..'; }
+    80%, 100% { content: '...'; }
+}
+
+/* Success/Error feedback animations */
+.feedback-message {
+    animation: slideInFromBottom var(--transition-normal) var(--bounce);
+}
+
+.feedback-message.success {
+    animation: fadeIn var(--transition-normal) var(--smooth);
+    color: var(--color-success);
+}
+
+.feedback-message.error {
+    animation: shake var(--transition-normal) var(--smooth);
+    color: var(--color-danger);
+}
+
+/* Phase transition animations */
+.phase-section {
+    animation: fadeIn var(--transition-slow) var(--smooth);
+}
+
+.phase-section.entering {
+    animation: slideInFromBottom var(--transition-slow) var(--smooth);
+}
+
+/* Turn transition effects */
+.turn-transition {
+    animation: fadeIn var(--transition-normal) var(--smooth);
+}
+
+.player-turn-indicator {
+    animation: glow 1s ease-in-out 3;
+}
+
+/* Score animation */
+.score-update {
+    animation: bounce var(--transition-normal) var(--bounce);
+    color: var(--color-success);
+}
+
+.score-decrease {
+    animation: shake var(--transition-normal) var(--smooth);
+    color: var(--color-danger);
+}
+
+/* Game end animations */
+.winner-announcement {
+    animation: scaleIn var(--transition-slow) var(--bounce);
+}
+
+.confetti-effect {
+    animation: bounce 2s infinite ease-in-out;
+}
+
+/* Accessibility - Respect user preferences */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Performance optimizations */
+.board-space,
+.game-card,
+.btn,
+.modal-content {
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+/* Smooth state transitions */
+.state-transition {
+    transition: all var(--transition-normal) var(--smooth);
+}
+
+/* Micro-interactions for better UX */
+.interactive:hover {
+    cursor: pointer;
+    transform: translateY(-1px);
+    transition: transform var(--transition-fast) var(--smooth);
+}
+
+.interactive:active {
+    transform: translateY(0) scale(0.98);
+    transition: transform 0.1s var(--smooth);
+}
+
+/* Floating action button animation */
+.floating-action {
+    transition: all var(--transition-normal) var(--smooth);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.floating-action:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Progress indicator animations */
+.progress-indicator {
+    transition: all var(--transition-normal) var(--smooth);
+}
+
+.progress-bar {
+    animation: slideInFromLeft var(--transition-slow) var(--smooth);
+}
+
+@keyframes slideInFromLeft {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+/* Notification animations */
+.notification {
+    animation: slideInFromBottom var(--transition-normal) var(--bounce);
+}
+
+.notification.removing {
+    animation: slideInFromBottom var(--transition-normal) reverse var(--smooth);
+}
+
+/* Enhanced hover states for touch devices */
+@media (hover: none) and (pointer: coarse) {
+    .board-space:hover,
+    .game-card:hover,
+    .btn:hover {
+        transform: none;
+    }
+    
+    .board-space:active,
+    .game-card:active,
+    .btn:active {
+        transform: scale(0.95);
+        transition: transform 0.1s var(--smooth);
+    }
+}

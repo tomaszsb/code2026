@@ -4,6 +4,7 @@
  */
 
 function GameBoard() {
+    const { useState, useEffect, useCallback } = React;
     const [gameState, gameStateManager] = useGameState();
     const [selectedSpace, setSelectedSpace] = useState(null);
     const [availableMoves, setAvailableMoves] = useState([]);
@@ -38,10 +39,10 @@ function GameBoard() {
                 });
             }
         }
-    }, [currentPlayer?.position, currentPlayer?.visitType, gameState.currentPlayer]);
+    }, [currentPlayer?.position, currentPlayer?.visitType, currentPlayer?.id]);
     
     // Handle space selection with movement logic
-    const handleSpaceClick = (spaceName) => {
+    const handleSpaceClick = useCallback((spaceName) => {
         const spaceData = window.CSVDatabase.spaces.find(spaceName, 'First');
         
         // Check if this is a valid move
@@ -63,10 +64,10 @@ function GameBoard() {
                 player: currentPlayer
             });
         }
-    };
+    }, [availableMoves, currentPlayer, gameStateManager]);
     
     // Handle player move with CSV-driven logic
-    const handleMovePlayer = (spaceName, visitType = 'First') => {
+    const handleMovePlayer = useCallback((spaceName, visitType = 'First') => {
         if (!currentPlayer) return;
         
         // Get space data to determine effects
@@ -83,7 +84,7 @@ function GameBoard() {
         processSpaceEffects(spaceData, currentPlayer);
         
         setSelectedSpace(null);
-    };
+    }, [currentPlayer, gameState.currentPlayer, gameStateManager]);
     
     // Process space effects based on CSV data
     const processSpaceEffects = (spaceData, player) => {

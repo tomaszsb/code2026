@@ -19,9 +19,14 @@
     <link rel="stylesheet" href="css/space-info.css">
     <link rel="stylesheet" href="css/space-explorer.css">
     <link rel="stylesheet" href="css/logic-space-components.css">
+    <link rel="stylesheet" href="css/mobile-responsive.css">
+    <link rel="stylesheet" href="css/smooth-animations.css">
 </head>
 <body>
-    <div id="app">
+    <div id="app" role="application" aria-label="Project Management Board Game">
+        <!-- Skip link for keyboard navigation -->
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+        
         <div class="loading-screen">
             <h1>Project Management Board Game</h1>
             <p>Loading game data...</p>
@@ -49,18 +54,38 @@
     
     <!-- Component Utilities -->
     <script type="text/babel" src="js/utils/ComponentUtils.js"></script>
+    <script src="js/utils/AccessibilityUtils.js"></script>
     
     <!-- Manager Components -->
     <script type="text/babel" src="js/components/GameManager.js"></script>
     
+    <!-- Advanced System Components (Load First) -->
+    <script type="text/babel" src="js/components/InteractiveFeedback.js"></script>
+    <script type="text/babel" src="js/components/TooltipSystem.js"></script>
+    <script type="text/babel" src="js/components/LogicSpaceManager.js"></script>
+    <script type="text/babel" src="js/components/AdvancedCardManager.js"></script>
+    <script type="text/babel" src="js/components/AdvancedDiceManager.js"></script>
+    <script type="text/babel" src="js/components/PlayerInfo.js"></script>
+    <script type="text/babel" src="js/components/PlayerMovementVisualizer.js"></script>
+    
     <!-- UI Components -->
     <script type="text/babel" src="js/components/LoadingScreen.js"></script>
     <script type="text/babel" src="js/components/PlayerSetup.js"></script>
+    <script type="text/babel" src="js/components/EnhancedPlayerSetup.js"></script>
     <script type="text/babel" src="js/components/GameBoard.js"></script>
     <script type="text/babel" src="js/components/SpaceExplorer.js"></script>
     <script type="text/babel" src="js/components/DiceRoll.js"></script>
     <script type="text/babel" src="js/components/SpaceChoice.js"></script>
     <script type="text/babel" src="js/components/CardDisplay.js"></script>
+    <script type="text/babel" src="js/components/CardPlayInterface.js"></script>
+    <script type="text/babel" src="js/components/HandManager.js"></script>
+    <script type="text/babel" src="js/components/CardEffectAnimations.js"></script>
+    <script type="text/babel" src="js/components/TurnManager.js"></script>
+    <script type="text/babel" src="js/components/WinConditionManager.js"></script>
+    <script type="text/babel" src="js/components/GameEndScreen.js"></script>
+    <script type="text/babel" src="js/components/GameTimer.js"></script>
+    <script type="text/babel" src="js/components/GameSaveManager.js"></script>
+    <script type="text/babel" src="js/components/LoadingAndErrorHandler.js"></script>
     
     <!-- Main App -->
     <script type="text/babel" src="js/components/App.js"></script>

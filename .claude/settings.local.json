@@ -19,7 +19,9 @@
       "Bash(git push:*)",
       "Bash(git remote:*)",
       "Bash(git reset:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(rg:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

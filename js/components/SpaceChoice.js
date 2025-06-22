@@ -53,11 +53,15 @@ function SpaceChoice() {
     };
 
     // Auto-select if only one option
-    if (state.spaceOptions.length === 1 && !state.selectedSpace) {
-        setTimeout(() => {
-            selectSpace(state.spaceOptions[0]);
-        }, 100);
-    }
+    useEffect(() => {
+        if (state.spaceOptions.length === 1 && !state.selectedSpace) {
+            const timeoutId = setTimeout(() => {
+                selectSpace(state.spaceOptions[0]);
+            }, 100);
+            
+            return () => clearTimeout(timeoutId);
+        }
+    }, [state.spaceOptions.length, state.selectedSpace]);
 
     // Don't render if no choice needed
     if (!state.playerId || state.spaceOptions.length === 0) {
