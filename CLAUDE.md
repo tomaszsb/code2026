@@ -135,17 +135,28 @@ For detailed information see:
 - **Current Position**: Orange highlighting with pulse animation
 - **Visited Spaces**: Visual tracking of player's journey
 
-### ✅ Space Explorer Panel
-- **Real-time Details**: Comprehensive space information on click
-- **Space Navigation**: Explore connected spaces with clickable buttons
-- **Move Actions**: Direct movement to valid spaces
-- **History Tracking**: Recently viewed spaces for easy navigation
+### ✅ Enhanced Space Explorer Panel
+- **Comprehensive Space Information**: Large space name, visit status, complete details
+- **Dice Roll Alerts**: Red warning boxes for spaces requiring dice rolls
+- **Card Draw Indicators**: Type-specific badges with icons (🔧 W, 💼 B, 🔍 I, ⚖️ L, ⚠️ E)
+- **Movement Navigation**: Numbered movement choices with clickable exploration
+- **Dice Outcomes Display**: Complete table showing all possible roll results (1-6)
+- **Color-Coded Sections**: Blue events, orange actions, professional styling
+- **Time Cost Display**: Prominent time requirements with orange styling
+- **Mobile Responsive**: Optimized layout for all screen sizes
 
 ### ✅ Unified Design System
 - **Consistent Styling**: All panels use unified card system and typography
 - **Design Tokens**: Standardized colors, spacing, and typography
 - **Button System**: Consistent button styles across all components
 - **Professional UI**: Cohesive visual experience throughout the game
+
+### ✅ Complete Card Management System
+- **Visual Card Displays**: 5 card types with unique colors, icons, and layouts
+- **Drag-and-Drop Interface**: Interactive card playing with drop zone validation
+- **Hand Management**: Sort, filter, organize with hand limit enforcement
+- **Effect Animations**: Floating messages for card effects with visual feedback
+- **Mobile Responsive**: Optimized for all screen sizes and touch interactions
 
 ### ✅ CSV-First Architecture
 - **No Magic Strings**: All space names and effects from CSV data
