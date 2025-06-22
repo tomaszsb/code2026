@@ -3,6 +3,9 @@
  * Shows detailed space information and allows exploration
  */
 
+// React hooks
+const { useState, useEffect } = React;
+
 // Helper function to get phase color
 function getPhaseColor(phase) {
     const phaseColors = {
@@ -139,115 +142,183 @@ function SpaceDetails({ spaceName, spaceData, isValidMove, player, onExploreSpac
     
     const nextSpaces = ComponentUtils.getNextSpaces(spaceData);
     const cardTypes = ComponentUtils.getCardTypes(spaceData);
+    const requiresDice = ComponentUtils.requiresDiceRoll(spaceData);
+    
+    // Determine visit status
+    const visitStatus = 'First Visit'; // TODO: Track actual visit history
+    
+    // Get movement choices
+    const movementChoices = [];
+    if (spaceData.space_1) movementChoices.push(spaceData.space_1);
+    if (spaceData.space_2) movementChoices.push(spaceData.space_2);
+    if (spaceData.space_3) movementChoices.push(spaceData.space_3);
+    if (spaceData.space_4) movementChoices.push(spaceData.space_4);
+    if (spaceData.space_5) movementChoices.push(spaceData.space_5);
     
     return React.createElement('div',
-        { className: 'flex flex-col gap-4' },
+        { className: 'space-explorer-details' },
         
-        // Space name and phase
+        // Space name and visit status
         React.createElement('div',
-            { className: 'flex flex-col gap-2' },
-            React.createElement('h4', { className: 'heading-3' }, spaceData.space_name),
-            React.createElement('div',
-                { className: 'flex items-center gap-2' },
-                React.createElement('span',
-                    { className: `badge badge--${getPhaseColor(spaceData.phase)}` },
-                    spaceData.phase
-                ),
-                isValidMove && React.createElement('span',
-                    { className: 'badge badge--success' },
-                    '✓ Valid Move'
-                )
-            )
+            { className: 'space-header' },
+            React.createElement('h2', { className: 'space-name' }, spaceData.space_name || spaceName),
+            React.createElement('div', { className: 'visit-status' }, visitStatus)
         ),
         
-        // Event description
+        // Dice roll requirement alert
+        requiresDice && React.createElement('div',
+            { className: 'dice-alert' },
+            React.createElement('span', { className: 'alert-icon' }, '🎲'),
+            React.createElement('span', { className: 'alert-text' }, 'This space requires a dice roll')
+        ),
+        
+        // Event section
         spaceData.Event && React.createElement('div',
-            { className: 'card card--compact' },
-            React.createElement('h5', { className: 'heading-5 mb-2' }, 'Event'),
-            React.createElement('p', { className: 'text-body mb-0' }, spaceData.Event)
+            { className: 'space-section' },
+            React.createElement('h4', { className: 'section-title' }, 'Event:'),
+            React.createElement('div', { className: 'section-content event-content' }, spaceData.Event)
         ),
         
-        // Action description
+        // Action section
         spaceData.Action && React.createElement('div',
-            { className: 'card card--compact' },
-            React.createElement('h5', { className: 'heading-5 mb-2' }, 'Action'),
-            React.createElement('p', { className: 'text-body mb-0' }, spaceData.Action)
+            { className: 'space-section' },
+            React.createElement('h4', { className: 'section-title' }, 'Action:'),
+            React.createElement('div', { className: 'section-content action-content' }, spaceData.Action)
         ),
         
-        // Outcome
-        spaceData.Outcome && React.createElement('div',
-            { className: 'card card--compact' },
-            React.createElement('h5', { className: 'heading-5 mb-2' }, 'Outcome'),
-            React.createElement('p', { className: 'text-body mb-0' }, spaceData.Outcome)
-        ),
-        
-        // Costs
-        (spaceData.Time || spaceData.Fee) && React.createElement('div',
-            { className: 'card card--compact' },
-            React.createElement('h5', { className: 'heading-5 mb-2' }, 'Costs'),
-            spaceData.Time && React.createElement('div',
-                { className: 'flex justify-between mb-2' },
-                React.createElement('span', { className: 'text-small' }, 'Time:'),
-                React.createElement('span', { className: 'text-small font-weight-medium' }, spaceData.Time)
-            ),
-            spaceData.Fee && React.createElement('div',
-                { className: 'flex justify-between' },
-                React.createElement('span', { className: 'text-small' }, 'Fee:'),
-                React.createElement('span', { className: 'text-small font-weight-medium' }, spaceData.Fee)
-            )
-        ),
-        
-        // Card effects
+        // Card draw effects
         cardTypes.length > 0 && React.createElement('div',
-            { className: 'card card--compact' },
-            React.createElement('h5', { className: 'heading-5 mb-2' }, 'Card Effects'),
-            cardTypes.map(({ type, action }) =>
-                React.createElement('div',
-                    {
+            { className: 'space-section' },
+            cardTypes.map(({ type, action }) => {
+                // Extract number from action (e.g., "Draw 3" -> "3")
+                const match = action.match(/(\d+)/);
+                const count = match ? match[1] : action;
+                
+                return React.createElement('div',
+                    { 
                         key: type,
-                        className: 'flex justify-between mb-2'
+                        className: `card-draw-badge card-draw-${type.toLowerCase()}`
                     },
-                    React.createElement('span', { className: 'text-small' }, `${type} Cards:`),
-                    React.createElement('span', { className: 'text-small font-weight-medium' }, action)
-                )
-            )
+                    React.createElement('span', { className: 'badge-icon' }, getCardTypeIcon(type)),
+                    React.createElement('span', { className: 'badge-text' }, `Draw ${count} ${type} Cards`)
+                );
+            })
         ),
         
-        // Dice roll requirement
-        ComponentUtils.requiresDiceRoll(spaceData) && React.createElement('div',
-            { className: 'card card--compact' },
-            React.createElement('h5', { className: 'heading-5 mb-2' }, 'Dice Roll Required'),
-            React.createElement('p', { className: 'text-small mb-0' }, 'This space requires rolling dice to determine outcome')
+        // Time cost
+        spaceData.Time && React.createElement('div',
+            { className: 'space-section time-section' },
+            React.createElement('span', { className: 'time-label' }, 'Time:'),
+            React.createElement('span', { className: 'time-value' }, spaceData.Time)
         ),
         
-        // Next spaces
-        nextSpaces.length > 0 && React.createElement('div',
-            { className: 'card card--compact' },
-            React.createElement('h5', { className: 'heading-5 mb-2' }, 'Connected Spaces'),
+        // Movement choices
+        movementChoices.length > 0 && React.createElement('div',
+            { className: 'space-section' },
+            React.createElement('h4', { className: 'section-title' }, 'Movement Choices:'),
             React.createElement('div',
-                { className: 'flex flex-col gap-2' },
-                nextSpaces.map(nextSpace =>
-                    React.createElement('button',
-                        {
-                            key: nextSpace,
-                            className: 'btn btn--secondary btn--sm',
-                            onClick: () => onExploreSpace(nextSpace)
+                { className: 'movement-list' },
+                movementChoices.map((choice, index) => 
+                    choice && choice !== 'n/a' && React.createElement('div',
+                        { 
+                            key: index,
+                            className: 'movement-item'
                         },
-                        nextSpace
+                        React.createElement('span', { className: 'movement-number' }, `${index + 1}.`),
+                        React.createElement('button',
+                            {
+                                className: 'movement-link',
+                                onClick: () => onExploreSpace(choice)
+                            },
+                            choice
+                        )
                     )
                 )
             )
         ),
         
+        // Dice roll outcomes
+        requiresDice && React.createElement(DiceOutcomes, {
+            spaceName: spaceName,
+            spaceData: spaceData
+        }),
+        
+        // Fee information
+        spaceData.Fee && React.createElement('div',
+            { className: 'space-section' },
+            React.createElement('h4', { className: 'section-title' }, 'Fee:'),
+            React.createElement('div', { className: 'section-content' }, spaceData.Fee)
+        ),
+        
+        // Outcome information
+        spaceData.Outcome && React.createElement('div',
+            { className: 'space-section' },
+            React.createElement('h4', { className: 'section-title' }, 'Outcome:'),
+            React.createElement('div', { className: 'section-content' }, spaceData.Outcome)
+        ),
+        
         // Negotiation option
         spaceData.Negotiate === 'YES' && React.createElement('div',
-            { className: 'card card--compact' },
-            React.createElement('h5', { className: 'heading-5 mb-2' }, 'Negotiation'),
-            React.createElement('p', { className: 'text-small mb-0' }, 'You can negotiate and re-roll instead of accepting the outcome')
+            { className: 'space-section negotiation-section' },
+            React.createElement('h4', { className: 'section-title' }, 'Negotiation Available'),
+            React.createElement('div', { className: 'section-content' }, 'You can negotiate and re-roll instead of accepting the outcome')
         )
     );
+}
+
+/**
+ * DiceOutcomes - Display dice roll outcomes for a space
+ */
+function DiceOutcomes({ spaceName, spaceData }) {
+    const [diceData, setDiceData] = useState(null);
+    
+    useEffect(() => {
+        // Get dice data for this space
+        const diceOutcomes = window.CSVDatabase?.dice?.query({ space: spaceName });
+        if (diceOutcomes && diceOutcomes.length > 0) {
+            setDiceData(diceOutcomes[0]);
+        }
+    }, [spaceName]);
+    
+    if (!diceData) {
+        return null;
+    }
+    
+    return React.createElement('div',
+        { className: 'space-section dice-outcomes-section' },
+        React.createElement('h4', { className: 'section-title' }, 'Dice Roll Outcomes:'),
+        React.createElement('div',
+            { className: 'dice-outcomes-table' },
+            [1, 2, 3, 4, 5, 6].map(roll => {
+                const outcome = diceData[roll.toString()];
+                if (!outcome || outcome === 'n/a') return null;
+                
+                return React.createElement('div',
+                    {
+                        key: roll,
+                        className: 'dice-outcome-row'
+                    },
+                    React.createElement('span', { className: 'dice-roll-number' }, roll),
+                    React.createElement('span', { className: 'dice-outcome-text' }, outcome)
+                );
+            })
+        )
+    );
+}
+
+// Helper function to get card type icons
+function getCardTypeIcon(type) {
+    const icons = {
+        'W': '🔧',
+        'B': '💼',
+        'I': '🔍',
+        'L': '⚖️',
+        'E': '⚠️'
+    };
+    return icons[type] || '🃏';
 }
 
 // Export components
 window.SpaceExplorer = SpaceExplorer;
 window.SpaceDetails = SpaceDetails;
+window.DiceOutcomes = DiceOutcomes;
