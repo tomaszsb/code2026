@@ -19,6 +19,10 @@ function GameManager() {
             // Move player
             gameStateManager.movePlayer(playerId, spaceName, visitType);
             
+            // Save snapshot AFTER movement but BEFORE space effects
+            // This captures clean state when entering the space
+            gameStateManager.savePlayerSnapshot(playerId);
+            
             // Process space effects
             processSpaceEffects(playerId, spaceData);
             

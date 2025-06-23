@@ -6,6 +6,8 @@
 function ActionPanel() {
     const { useState, useEffect } = React;
     const [gameState, gameStateManager] = useGameState();
+    
+    
     const [actionState, setActionState] = useState({
         availableMoves: [],
         selectedMove: null,
@@ -339,17 +341,14 @@ function ActionPanel() {
     };
 
     const handleNegotiate = () => {
-        // Apply time penalty (reduce time by 1)
-        gameStateManager.emit('updatePlayerResources', {
-            playerId: currentPlayer.id,
-            timeChange: -1,
-            reason: 'Negotiation time penalty'
-        });
-
-        // Clear cards added during this turn
+        console.log('ActionPanel: Negotiate button clicked');
+        
+        // Restore player state to space entry and apply time penalty
         gameStateManager.emit('clearCardsAddedThisTurn', {
             playerId: currentPlayer.id
         });
+        
+        console.log('ActionPanel: Restored player state with time penalty');
 
         // Reset all turn state
         setActionState(prev => ({
@@ -374,18 +373,23 @@ function ActionPanel() {
             requiredActions: 0,
             completedActions: 0
         }));
+        
+        console.log('ActionPanel: Reset turn state, ending turn');
 
         // End the turn after negotiating
         setTimeout(() => {
-            gameStateManager.emit('endTurn', {
+            gameStateManager.emit('turnEnded', {
                 playerId: currentPlayer.id,
                 reason: 'Negotiation - turn ended'
             });
+            console.log('ActionPanel: Turn ended after negotiation');
         }, 500); // Small delay to ensure state is cleared first
     };
 
     const handleCardAction = (cardType, action) => {
         if (currentPlayer) {
+            console.log(`ActionPanel: Processing card action ${cardType} - ${action}`);
+            
             gameStateManager.emit('processCardAction', {
                 playerId: currentPlayer.id,
                 cardType,
@@ -393,13 +397,19 @@ function ActionPanel() {
             });
             
             // Remove this action from available actions and track completion
-            setActionState(prev => ({
-                ...prev,
-                availableCardActions: prev.availableCardActions.filter(
+            setActionState(prev => {
+                const newAvailableActions = prev.availableCardActions.filter(
                     ca => !(ca.type === cardType && ca.action === action)
-                ),
-                actionsCompleted: [...prev.actionsCompleted, `card_${cardType}_${action}`]
-            }));
+                );
+                
+                console.log(`ActionPanel: Removed action, ${prev.availableCardActions.length} -> ${newAvailableActions.length}`);
+                
+                return {
+                    ...prev,
+                    availableCardActions: newAvailableActions,
+                    actionsCompleted: [...prev.actionsCompleted, `card_${cardType}_${action}`]
+                };
+            });
             
             // Recalculate if we can end turn
             setTimeout(() => checkCanEndTurn(), 100);
@@ -667,14 +677,21 @@ function ActionPanel() {
                 key: 'negotiate',
                 className: 'negotiate-button',
                 onClick: handleNegotiate,
-                disabled: (() => {
-                    // Always allow negotiate if there's a move selected
-                    if (actionState.selectedMove) return false;
-                    // Also allow negotiate if dice roll is required but penalty is known (fixed -1 day)
-                    // For now, assume first space and most spaces have known penalty
-                    return false; // Make it always available
-                })(),
-                title: 'Clear selection with time penalty (-1 day)'
+                disabled: false, // Always available - time penalty is calculated from current space
+                title: (() => {
+                    // Calculate time penalty from current space
+                    if (currentPlayer && window.CSVDatabase && window.CSVDatabase.loaded) {
+                        const currentSpaceData = window.CSVDatabase.spaces.find(
+                            currentPlayer.position, 
+                            currentPlayer.visitType || 'First'
+                        );
+                        if (currentSpaceData && currentSpaceData.Time) {
+                            const timeCost = parseInt(currentSpaceData.Time.replace(/\D/g, '')) || 1;
+                            return `Reset to space entry with time penalty (-${timeCost} days)`;
+                        }
+                    }
+                    return 'Reset to space entry with time penalty (-1 day)';
+                })()
             }, 'Negotiate'),
 
             React.createElement('button', {

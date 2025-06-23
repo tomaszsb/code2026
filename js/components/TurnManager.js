@@ -12,9 +12,24 @@ function TurnManager() {
         turnStartTime: null
     });
 
+
     // Initialize turn when game starts
-    useEventListener('gameStarted', () => {
-        startPlayerTurn();
+    useEffect(() => {
+        // Check if game has players and no turn has started yet
+        if (gameState.players && gameState.players.length > 0 && 
+            gameState.gamePhase !== 'SETUP' && 
+            turnState.phase === 'WAITING') {
+            gameStateManager.startTurn(0);
+        }
+    }, [gameState.players, gameState.gamePhase, turnState.phase]);
+
+    // Handle turn started (from GameStateManager)
+    useEventListener('turnStarted', ({ player, turnCount }) => {
+        setTurnState({
+            phase: 'MOVING',
+            actionsCompleted: [],
+            turnStartTime: Date.now()
+        });
     });
 
     // Handle player movement completion
@@ -44,22 +59,11 @@ function TurnManager() {
         checkTurnCompletion();
     });
 
-    // Start a player's turn
-    const startPlayerTurn = () => {
-        const currentPlayer = getCurrentPlayer();
-        if (!currentPlayer) return;
+    // Handle manual turn end (from negotiate or end turn button)
+    useEventListener('turnEnded', ({ playerId, reason }) => {
+        endCurrentTurn();
+    });
 
-        setTurnState({
-            phase: 'MOVING',
-            actionsCompleted: [],
-            turnStartTime: Date.now()
-        });
-
-        gameStateManager.emit('turnStarted', {
-            player: currentPlayer,
-            turnNumber: gameState.turnCount + 1
-        });
-    };
 
     // Handle movement completion and determine next actions
     const handleMovementComplete = (player, spaceName) => {
@@ -96,62 +100,57 @@ function TurnManager() {
         if (!currentPlayer) return;
 
         // Check if all required actions are completed
-        // For now, allow manual turn ending
+        // Players must manually end their turn - no auto-advance
         setTurnState(prev => ({
             ...prev,
-            phase: 'ENDING'
+            phase: 'ACTING'  // Keep in acting phase, don't auto-end
         }));
 
-        // Auto-advance turn after a short delay
-        setTimeout(() => {
-            endCurrentTurn();
-        }, 1000);
+        // Removed auto-advance - players control when turn ends
     };
 
     // End current player's turn
     const endCurrentTurn = () => {
         const currentPlayer = getCurrentPlayer();
-        if (!currentPlayer) return;
+        
+        if (!currentPlayer) {
+            return;
+        }
 
-        // Calculate turn duration
-        const turnDuration = turnState.turnStartTime ? 
-            Date.now() - turnState.turnStartTime : 0;
-
-        gameStateManager.emit('turnEnded', {
-            player: currentPlayer,
-            duration: turnDuration,
-            actionsCompleted: turnState.actionsCompleted
-        });
-
-        // Advance to next player
+        // Don't emit turnEnded here - we're responding TO a turnEnded event
+        // Just advance to next player
         advanceToNextPlayer();
     };
 
     // Advance to next player's turn
     const advanceToNextPlayer = () => {
-        const players = gameState.players;
-        if (!players || players.length === 0) return;
+        // Get fresh state directly from GameStateManager to avoid stale state
+        const freshState = gameStateManager.getState();
+        
+        const players = freshState.players;
+        if (!players || players.length === 0) {
+            return;
+        }
 
-        const nextPlayerIndex = (gameState.currentPlayer + 1) % players.length;
-        const newTurnCount = nextPlayerIndex === 0 ? 
-            gameState.turnCount + 1 : gameState.turnCount;
+        const nextPlayerIndex = (freshState.currentPlayer + 1) % players.length;
 
-        gameStateManager.setState({
-            currentPlayer: nextPlayerIndex,
-            turnCount: newTurnCount
-        });
-
-        // Start next player's turn
+        // Use GameStateManager's startTurn method which properly handles state updates
         setTimeout(() => {
-            startPlayerTurn();
+            gameStateManager.startTurn(nextPlayerIndex);
         }, 500);
     };
 
     // Get current player object
     const getCurrentPlayer = useCallback(() => {
-        if (!gameState.players || gameState.players.length === 0) return null;
-        return gameState.players[gameState.currentPlayer];
-    }, [gameState.players, gameState.currentPlayer]);
+        // Get fresh state directly from GameStateManager to avoid stale state
+        const freshState = gameStateManager.getState();
+        
+        if (!freshState.players || freshState.players.length === 0) {
+            return null;
+        }
+        
+        return freshState.players[freshState.currentPlayer];
+    }, [gameStateManager]);
 
     // Validate if action is allowed
     const validateAction = (playerId, actionType) => {

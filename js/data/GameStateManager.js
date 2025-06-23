@@ -192,6 +192,12 @@ class GameStateManager {
         
         // Use setState to ensure proper event emission
         this.state = newGameState;
+        
+        // Save initial snapshots for all players at their starting positions
+        this.state.players.forEach((player, index) => {
+            this.savePlayerSnapshot(index);
+        });
+        
         this.emit('stateChanged', {
             previous: this.getInitialState(),
             current: this.getState(),
@@ -216,6 +222,33 @@ class GameStateManager {
         });
 
         this.emit('turnStarted', { player, turnCount: this.state.turnCount });
+    }
+
+    /**
+     * Save player state snapshot when entering a space (for negotiation)
+     */
+    savePlayerSnapshot(playerId) {
+        const players = [...this.state.players];
+        const player = players[playerId];
+        
+        if (!player) {
+            console.error(`GameStateManager: Player ${playerId} not found for snapshot`);
+            return;
+        }
+
+        // Save a deep copy of the player state
+        player.spaceEntrySnapshot = {
+            cards: player.cards ? JSON.parse(JSON.stringify(player.cards)) : {},
+            money: player.money,
+            timeSpent: player.timeSpent,
+            scope: player.scope ? JSON.parse(JSON.stringify(player.scope)) : null,
+            scopeItems: player.scopeItems ? JSON.parse(JSON.stringify(player.scopeItems)) : [],
+            scopeTotalCost: player.scopeTotalCost || 0
+        };
+
+        console.log(`GameStateManager: Saved snapshot for player ${playerId}`);
+        
+        this.setState({ players });
     }
 
     /**
@@ -320,9 +353,10 @@ class GameStateManager {
     /**
      * Clear cards added during current turn (for negotiation)
      */
-    clearCardsAddedThisTurn(playerId) {
-        console.log(`GameStateManager: clearCardsAddedThisTurn called for player ${playerId}`);
-        
+    /**
+     * Restore player state to space entry snapshot and apply time penalty (negotiation)
+     */
+    restorePlayerSnapshot(playerId, timePenalty = null) {
         const players = [...this.state.players];
         const player = players[playerId];
         
@@ -331,23 +365,56 @@ class GameStateManager {
             return;
         }
 
-        // Track cards before clearing
-        const cardsBefore = player.cards ? {...player.cards} : {};
-        console.log('GameStateManager: Player cards before clearing:', cardsBefore);
+        if (!player.spaceEntrySnapshot) {
+            console.warn(`GameStateManager: No snapshot found for player ${playerId}, cannot restore`);
+            return;
+        }
 
-        // Clear all cards (or implement more sophisticated tracking of "cards added this turn")
-        // For now, we'll clear all cards as a simple implementation
-        player.cards = {};
+        const snapshot = player.spaceEntrySnapshot;
+        console.log('GameStateManager: Restoring from snapshot - cards:', Object.keys(snapshot.cards), 'scope:', snapshot.scope);
+
+        // Get current space time cost for penalty if not provided
+        let actualTimePenalty = timePenalty;
+        if (actualTimePenalty === null && window.CSVDatabase && window.CSVDatabase.loaded) {
+            const currentSpaceData = window.CSVDatabase.spaces.find(
+                player.position, 
+                player.visitType || 'First'
+            );
+            if (currentSpaceData && currentSpaceData.Time) {
+                actualTimePenalty = parseInt(currentSpaceData.Time.replace(/\D/g, '')) || 1;
+            } else {
+                actualTimePenalty = 1; // Default fallback
+            }
+        }
+        
+        if (actualTimePenalty === null) {
+            actualTimePenalty = 1; // Fallback if CSV not available
+        }
+
+        // Restore player state from snapshot
+        player.cards = JSON.parse(JSON.stringify(snapshot.cards));
+        player.money = snapshot.money;
+        player.scope = snapshot.scope ? JSON.parse(JSON.stringify(snapshot.scope)) : null;
+        player.scopeItems = snapshot.scopeItems ? JSON.parse(JSON.stringify(snapshot.scopeItems)) : [];
+        player.scopeTotalCost = snapshot.scopeTotalCost || 0;
+        
+        // Apply time penalty for negotiation (same as space would cost)
+        player.timeSpent = snapshot.timeSpent + actualTimePenalty;
         
         this.setState({ players });
         
-        this.emit('cardsCleared', {
+        this.emit('playerStateRestored', {
             player,
-            cardsBefore,
-            reason: 'Negotiation penalty'
+            timePenalty: actualTimePenalty,
+            reason: 'Negotiation - state restored with time penalty'
         });
         
-        console.log('GameStateManager: All cards cleared for player', playerId);
+        console.log(`GameStateManager: Player state restored with +${actualTimePenalty} time penalty`);
+    }
+
+    // Legacy method name for compatibility
+    clearCardsAddedThisTurn(playerId) {
+        this.restorePlayerSnapshot(playerId);
     }
 
     /**
