@@ -120,6 +120,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                     }, [
                         // Card header with type
                         React.createElement('div', {
+                            key: 'card-header',
                             style: {
                                 background: `linear-gradient(135deg, ${cardColors.text}, ${cardColors.text}dd)`,
                                 color: 'white',
@@ -129,6 +130,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                             }
                         }, [
                             React.createElement('div', {
+                                key: 'card-type-title',
                                 style: {
                                     fontSize: '24px',
                                     fontWeight: 'bold',
@@ -136,6 +138,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                 }
                             }, `${selectedCard.card_type} CARD`),
                             React.createElement('div', {
+                                key: 'card-id',
                                 style: {
                                     fontSize: '12px',
                                     opacity: 0.8,
@@ -227,7 +230,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                             style: { marginBottom: '8px' }
                                         }, [
                                             React.createElement('strong', {key: 'label'}, 'Work Cost: '),
-                                            `$${parseInt(card.work_cost).toLocaleString()}`
+                                            React.createElement('span', {key: 'value'}, `$${parseInt(card.work_cost).toLocaleString()}`)
                                         ]),
                                         
                                         // Money Cost
@@ -236,7 +239,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                             style: { marginBottom: '8px' }
                                         }, [
                                             React.createElement('strong', {key: 'label'}, 'Money Cost: '),
-                                            card.money_cost
+                                            React.createElement('span', {key: 'value'}, card.money_cost)
                                         ])
                                     ]),
                                     
@@ -268,7 +271,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                             style: { marginBottom: '8px' }
                                         }, [
                                             React.createElement('strong', {key: 'label'}, 'Work Type: '),
-                                            card.work_type_restriction
+                                            React.createElement('span', {key: 'value'}, card.work_type_restriction)
                                         ]),
                                         
                                         // Space Restriction
@@ -277,7 +280,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                             style: { marginBottom: '8px' }
                                         }, [
                                             React.createElement('strong', {key: 'label'}, 'Space: '),
-                                            card.space_restriction
+                                            React.createElement('span', {key: 'value'}, card.space_restriction)
                                         ])
                                     ])
                                 ];
@@ -352,7 +355,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                                 style: { marginBottom: '8px' }
                                             }, [
                                                 React.createElement('strong', {key: 'label'}, `${label}: `),
-                                                value
+                                                React.createElement('span', {key: 'value'}, value)
                                             ])
                                         )
                                     ]));
@@ -396,7 +399,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                                 style: { marginBottom: '8px' }
                                             }, [
                                                 React.createElement('strong', {key: 'label'}, `${label}: `),
-                                                value
+                                                React.createElement('span', {key: 'value'}, value)
                                             ])
                                         )
                                     ]));
@@ -437,7 +440,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                                 style: { marginBottom: '8px' }
                                             }, [
                                                 React.createElement('strong', {key: 'label'}, `${label}: `),
-                                                value
+                                                React.createElement('span', {key: 'value'}, value)
                                             ])
                                         )
                                     ]));
@@ -458,8 +461,8 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                 textAlign: 'center'
                             }
                         }, [
-                            React.createElement('div', {}, `${selectedCard.rarity || 'Common'} • ${selectedCard.work_type_restriction || 'General'}`),
-                            React.createElement('div', {}, `Phase: ${selectedCard.phase_restriction || 'Any'}`)
+                            React.createElement('div', { key: 'card-rarity' }, `${selectedCard.rarity || 'Common'} • ${selectedCard.work_type_restriction || 'General'}`),
+                            React.createElement('div', { key: 'card-phase' }, `Phase: ${selectedCard.phase_restriction || 'Any'}`)
                         ])
                     ]),
 
