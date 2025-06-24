@@ -232,7 +232,7 @@ function RulesModal({ show, onClose }) {
                             }
                         })
                     ])
-                ].filter(Boolean)
+                ].filter(Boolean))
             ] : React.createElement('div', {
                 key: 'loading',
                 style: {
