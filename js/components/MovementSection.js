@@ -158,7 +158,7 @@ function MovementSection({
                     }, [
                         React.createElement('div', {
                             key: 'space-name',
-                            className: 'space-name'
+                            className: 'move-space-name'
                         }, (() => {
                             console.log(`MovementSection: Rendering space name: "${spaceName}"`);
                             return spaceName;
@@ -166,7 +166,7 @@ function MovementSection({
                         
                         spaceData && React.createElement('div', {
                             key: 'space-phase',
-                            className: 'space-phase'
+                            className: 'move-space-phase'
                         }, spaceData.phase || 'Unknown'),
                         
                         spaceData && spaceData.Event && React.createElement('div', {
