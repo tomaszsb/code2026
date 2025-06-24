@@ -46,19 +46,29 @@ function DiceRollSection({
             const diceValue = Math.floor(Math.random() * 6) + 1;
             
             // Get current space data
-            const currentSpaceData = window.CSVDatabase.spaces.find(currentPlayer.position, 'FIRST_VISIT');
+            const currentSpaceData = window.CSVDatabase.spaces.find(currentPlayer.position, 'First');
             
             // Look up dice outcome from CSV
             let diceOutcomeResult = null;
             if (currentSpaceData) {
-                const diceData = window.CSVDatabase.dice.query({
-                    space: currentPlayer.position,
-                    visitType: 'FIRST_VISIT',
-                    diceValue: diceValue
+                // Find dice configuration for this space
+                const diceConfig = window.CSVDatabase.dice.query({
+                    space_name: currentPlayer.position,
+                    visit_type: 'First'
                 });
                 
-                if (diceData && diceData.length > 0) {
-                    diceOutcomeResult = diceData[0];
+                if (diceConfig && diceConfig.length > 0) {
+                    // Get the outcome for the specific dice value (1-6)
+                    const config = diceConfig[0];
+                    const outcome = config[diceValue.toString()]; // Use dice value as column name
+                    
+                    if (outcome) {
+                        diceOutcomeResult = {
+                            cards: outcome,
+                            money: '0',
+                            time: '0'
+                        };
+                    }
                 }
             }
 
@@ -89,7 +99,7 @@ function DiceRollSection({
                         playerId: currentPlayer.id,
                         outcome: outcomeString,
                         spaceName: currentPlayer.position,
-                        visitType: 'FIRST_VISIT'
+                        visitType: 'First'
                     });
                 }
 
