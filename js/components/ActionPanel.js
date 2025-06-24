@@ -153,6 +153,8 @@ function ActionPanel() {
                 const cardTypes = ComponentUtils.getCardTypes(currentSpaceData);
                 
                 console.log(`ActionPanel: Current space ${currentPlayer.position} has ${cardTypes.length} card actions:`, cardTypes);
+                console.log(`ActionPanel: Available moves from ${currentPlayer.position}:`, moves);
+                console.log(`ActionPanel: Current space data:`, currentSpaceData);
                 
                 setActionState(prev => ({
                     ...prev,
