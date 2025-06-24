@@ -159,7 +159,10 @@ function MovementSection({
                         React.createElement('div', {
                             key: 'space-name',
                             className: 'space-name'
-                        }, spaceName),
+                        }, (() => {
+                            console.log(`MovementSection: Rendering space name: "${spaceName}"`);
+                            return spaceName;
+                        })()),
                         
                         spaceData && React.createElement('div', {
                             key: 'space-phase',
