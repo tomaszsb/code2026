@@ -33,10 +33,14 @@ function DiceRollSection({
         }
 
         try {
-            onDiceRoll({ rolling: true });
+            onDiceRoll({ 
+                rolling: true,
+                diceRollValue: '🎲',
+                diceOutcome: null
+            });
 
-            // Simulate dice roll delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Simulate dice roll animation delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
 
             // Generate random dice value (1-6)
             const diceValue = Math.floor(Math.random() * 6) + 1;
@@ -58,17 +62,28 @@ function DiceRollSection({
                 }
             }
 
+            // Format outcome for display
+            const formattedOutcome = diceOutcomeResult ? 
+                `${diceOutcomeResult.cards || 'No cards'} | ${diceOutcomeResult.money ? '$' + diceOutcomeResult.money + 'k' : '$0'} | ${diceOutcomeResult.time ? diceOutcomeResult.time + ' days' : '0 days'}` :
+                `No outcome data for roll ${diceValue}`;
+
             // Update state with results
             onDiceRoll({
                 rolling: false,
                 hasRolled: true,
                 diceRollValue: diceValue,
-                diceOutcome: diceOutcomeResult
+                diceOutcome: diceOutcomeResult,
+                diceOutcomeText: formattedOutcome
             });
 
-            // Process dice outcome
+            // Process dice outcome using GameManager
             if (diceOutcomeResult) {
-                await processDiceOutcome(diceOutcomeResult, currentPlayer);
+                gameStateManager.emit('processDiceOutcome', {
+                    playerId: currentPlayer.id,
+                    outcome: diceOutcomeResult,
+                    spaceName: currentPlayer.position,
+                    visitType: 'FIRST_VISIT'
+                });
             }
 
             // Emit completion event
@@ -84,72 +99,6 @@ function DiceRollSection({
         }
     };
 
-    // Process dice outcome based on CSV data
-    const processDiceOutcome = async (outcome, player) => {
-        if (!outcome || !player) return;
-
-        try {
-            // Handle cards from dice outcome
-            if (outcome.cards && outcome.cards !== 'None') {
-                const cardInstructions = outcome.cards.split(',').map(c => c.trim());
-                
-                for (const instruction of cardInstructions) {
-                    if (instruction.includes('Draw')) {
-                        const matches = instruction.match(/Draw (\d+) ([BWILE])/);
-                        if (matches) {
-                            const count = parseInt(matches[1]);
-                            const cardType = matches[2];
-                            
-                            // Draw cards
-                            const newCards = [];
-                            for (let i = 0; i < count; i++) {
-                                const availableCards = window.CSVDatabase.cards.query({ type: cardType });
-                                if (availableCards && availableCards.length > 0) {
-                                    const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-                                    newCards.push({ ...randomCard, id: Date.now() + i });
-                                }
-                            }
-                            
-                            if (newCards.length > 0) {
-                                gameStateManager.emit('cardsDrawn', {
-                                    playerId: player.id,
-                                    cards: newCards,
-                                    source: 'dice_roll'
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Handle money changes
-            if (outcome.money && outcome.money !== '0') {
-                const moneyChange = parseInt(outcome.money);
-                if (!isNaN(moneyChange)) {
-                    gameStateManager.emit('moneyChanged', {
-                        playerId: player.id,
-                        amount: moneyChange,
-                        source: 'dice_roll'
-                    });
-                }
-            }
-
-            // Handle time changes
-            if (outcome.time && outcome.time !== '0') {
-                const timeChange = parseInt(outcome.time);
-                if (!isNaN(timeChange)) {
-                    gameStateManager.emit('timeChanged', {
-                        playerId: player.id,
-                        amount: timeChange,
-                        source: 'dice_roll'
-                    });
-                }
-            }
-
-        } catch (error) {
-            console.error('Error processing dice outcome:', error);
-        }
-    };
 
     // Don't render if dice roll is not required or shown
     if (!showDiceRoll && !diceRequired) {

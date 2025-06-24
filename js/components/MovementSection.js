@@ -73,7 +73,7 @@ function MovementSection({
         gameStateManager.emit('movePlayerRequest', {
             playerId: currentPlayer.id,
             spaceName: selectedMove,
-            visitType: 'First'
+            visitType: 'FIRST_VISIT'
         });
 
         // Emit player moved event for turn tracking
@@ -104,7 +104,7 @@ function MovementSection({
     // Get space data for display
     const getSpaceData = (spaceName) => {
         if (!window.CSVDatabase?.loaded) return null;
-        return window.CSVDatabase.spaces.find(spaceName, 'First');
+        return window.CSVDatabase.spaces.find(spaceName, 'FIRST_VISIT');
     };
 
     // Don't render if no moves available
