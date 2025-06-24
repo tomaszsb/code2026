@@ -9,62 +9,11 @@ class CardDisplay extends React.Component {
     }
 
     getCardTypeConfig(cardType) {
-        const configs = {
-            'W': {
-                name: 'Work',
-                color: 'var(--primary-blue)',
-                bgColor: '#e3f2fd',
-                borderColor: 'var(--primary-blue)',
-                icon: '🔧'
-            },
-            'B': {
-                name: 'Bank',
-                color: 'var(--secondary-green)',
-                bgColor: '#e8f5e8',
-                borderColor: 'var(--secondary-green)',
-                icon: '💼'
-            },
-            'I': {
-                name: 'Inspection',
-                color: 'var(--accent-orange)',
-                bgColor: '#fff3e0',
-                borderColor: 'var(--accent-orange)',
-                icon: '🔍'
-            },
-            'L': {
-                name: 'Life',
-                color: 'var(--error-red)',
-                bgColor: '#ffebee',
-                borderColor: 'var(--error-red)',
-                icon: '⚖️'
-            },
-            'E': {
-                name: 'Expeditor',
-                color: 'var(--warning-amber)',
-                bgColor: '#fff8e1',
-                borderColor: 'var(--warning-amber)',
-                icon: '⚠️'
-            }
-        };
-        return configs[cardType] || configs['W'];
+        return window.CardUtils.getCardTypeConfig(cardType);
     }
 
     formatCardValue(card) {
-        if (card.loan_amount) {
-            return `$${parseInt(card.loan_amount).toLocaleString()}`;
-        }
-        if (card.money_effect) {
-            return `$${parseInt(card.money_effect).toLocaleString()}`;
-        }
-        if (card.money_cost) {
-            const cost = parseInt(card.money_cost);
-            return cost !== 0 ? `$${Math.abs(cost).toLocaleString()}` : null;
-        }
-        if (card.time_effect) {
-            const timeValue = parseInt(card.time_effect);
-            return timeValue !== 0 ? `${Math.abs(timeValue)} days` : null;
-        }
-        return null;
+        return window.CardUtils.formatCardValue(card);
     }
 
     renderCard(card, isSelected = false, isHovered = false) {

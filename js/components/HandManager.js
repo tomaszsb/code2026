@@ -48,11 +48,7 @@ class HandManager extends React.Component {
 
         switch (sortBy) {
             case 'type':
-                sortedCards.sort((a, b) => {
-                    const typeOrder = { 'W': 0, 'B': 1, 'I': 2, 'L': 3, 'E': 4 };
-                    return typeOrder[a.card_type] - typeOrder[b.card_type] || 
-                           a.card_name.localeCompare(b.card_name);
-                });
+                sortedCards = window.CardUtils.sortCardsByType(sortedCards);
                 break;
             case 'name':
                 sortedCards.sort((a, b) => a.card_name.localeCompare(b.card_name));
@@ -107,14 +103,7 @@ class HandManager extends React.Component {
             let groupKey;
             switch (groupBy) {
                 case 'type':
-                    const typeNames = {
-                        'W': 'Work Cards',
-                        'B': 'Business Cards',
-                        'I': 'Inspection Cards',
-                        'L': 'Legal Cards',
-                        'E': 'Emergency Cards'
-                    };
-                    groupKey = typeNames[card.card_type] || card.card_type;
+                    groupKey = window.CardUtils.getCardDisplayName(card.card_type);
                     break;
                 case 'cost':
                     const cost = parseInt(card.money_cost || card.loan_amount || 0);
@@ -279,11 +268,12 @@ class HandManager extends React.Component {
                         className: 'btn btn--secondary btn--sm'
                     }, [
                         React.createElement('option', { key: 'all', value: 'all' }, 'All'),
-                        React.createElement('option', { key: 'W', value: 'W' }, 'Work'),
-                        React.createElement('option', { key: 'B', value: 'B' }, 'Bank'),
-                        React.createElement('option', { key: 'I', value: 'I' }, 'Inspection'),
-                        React.createElement('option', { key: 'L', value: 'L' }, 'Life'),
-                        React.createElement('option', { key: 'E', value: 'E' }, 'Expeditor')
+                        ...window.CardUtils.getAllCardTypes().map(type => 
+                            React.createElement('option', { 
+                                key: type, 
+                                value: type 
+                            }, window.CardUtils.getCardTypeConfig(type).name)
+                        )
                     ])
                 ]),
 

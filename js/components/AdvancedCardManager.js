@@ -335,14 +335,7 @@ function AdvancedCardManager() {
 
     // Get human-readable card type name
     const getCardTypeName = (cardType) => {
-        const names = {
-            'W': 'Work',
-            'B': 'Bank',
-            'I': 'Investment',
-            'L': 'Life',
-            'E': 'Expeditor'
-        };
-        return names[cardType] || 'Unknown';
+        return window.CardUtils.getCardTypeConfig(cardType).name;
     };
 
     // Expose combo and chain methods globally

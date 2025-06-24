@@ -52,25 +52,14 @@ function PlayerStatusPanel() {
     
     // Get icon and color for card type (consistent with rules modal)
     const getCardTypeIcon = (cardType) => {
-        const icons = {
-            'W': '🔧', // Work
-            'B': '💼', // Bank
-            'I': '🔍', // Investor
-            'L': '⚖️', // Life
-            'E': '⚠️'  // Expeditor
-        };
-        return icons[cardType] || '🃏';
+        return window.CardUtils.getCardIcon(cardType);
     };
 
     const getCardTypeColor = (cardType) => {
-        const colors = {
-            'W': { bg: '#e3f2fd', text: '#1976d2' }, // Work - blue
-            'B': { bg: '#e8f5e8', text: '#388e3c' }, // Bank - green
-            'I': { bg: '#fff3e0', text: '#f57c00' }, // Investor - orange
-            'L': { bg: '#ffebee', text: '#d32f2f' }, // Life - red
-            'E': { bg: '#f3e5f5', text: '#7b1fa2' }  // Expeditor - purple
+        return {
+            bg: window.CardUtils.getCardBgColor(cardType),
+            text: window.CardUtils.getCardColor(cardType)
         };
-        return colors[cardType] || { bg: '#f5f5f5', text: '#666' };
     };
     
     // Get current space information

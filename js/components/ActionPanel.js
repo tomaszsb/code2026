@@ -568,8 +568,7 @@ function ActionPanel() {
                     
                     return true; // Show all other cards normally
                 }).map((cardAction, index) => {
-                    const cardTypeNames = { W: 'Work', B: 'Bank', I: 'Investor', L: 'Life', E: 'Expeditor' };
-                    const cardTypeName = cardTypeNames[cardAction.type] || cardAction.type;
+                    const cardTypeName = window.CardUtils.getCardTypeConfig(cardAction.type).name;
                     
                     return React.createElement('button', {
                         key: `${cardAction.type}-${index}`,
