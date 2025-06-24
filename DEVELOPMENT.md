@@ -2,7 +2,7 @@
 
 **Project Management Board Game - Clean Architecture Rebuild**
 
-## Current Status: Phase 12 Complete ✅ - Component Splitting & Architecture
+## Current Status: Phase 14 Complete ✅ - Critical Bug Fixes & UI Improvements
 
 ### Phase 1: Clean Architecture Foundation (COMPLETE)
 - ✅ CSVDatabase.js - Unified query system for all CSV data
@@ -556,6 +556,35 @@ http://localhost:8000/?debug=true&logLevel=debug     # Debug mode
 - ✅ **Component Extraction** - Extracted RulesModal.js from ActionPanel.js (1,137→720 lines, 36% reduction)
 - ✅ **Fixed Critical Card Type Names** - Corrected Business→Bank, Inspection→Investor, Legal→Life, Emergency→Expeditor
 
+### Phase 13: ActionPanel Component Splitting (COMPLETE)
+- ✅ **Major ActionPanel Refactor** - Complete component splitting achieving 56% size reduction
+- ✅ **4 New Focused Components** - Event-driven communication with clean separation of concerns
+- ✅ **Enhanced Event Architecture** - Improved state management and proper event handling
+- ✅ **No Functionality Lost** - All features preserved with better maintainability
+
+**New Components Created:**
+- **DiceRollSection.js** (227 lines): Dice rolling interface with animation and CSV outcome processing
+- **CardActionsSection.js** (153 lines): Card actions with smart filtering for OWNER-FUND-INITIATION
+- **MovementSection.js** (240 lines): Movement selection, validation, and execution interface
+- **TurnControls.js** (264 lines): Turn management, action counting, and validation logic
+
+**Component Metrics:**
+- **ActionPanel.js**: Reduced from 720 to 318 lines (56% reduction, 402 lines extracted)
+- **Combined with Phase 12**: Total component splitting reduced massive files by ~1,200 lines
+- **Established Pattern**: Large component extraction methodology proven successful
+
+### Phase 14: Critical Bug Fixes & UI Improvements (COMPLETE)
+- ✅ **Fixed Rules Modal Display** - Corrected CSV field name references preventing rules from showing
+- ✅ **Fixed Bank/Investment Card Effects** - Cards now immediately update player resources when drawn
+- ✅ **Fixed Decision Modal Dismissal** - Added multiple ways to close PM decision modals
+- ✅ **Enhanced Card System** - Investment card amounts now properly displayed and processed
+
+**Technical Fixes:**
+- **RulesModal.js**: Fixed field references (Event/Action/Outcome vs event_description/action/outcome)
+- **GameStateManager.js**: Added card effect processing to addCardsToPlayer() method
+- **CardUtils.js**: Added investment_amount support for proper Investment card display
+- **LogicSpaceManager.js**: Added close button, escape key, and click-outside dismissal for decision modals
+
 ---
 
-*Last Updated: Phase 12 Completion - Component Splitting & Architecture*
+*Last Updated: Phase 14 Completion - Critical Bug Fixes & UI Improvements*
