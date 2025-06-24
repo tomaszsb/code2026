@@ -124,9 +124,7 @@ function MovementSection({
     // Get space data for display
     const getSpaceData = (spaceName) => {
         if (!window.CSVDatabase?.loaded) return null;
-        const spaceData = window.CSVDatabase.spaces.find(spaceName, 'First');
-        console.log(`MovementSection: getSpaceData(${spaceName}) returned:`, spaceData);
-        return spaceData;
+        return window.CSVDatabase.spaces.find(spaceName, 'First');
     };
 
     // Don't render if no moves available
@@ -166,7 +164,7 @@ function MovementSection({
                         spaceData && React.createElement('div', {
                             key: 'space-phase',
                             className: 'space-phase'
-                        }, spaceData.Phase || 'Unknown'),
+                        }, spaceData.phase || 'Unknown'),
                         
                         spaceData && spaceData.Event && React.createElement('div', {
                             key: 'space-event',
