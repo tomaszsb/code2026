@@ -177,13 +177,6 @@ function ActionPanel() {
 
     // handleApplyOutcome removed - outcomes now auto-apply after dice roll
 
-    const showRulesModal = () => {
-        setActionState(prev => ({
-            ...prev,
-            showRulesModal: true
-        }));
-    };
-
     const hideRulesModal = () => {
         setActionState(prev => ({
             ...prev,
