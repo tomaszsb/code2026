@@ -53,6 +53,9 @@ const CardUtils = {
         if (card.loan_amount) {
             return `$${parseInt(card.loan_amount).toLocaleString()}`;
         }
+        if (card.investment_amount) {
+            return `$${parseInt(card.investment_amount).toLocaleString()}`;
+        }
         if (card.money_effect) {
             return `$${parseInt(card.money_effect).toLocaleString()}`;
         }
@@ -151,12 +154,16 @@ const CardUtils = {
             effects.push(`Loan: $${parseInt(card.loan_amount).toLocaleString()}`);
         }
         
+        if (card.investment_amount) {
+            effects.push(`Investment: $${parseInt(card.investment_amount).toLocaleString()}`);
+        }
+        
         return effects.join(', ') || 'No direct effects';
     },
 
     // Check if card has monetary effects
     hasMonetaryEffect(card) {
-        return !!(card.money_effect || card.money_cost || card.loan_amount);
+        return !!(card.money_effect || card.money_cost || card.loan_amount || card.investment_amount);
     },
 
     // Check if card has time effects

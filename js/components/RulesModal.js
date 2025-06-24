@@ -84,7 +84,7 @@ function RulesModal({ show, onClose }) {
 
             // Rules content
             rulesData && (rulesData.first || rulesData.subsequent) ? [
-                rulesData.first?.event_description && React.createElement('div', {
+                rulesData.first?.Event && React.createElement('div', {
                     key: 'intro',
                     style: {
                         marginBottom: '30px',
@@ -109,7 +109,7 @@ function RulesModal({ show, onClose }) {
                             lineHeight: '1.6',
                             margin: '0'
                         }
-                    }, rulesData.first.event_description)
+                    }, rulesData.first.Event)
                 ]),
 
                 React.createElement('div', {
@@ -122,7 +122,7 @@ function RulesModal({ show, onClose }) {
                     }
                 }, [
                     // Phase Actions
-                    rulesData.subsequent?.action && React.createElement('div', {
+                    rulesData.subsequent?.Action && React.createElement('div', {
                         key: 'phase-actions',
                         style: {
                             backgroundColor: '#e3f2fd',
@@ -144,13 +144,13 @@ function RulesModal({ show, onClose }) {
                             key: 'content',
                             style: { fontSize: '14px', lineHeight: '1.5' },
                             dangerouslySetInnerHTML: {
-                                __html: rulesData.subsequent.action.replace(/\n/g, '<br>')
+                                __html: rulesData.subsequent.Action.replace(/\n/g, '<br>')
                             }
                         })
                     ]),
 
                     // Card Types
-                    rulesData.first?.action && React.createElement('div', {
+                    rulesData.first?.Action && React.createElement('div', {
                         key: 'card-types',
                         style: {
                             backgroundColor: '#f3e5f5',
@@ -172,13 +172,13 @@ function RulesModal({ show, onClose }) {
                             key: 'content',
                             style: { fontSize: '14px', lineHeight: '1.5' },
                             dangerouslySetInnerHTML: {
-                                __html: rulesData.first.action.replace(/\n/g, '<br>')
+                                __html: rulesData.first.Action.replace(/\n/g, '<br>')
                             }
                         })
                     ]),
 
                     // Movement Rules
-                    rulesData.subsequent?.outcome && React.createElement('div', {
+                    rulesData.subsequent?.Outcome && React.createElement('div', {
                         key: 'movement',
                         style: {
                             backgroundColor: '#e8f5e8',
@@ -200,13 +200,13 @@ function RulesModal({ show, onClose }) {
                             key: 'content',
                             style: { fontSize: '14px', lineHeight: '1.5' },
                             dangerouslySetInnerHTML: {
-                                __html: rulesData.subsequent.outcome.replace(/\n/g, '<br>')
+                                __html: rulesData.subsequent.Outcome.replace(/\n/g, '<br>')
                             }
                         })
                     ]),
 
                     // Game Objective
-                    rulesData.first?.outcome && React.createElement('div', {
+                    rulesData.first?.Outcome && React.createElement('div', {
                         key: 'objective',
                         style: {
                             backgroundColor: '#fff3e0',
@@ -228,7 +228,7 @@ function RulesModal({ show, onClose }) {
                             key: 'content',
                             style: { fontSize: '14px', lineHeight: '1.5' },
                             dangerouslySetInnerHTML: {
-                                __html: rulesData.first.outcome.replace(/\n/g, '<br>')
+                                __html: rulesData.first.Outcome.replace(/\n/g, '<br>')
                             }
                         })
                     ])

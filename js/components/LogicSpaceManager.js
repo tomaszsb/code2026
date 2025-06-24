@@ -187,6 +187,22 @@ function LogicSpaceManager() {
         }));
     };
 
+    // Handle escape key press
+    useEffect(() => {
+        const handleEscapeKey = (event) => {
+            if (event.key === 'Escape' && state.isVisible) {
+                hideLogicInterface();
+            }
+        };
+
+        if (state.isVisible) {
+            document.addEventListener('keydown', handleEscapeKey);
+            return () => {
+                document.removeEventListener('keydown', handleEscapeKey);
+            };
+        }
+    }, [state.isVisible]);
+
     // Don't render if not visible
     if (!state.isVisible || !state.currentPlayer) {
         return null;
@@ -207,7 +223,8 @@ function LogicSpaceManager() {
                 justifyContent: 'center',
                 alignItems: 'center',
                 zIndex: 1000
-            }
+            },
+            onClick: hideLogicInterface
         },
             React.createElement('div', {
                 className: 'card card--large logic-question-card',
@@ -220,12 +237,36 @@ function LogicSpaceManager() {
                     maxWidth: '600px',
                     margin: '20px',
                     boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
-                }
+                },
+                onClick: (e) => e.stopPropagation()
             }, [
                 React.createElement('div', { 
                     key: 'header',
-                    className: 'logic-question-header mb-6'
+                    className: 'logic-question-header mb-6',
+                    style: { position: 'relative' }
                 }, [
+                    React.createElement('button', {
+                        key: 'close',
+                        onClick: hideLogicInterface,
+                        className: 'logic-close-button',
+                        style: {
+                            position: 'absolute',
+                            top: '-10px',
+                            right: '-10px',
+                            background: 'rgba(255, 255, 255, 0.2)',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '30px',
+                            height: '30px',
+                            color: 'white',
+                            fontSize: '16px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        },
+                        title: 'Close (Esc)'
+                    }, '×'),
                     React.createElement('h2', { 
                         key: 'title',
                         className: 'heading-2 mb-4'

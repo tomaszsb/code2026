@@ -330,6 +330,37 @@ class GameStateManager {
 
         player.cards[cardType].push(...cards);
         
+        // Process card effects immediately when cards are added
+        cards.forEach(card => {
+            // Process Bank card loan amounts
+            if (card.loan_amount) {
+                const loanAmount = parseInt(card.loan_amount) || 0;
+                player.money = (player.money || 0) + loanAmount;
+                console.log(`GameStateManager: Applied loan amount ${loanAmount} from card ${card.card_name || card.card_id}. Player money now: ${player.money}`);
+            }
+            
+            // Process Investment card investment amounts
+            if (card.investment_amount) {
+                const investmentAmount = parseInt(card.investment_amount) || 0;
+                player.money = (player.money || 0) + investmentAmount;
+                console.log(`GameStateManager: Applied investment amount ${investmentAmount} from card ${card.card_name || card.card_id}. Player money now: ${player.money}`);
+            }
+            
+            // Process general money effects
+            if (card.money_effect) {
+                const moneyEffect = parseInt(card.money_effect) || 0;
+                player.money = (player.money || 0) + moneyEffect;
+                console.log(`GameStateManager: Applied money effect ${moneyEffect} from card ${card.card_name || card.card_id}. Player money now: ${player.money}`);
+            }
+            
+            // Process time effects
+            if (card.time_effect) {
+                const timeEffect = parseInt(card.time_effect) || 0;
+                player.time = (player.time || 365) + timeEffect;
+                console.log(`GameStateManager: Applied time effect ${timeEffect} from card ${card.card_name || card.card_id}. Player time now: ${player.time}`);
+            }
+        });
+        
         // Update player scope if W cards were added
         if (cardType === 'W') {
             this.updatePlayerScope(playerId, players);

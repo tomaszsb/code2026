@@ -206,7 +206,24 @@ For detailed information see:
 
 ## Recent Improvements (Latest Session)
 
-### ✅ **Phase 13: Component Splitting - ActionPanel (Current Session)**
+### ✅ **Phase 14: Critical Bug Fixes - UI & Card Effects (Current Session)**
+- **Fixed Rules Modal Display**: Corrected CSV field name references that prevented rules from showing
+  - RulesModal.js was using incorrect field names (event_description, action, outcome) instead of CSV fields (Event, Action, Outcome)
+  - Rules button now reliably displays game content from START-QUICK-PLAY-GUIDE CSV data
+  - Fixed empty/broken modal when CSV data loads but fields were mismatched
+- **Fixed Bank/Investment Card Money Effects**: Cards now immediately update player resources when drawn
+  - Added card effect processing to GameStateManager.addCardsToPlayer() method
+  - Bank cards (loan_amount) and Investment cards (investment_amount) now apply money immediately
+  - Updated CardUtils.js to properly display and handle investment_amount field
+  - Fixed missing monetary effects that prevented resource indicators from updating
+- **Fixed PM Decision Modal Dismissal**: Added multiple ways to close decision modals
+  - Added close button (×) in top-right corner with hover effects
+  - Added Escape key functionality to close modal
+  - Added click-outside-to-close behavior on modal overlay
+  - Prevented modal content clicks from accidentally closing modal
+  - Resolves user frustration with "trapped" decision dialogs
+
+### ✅ **Phase 13: Component Splitting - ActionPanel (Previous Session)**
 - **Major Architectural Refactor**: Complete ActionPanel component splitting achieving 56% size reduction
   - Original ActionPanel: 720 lines → Final: 318 lines (402 lines reduced)
   - Extracted 4 new focused components with clean separation of concerns
