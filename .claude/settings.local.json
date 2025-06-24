@@ -22,7 +22,8 @@
       "Bash(git pull:*)",
       "Bash(rg:*)",
       "Bash(ls:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(cp:*)"
     ],
     "deny": []
   }
