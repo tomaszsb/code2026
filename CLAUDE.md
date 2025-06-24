@@ -46,10 +46,17 @@ js/components/SpaceExplorer.js      # Space details and exploration panel
 
 # Modern Panel System (User Interface)
 js/components/GamePanelLayout.js    # Responsive three-panel layout container
-js/components/PlayerStatusPanel.js  # Left panel: player status, space info, cards (901 lines)
+js/components/PlayerStatusPanel.js  # Left panel coordinator (117 lines - refactored)
 js/components/ActionPanel.js        # Bottom panel: actions, dice, moves, turn control (720 lines)
 js/components/ResultsPanel.js       # Right panel: results, history, game progress
 js/components/RulesModal.js         # Standalone rules modal with CSV-driven content
+
+# PlayerStatusPanel Components (Split Architecture)
+js/components/CardModal.js          # Enhanced card display modal with 3D flip animation (527 lines)
+js/components/PlayerHeader.js       # Player avatar, name, and turn information (42 lines)
+js/components/CurrentSpaceInfo.js   # Space details, requirements, and CSV content (84 lines)
+js/components/PlayerResources.js    # Money, time, and project scope management (119 lines)
+js/components/CardsInHand.js        # Card grid display and interaction handling (140 lines)
 
 # Advanced System Components (Professional Features)
 js/components/InteractiveFeedback.js       # Toast notifications & visual feedback
@@ -193,7 +200,23 @@ For detailed information see:
 
 ## Recent Improvements (Latest Session)
 
-### ✅ **Phase 1: Code Cleanup & Organization (Current Session)**
+### ✅ **Phase 12: Component Splitting - PlayerStatusPanel (Current Session)**
+- **Major Architectural Refactor**: Complete PlayerStatusPanel component splitting achieving 87% size reduction
+  - Original PlayerStatusPanel: 902 lines → Final: 117 lines (785 lines reduced)
+  - Extracted 5 new focused components with clean separation of concerns
+  - No functionality lost - all features preserved with improved maintainability
+- **New Components Created**: Professional component architecture with props-based communication
+  - CardModal.js (527 lines): Enhanced card display modal with 3D flip animation and type-specific filtering
+  - PlayerHeader.js (42 lines): Player avatar, name, and turn information display
+  - CurrentSpaceInfo.js (84 lines): Space details, requirements, and CSV-driven content
+  - PlayerResources.js (119 lines): Money, time, and detailed project scope management
+  - CardsInHand.js (140 lines): Card grid display with expand/collapse and interaction handling
+- **Enhanced Maintainability**: Each component has single responsibility and clear interfaces
+  - Improved testability with isolated functionality
+  - Better debugging and development experience
+  - Established pattern for future large component refactoring
+
+### ✅ **Phase 1: Code Cleanup & Organization (Previous Session)**
 - **Component Consolidation & Duplication Removal**: Major codebase cleanup and maintainability improvements
   - Removed duplicate PlayerSetup.js component, kept EnhancedPlayerSetup as active
   - Merged game-components.css into main.css, reducing from 15 to 14 CSS files (~17% reduction)
@@ -347,7 +370,7 @@ For detailed information see:
 - **Error Resilience**: Graceful handling of undefined data and event format variations
 
 #### 🔧 **Developer Experience**
-- **Component-Based Architecture**: 30 React components with clear separation of concerns
+- **Component-Based Architecture**: 35 React components with clear separation of concerns
 - **Advanced State Management**: Event system with proper cleanup and memory management
 - **Debug Mode**: Comprehensive logging and development tools
 - **Hot Reload**: Browser-based Babel compilation, no build required

@@ -24,7 +24,13 @@
       "Bash(ls:*)",
       "Bash(rm:*)",
       "Bash(cp:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(for comp in CardModal PlayerHeader CurrentSpaceInfo PlayerResources CardsInHand)",
+      "Bash(do if [ -f \"/mnt/d/unravel/current_game/code2026/js/components/$comp.js\" ])",
+      "Bash(then echo \"✅ $comp.js exists\")",
+      "Bash(else echo \"❌ $comp.js missing\")",
+      "Bash(fi)",
+      "Bash(done)"
     ],
     "deny": []
   }
