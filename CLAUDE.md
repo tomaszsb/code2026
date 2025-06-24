@@ -169,6 +169,19 @@ For detailed information see:
 
 ## Recent Improvements (Latest Session)
 
+### ✅ **Action System Fixes & Smart Card Filtering**
+- **Fixed Card Action Counting Bug**: Spaces with multiple card types now require only ONE action instead of ALL
+  - Code2026 was incorrectly requiring players to click all available card action buttons
+  - Now matches code2025 behavior: choose and execute one card action, then move forward
+  - Fixed in ActionPanel.js checkCanEndTurn() - card actions count as 1 total action regardless of quantity
+  - Resolves "stuck on space" issues for 28+ spaces with multiple card types (L+E, B+I combinations)
+- **Smart Card Filtering for OWNER-FUND-INITIATION**: Contextual button display based on project scope
+  - Bank button only shows if scope ≤ $4M (matches CSV condition: "Draw 1 if scope ≤ $ 4 M")
+  - Investor button only shows if scope > $4M (matches CSV condition: "Draw 1 if scope > $ 4 M")
+  - Eliminates illogical choice between two buttons when only one is correct based on game state
+  - Uses player.scopeTotalCost to determine appropriate funding source
+  - Maintains game narrative consistency: owner provides funding based on pre-determined scope
+
 ### ✅ **Enhanced Action System & Button Logic**
 - **Fixed End Turn Button**: Proper state management with action progress counter
   - Shows "End Turn (2/3)" format displaying completed vs required actions
@@ -181,7 +194,8 @@ For detailed information see:
   - Resets dice roll state and all turn selections
   - Automatically ends turn after clearing state
 - **Action Counter System**: Comprehensive tracking of space requirements
-  - Counts dice rolls, card actions, and movement selections as separate actions
+  - Counts dice rolls, card actions (as 1 total), and movement selections as separate actions
+  - Card actions count as 1 completed action regardless of quantity available
   - Updates in real-time as actions are completed
   - Proper validation for spaces with no required actions (e.g., first space)
 
@@ -250,6 +264,8 @@ For detailed information see:
   - Professional card back with logo from graphics folder
 - **Manual Card Action Interface**: Dedicated "🎴 Available Card Actions" section in ActionPanel
   - Clickable buttons for space-based card actions (separate from dice outcomes)
+  - Smart contextual filtering: shows only appropriate buttons based on game state
+  - OWNER-FUND-INITIATION displays Bank OR Investor button based on project scope (not both)
   - Actions execute immediately and are removed from available list
   - Color-coded buttons matching card type themes
 - **Interactive Feedback System**: Toast notifications with success/warning/error messages

@@ -126,16 +126,16 @@ function ActionPanel() {
             
             // Count required actions for current space
             if (prev.diceRequired) requiredActions++;
-            if (prev.originalCardActionCount > 0) requiredActions += prev.originalCardActionCount;
+            if (prev.originalCardActionCount > 0) requiredActions++; // Card actions count as 1 total action
             if (prev.availableMoves.length > 0) requiredActions++; // Movement selection
             
             // Count completed actions
             if (prev.diceRequired && prev.hasRolled) completedActions++;
             if (prev.selectedMove) completedActions++; // Movement selected
             
-            // Card actions completed = original count - remaining count
+            // Card actions completed - any card action counts as 1 completed action
             const cardActionsCompleted = prev.originalCardActionCount - prev.availableCardActions.length;
-            completedActions += cardActionsCompleted;
+            if (cardActionsCompleted > 0) completedActions++; // Any card action completion counts as 1
             
             // If no actions are required on this space, allow ending turn immediately
             const canEnd = requiredActions === 0 || completedActions >= requiredActions;
@@ -549,7 +549,25 @@ function ActionPanel() {
                 key: 'card-actions-grid',
                 className: 'card-actions-grid'
             }, 
-                actionState.availableCardActions.map((cardAction, index) => {
+                actionState.availableCardActions.filter((cardAction) => {
+                    // Smart filtering for OWNER-FUND-INITIATION space
+                    if (currentPlayer && currentPlayer.position === 'OWNER-FUND-INITIATION') {
+                        const scopeCost = currentPlayer.scopeTotalCost || 0;
+                        const fourMillion = 4000000; // $4M threshold
+                        
+                        // Bank card: only show if scope ≤ $4M
+                        if (cardAction.type === 'B' && scopeCost > fourMillion) {
+                            return false;
+                        }
+                        
+                        // Investor card: only show if scope > $4M
+                        if (cardAction.type === 'I' && scopeCost <= fourMillion) {
+                            return false;
+                        }
+                    }
+                    
+                    return true; // Show all other cards normally
+                }).map((cardAction, index) => {
                     const cardTypeNames = { W: 'Work', B: 'Bank', I: 'Investor', L: 'Life', E: 'Expeditor' };
                     const cardTypeName = cardTypeNames[cardAction.type] || cardAction.type;
                     
