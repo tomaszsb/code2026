@@ -23,7 +23,8 @@
       "Bash(rg:*)",
       "Bash(ls:*)",
       "Bash(rm:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(sed:*)"
     ],
     "deny": []
   }
