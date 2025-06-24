@@ -164,7 +164,24 @@ function TurnControls({
             }
         }
         
-        // Note: Move execution is now handled by MovementSection component
+        // Execute selected move if one is selected
+        if (selectedMove) {
+            console.log(`TurnControls: Executing selected move to ${selectedMove}`);
+            
+            // Execute the move
+            gameStateManager.emit('movePlayerRequest', {
+                playerId: currentPlayer.id,
+                spaceName: selectedMove,
+                visitType: 'First'
+            });
+
+            // Emit player moved event for turn tracking
+            gameStateManager.emit('playerMoved', {
+                playerId: currentPlayer.id,
+                fromSpace: currentPlayer.position,
+                toSpace: selectedMove
+            });
+        }
         
         gameStateManager.emit('turnEnded', {
             playerId: currentPlayer.id

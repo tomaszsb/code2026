@@ -39,87 +39,24 @@ function MovementSection({
         }
     });
 
-    // Handle move selection (execute immediately)
+    // Handle move selection (select only, don't execute)
     const handleMoveSelect = (spaceName) => {
-        console.log(`MovementSection: Executing move to ${spaceName}`);
+        console.log(`MovementSection: Selecting move to ${spaceName}`);
         
-        if (!currentPlayer || !window.CSVDatabase?.loaded) {
-            console.error('MovementSection: Cannot execute move - missing requirements');
-            return;
+        // Just select the move, don't execute it
+        if (onMoveSelect) {
+            onMoveSelect(spaceName);
         }
-
-        // Execute the move immediately
-        gameStateManager.emit('movePlayerRequest', {
-            playerId: currentPlayer.id,
-            spaceName: spaceName,
-            visitType: 'First'
-        });
-
-        // Emit player moved event for turn tracking
-        gameStateManager.emit('playerMoved', {
-            playerId: currentPlayer.id,
-            fromSpace: currentPlayer.position,
-            toSpace: spaceName
-        });
         
-        // Update state
+        // Update state to show selected move
         if (onMovementStateChange) {
             onMovementStateChange({
-                selectedMove: null,
-                showMoveDetails: false,
-                hasMoved: true
+                selectedMove: spaceName,
+                showMoveDetails: true
             });
-        }
-
-        if (onMoveExecute) {
-            onMoveExecute();
-        }
-
-        if (onActionCompleted) {
-            onActionCompleted();
         }
     };
 
-    // Execute the selected move
-    const executeSelectedMove = () => {
-        if (!selectedMove || !currentPlayer || !window.CSVDatabase?.loaded) {
-            console.error('MovementSection: Cannot execute move - missing requirements');
-            return;
-        }
-
-        console.log(`MovementSection: Executing move to ${selectedMove}`);
-
-        // Use only movePlayerRequest - this handles both movement and space effects
-        gameStateManager.emit('movePlayerRequest', {
-            playerId: currentPlayer.id,
-            spaceName: selectedMove,
-            visitType: 'First'
-        });
-
-        // Emit player moved event for turn tracking
-        gameStateManager.emit('playerMoved', {
-            playerId: currentPlayer.id,
-            fromSpace: currentPlayer.position,
-            toSpace: selectedMove
-        });
-        
-        // Update state
-        if (onMovementStateChange) {
-            onMovementStateChange({
-                selectedMove: null,
-                showMoveDetails: false,
-                hasMoved: true
-            });
-        }
-
-        if (onMoveExecute) {
-            onMoveExecute();
-        }
-
-        if (onActionCompleted) {
-            onActionCompleted();
-        }
-    };
 
     // Get space data for display
     const getSpaceData = (spaceName) => {
@@ -152,7 +89,7 @@ function MovementSection({
                     
                     return React.createElement('button', {
                         key: spaceName,
-                        className: 'move-button',
+                        className: `move-button ${selectedMove === spaceName ? 'selected' : ''}`,
                         onClick: () => handleMoveSelect(spaceName),
                         title: spaceData ? spaceData.Event : spaceName
                     }, 
