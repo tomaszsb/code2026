@@ -47,7 +47,7 @@ js/components/SpaceExplorer.js      # Space details and exploration panel
 # Modern Panel System (User Interface)
 js/components/GamePanelLayout.js    # Responsive three-panel layout container
 js/components/PlayerStatusPanel.js  # Left panel coordinator (117 lines - refactored)
-js/components/ActionPanel.js        # Bottom panel: actions, dice, moves, turn control (720 lines)
+js/components/ActionPanel.js        # Bottom panel coordinator (318 lines - refactored)
 js/components/ResultsPanel.js       # Right panel: results, history, game progress
 js/components/RulesModal.js         # Standalone rules modal with CSV-driven content
 
@@ -57,6 +57,12 @@ js/components/PlayerHeader.js       # Player avatar, name, and turn information 
 js/components/CurrentSpaceInfo.js   # Space details, requirements, and CSV content (84 lines)
 js/components/PlayerResources.js    # Money, time, and project scope management (119 lines)
 js/components/CardsInHand.js        # Card grid display and interaction handling (140 lines)
+
+# ActionPanel Components (Split Architecture)
+js/components/DiceRollSection.js    # Dice rolling interface with animation and CSV outcomes (227 lines)
+js/components/CardActionsSection.js # Card actions with smart filtering logic (153 lines)
+js/components/MovementSection.js    # Movement selection, validation, and execution (240 lines)
+js/components/TurnControls.js       # Turn management, action counting, and validation (264 lines)
 
 # Advanced System Components (Professional Features)
 js/components/InteractiveFeedback.js       # Toast notifications & visual feedback
@@ -200,7 +206,23 @@ For detailed information see:
 
 ## Recent Improvements (Latest Session)
 
-### ✅ **Phase 12: Component Splitting - PlayerStatusPanel (Current Session)**
+### ✅ **Phase 13: Component Splitting - ActionPanel (Current Session)**
+- **Major Architectural Refactor**: Complete ActionPanel component splitting achieving 56% size reduction
+  - Original ActionPanel: 720 lines → Final: 318 lines (402 lines reduced)
+  - Extracted 4 new focused components with clean separation of concerns
+  - No functionality lost - all features preserved with improved maintainability
+- **New Components Created**: Professional component architecture with event-driven communication
+  - DiceRollSection.js (227 lines): Dice rolling interface with animation and CSV outcome processing
+  - CardActionsSection.js (153 lines): Card actions with smart filtering for OWNER-FUND-INITIATION
+  - MovementSection.js (240 lines): Movement selection, validation, and execution interface
+  - TurnControls.js (264 lines): Turn management, action counting, and validation logic
+- **Enhanced Maintainability**: Each component has single responsibility and clear interfaces
+  - Total ActionPanel refactor: 720 → 318 lines (56% reduction)
+  - Combined with Phase 12: PlayerStatusPanel 902 → 117 lines (87% reduction)
+  - Established pattern for large component extraction and refactoring
+  - Improved event-driven architecture with proper state management
+
+### ✅ **Phase 12: Component Splitting - PlayerStatusPanel (Previous Session)**
 - **Major Architectural Refactor**: Complete PlayerStatusPanel component splitting achieving 87% size reduction
   - Original PlayerStatusPanel: 902 lines → Final: 117 lines (785 lines reduced)
   - Extracted 5 new focused components with clean separation of concerns
