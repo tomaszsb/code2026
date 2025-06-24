@@ -39,15 +39,17 @@ git pull origin main                                # Pull latest changes
 ```
 js/data/CSVDatabase.js              # Unified CSV query system
 js/data/GameStateManager.js         # Central state + events
+js/utils/CardUtils.js               # Centralized card configurations & utilities
 js/components/App.js                # Root component
 js/components/GameBoard.js          # Interactive board with movement system
 js/components/SpaceExplorer.js      # Space details and exploration panel
 
 # Modern Panel System (User Interface)
 js/components/GamePanelLayout.js    # Responsive three-panel layout container
-js/components/PlayerStatusPanel.js  # Left panel: player status, space info, cards
-js/components/ActionPanel.js        # Bottom panel: actions, dice, moves, turn control
+js/components/PlayerStatusPanel.js  # Left panel: player status, space info, cards (901 lines)
+js/components/ActionPanel.js        # Bottom panel: actions, dice, moves, turn control (720 lines)
 js/components/ResultsPanel.js       # Right panel: results, history, game progress
+js/components/RulesModal.js         # Standalone rules modal with CSV-driven content
 
 # Advanced System Components (Professional Features)
 js/components/InteractiveFeedback.js       # Toast notifications & visual feedback
@@ -59,7 +61,9 @@ js/components/PlayerInfo.js               # Comprehensive player dashboard
 js/components/PlayerMovementVisualizer.js # Visual movement animations
 
 css/unified-design.css          # Design system with consistent styling
+css/main.css                    # Consolidated core layout and UI (merged from game-components.css)
 css/panel-layout.css            # Three-panel layout styling
+css/card-components.css         # Card-specific styling
 data/cards.csv                  # Card properties and effects
 data/Spaces.csv                 # Space actions and outcomes
 data/DiceRoll Info.csv          # Dice result mappings
@@ -81,6 +85,21 @@ spaces.find(s => s.space_name === name);  // Forbidden
 // ❌ No unsafe database access
 const space = CSVDatabase.spaces.find(name, type);  // Missing window prefix
 const space = window.CSVDatabase.spaces.find(name, type);  // Missing loading check
+```
+
+### Card System Standards
+```javascript
+// ✅ Use CardUtils for all card-related operations
+const cardConfig = window.CardUtils.getCardTypeConfig('W');  // Returns {name: 'Work', icon: '🔨', color: '...'}
+const formattedValue = window.CardUtils.formatCardValue(card);
+const sortedCards = window.CardUtils.sortCardsByType(cards);
+
+// ❌ No hardcoded card mappings
+const cardNames = { 'B': 'Business' };  // Forbidden - use CardUtils
+const cardIcons = { 'W': '🔧' };       // Forbidden - use CardUtils
+
+// ❌ No duplicate card type configurations
+getCardTypeConfig(cardType) { /* local implementation */ }  // Use CardUtils instead
 ```
 
 ### Component Communication
@@ -118,16 +137,21 @@ gameState.players?.find()  // Defensive
 - ❌ **Unsafe database access** - always check loading state first
 - ❌ **Direct property access** - always use optional chaining and fallbacks
 - ❌ **Event data assumptions** - handle multiple event formats gracefully
+- ❌ **Duplicate card configurations** - use CardUtils.js only
+- ❌ **Hardcoded card type names** - no `{ 'B': 'Business' }` mappings
+- ❌ **Large monolithic components** - split components >500 lines
 
 ## Loading Order (Critical)
 ```html
 1. Unified Design System (CSS)
 2. CSVDatabase system
 3. GameStateManager
-4. Component utilities  
-5. Manager components
-6. UI components (GameBoard, SpaceExplorer)
-7. Main App
+4. Shared utilities (CardUtils.js)
+5. Component utilities  
+6. Manager components
+7. UI components (GameBoard, SpaceExplorer, RulesModal)
+8. Panel components (PlayerStatusPanel, ActionPanel)
+9. Main App
 ```
 
 ## What Lives Where
@@ -169,7 +193,23 @@ For detailed information see:
 
 ## Recent Improvements (Latest Session)
 
-### ✅ **Action System Fixes & Smart Card Filtering**
+### ✅ **Phase 1: Code Cleanup & Organization (Current Session)**
+- **Component Consolidation & Duplication Removal**: Major codebase cleanup and maintainability improvements
+  - Removed duplicate PlayerSetup.js component, kept EnhancedPlayerSetup as active
+  - Merged game-components.css into main.css, reducing from 15 to 14 CSS files (~17% reduction)
+  - Created centralized CardUtils.js shared module eliminating duplicate card functions across 4+ components
+  - Fixed critical card type naming inconsistencies (Business→Bank, Inspection→Investor, Legal→Life, Emergency→Expeditor)
+  - Extracted RulesModal.js from ActionPanel.js, reducing ActionPanel from 1,137 to 720 lines (36% reduction)
+- **Standardized Card System**: Unified card configurations, icons, colors, and naming throughout codebase
+  - All components now use CardUtils.getCardTypeConfig() for consistent card properties
+  - Eliminated hardcoded card mappings and duplicate configuration objects
+  - Fixed incorrect card type references that caused inconsistent UI display
+- **Architecture Improvements**: Enhanced maintainability through proper separation of concerns
+  - RulesModal now self-contained with CSV-driven content loading
+  - Reduced code duplication by ~2,000+ lines across CSS and JavaScript files
+  - Established pattern for future component extractions from large monolithic components
+
+### ✅ **Action System Fixes & Smart Card Filtering** (Previous Session)
 - **Fixed Card Action Counting Bug**: Spaces with multiple card types now require only ONE action instead of ALL
   - Code2026 was incorrectly requiring players to click all available card action buttons
   - Now matches code2025 behavior: choose and execute one card action, then move forward
@@ -307,7 +347,7 @@ For detailed information see:
 - **Error Resilience**: Graceful handling of undefined data and event format variations
 
 #### 🔧 **Developer Experience**
-- **Component-Based Architecture**: 25+ React components with clear separation of concerns
+- **Component-Based Architecture**: 30 React components with clear separation of concerns
 - **Advanced State Management**: Event system with proper cleanup and memory management
 - **Debug Mode**: Comprehensive logging and development tools
 - **Hot Reload**: Browser-based Babel compilation, no build required

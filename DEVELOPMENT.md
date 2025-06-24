@@ -2,7 +2,7 @@
 
 **Project Management Board Game - Clean Architecture Rebuild**
 
-## Current Status: Phase 9 Complete ✅ - Dice Roll & Card System Fixes
+## Current Status: Phase 12 Complete ✅ - Code Cleanup & Organization
 
 ### Phase 1: Clean Architecture Foundation (COMPLETE)
 - ✅ CSVDatabase.js - Unified query system for all CSV data
@@ -114,6 +114,36 @@
 ---
 
 ## Detailed Development Patterns
+
+### CardUtils Shared Module System
+```javascript
+// ✅ Centralized card configurations - use CardUtils for ALL card operations
+const cardConfig = window.CardUtils.getCardTypeConfig('W');
+// Returns: {name: 'Work', icon: '🔨', color: 'var(--primary-blue)', bgColor: '#e3f2fd', borderColor: 'var(--primary-blue)'}
+
+const displayName = window.CardUtils.getCardDisplayName('B');  // "Bank Cards"
+const formattedValue = window.CardUtils.formatCardValue(card);  // "$150,000" or "3 days"
+const sortedCards = window.CardUtils.sortCardsByType(cards);   // Sorted by W, B, I, L, E order
+
+// ✅ Standardized card type validation
+if (window.CardUtils.isValidCardType(cardType)) {
+    const icon = window.CardUtils.getCardIcon(cardType);
+    const color = window.CardUtils.getCardColor(cardType);
+}
+
+// ❌ FORBIDDEN: Hardcoded card mappings (creates inconsistencies)
+const cardTypes = { 'B': 'Business', 'I': 'Investigation' };  // WRONG NAMES!
+const icons = { 'W': '🔧', 'B': '💼' };  // Use CardUtils instead
+
+// ❌ FORBIDDEN: Local card configuration functions
+function getCardTypeConfig(type) { /* duplicate implementation */ }  // Use CardUtils
+```
+
+**Critical Fixes Made:**
+- **HandManager.js**: Fixed incorrect card names (Business→Bank, Inspection→Investor, Legal→Life, Emergency→Expeditor)
+- **AdvancedCardManager.js**: Fixed Investment→Investor in card type mapping
+- **PlayerStatusPanel.js**: Replaced duplicate icon/color functions with CardUtils calls
+- **ActionPanel.js**: Eliminated hardcoded card type names array
 
 ### Data-Driven Actions
 ```javascript
@@ -473,6 +503,51 @@ http://localhost:8000/?debug=true&logLevel=debug     # Debug mode
 - Added comprehensive logging throughout dice outcome processing
 - Fixed modal styling with proper z-index and positioning
 
+### Phase 10: Enhanced UI System & Rules Modal (COMPLETE)
+- ✅ **Complete Rules Modal System** - CSV-driven comprehensive help system with two-column layout
+- ✅ **Unified Color Scheme** - Consistent color coding across rules modal and all panels
+- ✅ **Perfect Cell Alignment** - Responsive grid design with proper content organization
+- ✅ **Enhanced Visual Consistency** - Standardized styling across all UI components
+- ✅ **Professional UI Polish** - Smooth transitions and visual feedback improvements
+
+**Key Achievements:**
+- **Rules Modal**: Complete game rules with CSV-driven content, perfect two-column layout
+- **Color Standardization**: Unified #4285f4 blue and consistent design language
+- **Visual Polish**: Enhanced player status panels with clean white backgrounds
+- **Terminology**: Standardized "days" instead of "ticks" throughout the interface
+
+### Phase 11: Enhanced Action System & Button Logic (COMPLETE)
+- ✅ **Fixed Card Action Counting Bug** - Spaces with multiple card types now require only ONE action
+- ✅ **Smart Card Filtering System** - Context-aware button display based on game state
+- ✅ **Enhanced Turn Management** - Proper action progress counter and end turn validation
+- ✅ **Fixed Negotiate Button** - Complete functionality with time penalty and state clearing
+- ✅ **Action Counter System** - Real-time tracking of dice rolls, card actions, and movements
+
+**Key Fixes:**
+- **Card Action Logic**: Fixed ActionPanel.js checkCanEndTurn() - multiple card types count as 1 action
+- **OWNER-FUND-INITIATION**: Smart filtering shows Bank OR Investor button based on project scope
+- **Turn Controls**: "End Turn (2/3)" format showing completed vs required actions
+- **Negotiate Function**: Applies -1 day penalty, clears cards, resets dice state, ends turn
+
+### Phase 12: Code Cleanup & Organization (COMPLETE)
+- ✅ **Component Consolidation** - Removed duplicate PlayerSetup.js, kept EnhancedPlayerSetup
+- ✅ **CSS File Consolidation** - Merged game-components.css into main.css (15→14 files, ~17% reduction)
+- ✅ **CardUtils Shared Module** - Centralized card configurations eliminating duplication across 4+ components
+- ✅ **Component Extraction** - Extracted RulesModal.js from ActionPanel.js (1,137→720 lines, 36% reduction)
+- ✅ **Fixed Critical Card Type Names** - Corrected Business→Bank, Inspection→Investor, Legal→Life, Emergency→Expeditor
+
+**Architecture Improvements:**
+- **Code Reduction**: Eliminated ~2,000+ lines of duplicate code across CSS and JavaScript
+- **Standardization**: All components now use CardUtils.getCardTypeConfig() for consistency
+- **Maintainability**: Large components split into manageable, focused modules
+- **Error Prevention**: Fixed incorrect card type mappings that caused UI inconsistencies
+
+**Component Metrics:**
+- **ActionPanel.js**: Reduced from 1,137 to 720 lines (36% reduction)
+- **CSS Files**: Consolidated from 15 to 14 files (~1,000 lines eliminated)
+- **CardUtils.js**: New shared module (150 lines) replacing 200+ lines of duplicated code
+- **RulesModal.js**: Extracted standalone component (195 lines) with full functionality
+
 ---
 
-*Last Updated: Phase 9 Completion - Dice Roll & Card System Fixes*
+*Last Updated: Phase 12 Completion - Code Cleanup & Organization*
