@@ -37,49 +37,38 @@ git pull origin main                                # Pull latest changes
 
 ### Key Files
 ```
+# Core Systems
 js/data/CSVDatabase.js              # Unified CSV query system
 js/data/GameStateManager.js         # Central state + events
 js/utils/CardUtils.js               # Centralized card configurations & utilities
+
+# Main Interface
 js/components/App.js                # Root component
+js/components/GamePanelLayout.js    # Responsive panel layout container
+js/components/PlayerStatusPanel.js  # Left panel coordinator (117 lines)
+js/components/ActionPanel.js        # Bottom panel coordinator (318 lines)
+js/components/ResultsPanel.js       # Right panel: results, history, progress
+
+# Game Components
 js/components/GameBoard.js          # Interactive board with movement system
 js/components/SpaceExplorer.js      # Space details and exploration panel
+js/components/RulesModal.js         # Standalone rules modal with CSV content
 
-# Modern Panel System (User Interface)
-js/components/GamePanelLayout.js    # Responsive three-panel layout container
-js/components/PlayerStatusPanel.js  # Left panel coordinator (117 lines - refactored)
-js/components/ActionPanel.js        # Bottom panel coordinator (318 lines - refactored)
-js/components/ResultsPanel.js       # Right panel: results, history, game progress
-js/components/RulesModal.js         # Standalone rules modal with CSV-driven content
+# Split Architecture Components
+js/components/DiceRollSection.js    # Dice rolling with animation (227 lines)
+js/components/CardActionsSection.js # Card actions with filtering (153 lines)
+js/components/MovementSection.js    # Movement selection/execution (240 lines)
+js/components/TurnControls.js       # Turn management/validation (264 lines)
+js/components/CardModal.js          # Enhanced card display (527 lines)
+js/components/PlayerHeader.js       # Player info display (42 lines)
+js/components/CurrentSpaceInfo.js   # Space details/requirements (84 lines)
+js/components/PlayerResources.js    # Money/time management (119 lines)
+js/components/CardsInHand.js        # Card grid display (140 lines)
 
-# PlayerStatusPanel Components (Split Architecture)
-js/components/CardModal.js          # Enhanced card display modal with 3D flip animation (527 lines)
-js/components/PlayerHeader.js       # Player avatar, name, and turn information (42 lines)
-js/components/CurrentSpaceInfo.js   # Space details, requirements, and CSV content (84 lines)
-js/components/PlayerResources.js    # Money, time, and project scope management (119 lines)
-js/components/CardsInHand.js        # Card grid display and interaction handling (140 lines)
-
-# ActionPanel Components (Split Architecture)
-js/components/DiceRollSection.js    # Dice rolling interface with animation and CSV outcomes (227 lines)
-js/components/CardActionsSection.js # Card actions with smart filtering logic (153 lines)
-js/components/MovementSection.js    # Movement selection, validation, and execution (240 lines)
-js/components/TurnControls.js       # Turn management, action counting, and validation (264 lines)
-
-# Advanced System Components (Professional Features)
-js/components/InteractiveFeedback.js       # Toast notifications & visual feedback
-js/components/TooltipSystem.js             # Context-sensitive help system
-js/components/LogicSpaceManager.js         # Complex decision-based spaces
-js/components/AdvancedCardManager.js       # Card combos & chain effects
-js/components/AdvancedDiceManager.js       # Sophisticated dice mechanics
-js/components/PlayerInfo.js               # Comprehensive player dashboard
-js/components/PlayerMovementVisualizer.js # Visual movement animations
-
-css/unified-design.css          # Design system with consistent styling
-css/main.css                    # Consolidated core layout and UI (merged from game-components.css)
-css/panel-layout.css            # Three-panel layout styling
-css/card-components.css         # Card-specific styling
-data/cards.csv                  # Card properties and effects
-data/Spaces.csv                 # Space actions and outcomes
-data/DiceRoll Info.csv          # Dice result mappings
+# Data Files
+data/cards.csv                      # Card properties and effects
+data/Spaces.csv                     # Space actions and outcomes
+data/DiceRoll Info.csv              # Dice result mappings
 ```
 
 ## Development Rules
@@ -110,9 +99,6 @@ const sortedCards = window.CardUtils.sortCardsByType(cards);
 // ❌ No hardcoded card mappings
 const cardNames = { 'B': 'Business' };  // Forbidden - use CardUtils
 const cardIcons = { 'W': '🔧' };       // Forbidden - use CardUtils
-
-// ❌ No duplicate card type configurations
-getCardTypeConfig(cardType) { /* local implementation */ }  // Use CardUtils instead
 ```
 
 ### Component Communication
@@ -124,7 +110,6 @@ useEventListener('playerMoved', ({ player, playerId, newSpace, toSpace }) => {
     const targetPlayer = player || (playerId && gameState.players?.find(p => p.id === playerId));
     const targetSpace = newSpace || toSpace;
     if (targetPlayer && targetSpace) {
-        // Safe to access properties
         handlePlayerMoved(targetPlayer, targetSpace);
     }
 });
@@ -181,16 +166,52 @@ gameState.players?.find()  // Defensive
 - ✅ Interactive board with clickable spaces and visual feedback
 - ✅ Player movement system using CSV space connections
 
-## Reference Materials
+## Recent Improvements
 
-### code2025 Folder - REFERENCE ONLY
-- 📚 **For understanding existing game logic**
-- ❌ **NO mixing of old and new code**
-- ❌ **NO importing files from code2025**
+### ✅ **Phase 14: Critical Bug Fixes (Latest)**
+- **Fixed Rules Modal**: Corrected CSV field references (Event/Action/Outcome vs event_description/action/outcome)
+- **Fixed Card Money Effects**: Bank loan_amount and Investment investment_amount now apply immediately
+- **Fixed Decision Modals**: Added close button, escape key, and click-outside dismissal
 
-### Screenshots and Visual Feedback
-- 📸 **Screenshots are uploaded to code2026 folder**
-- 📸 **Reference screenshots by filename when discussing layout/UI issues**
+### ✅ **Phase 13: ActionPanel Component Splitting**
+- Split 720-line ActionPanel into 4 focused components (56% size reduction)
+- Created DiceRollSection, CardActionsSection, MovementSection, TurnControls
+- Improved event-driven architecture and maintainability
+
+### ✅ **Phase 12: PlayerStatusPanel Component Splitting**
+- Split 902-line PlayerStatusPanel into 5 focused components (87% size reduction)
+- Created CardModal, PlayerHeader, CurrentSpaceInfo, PlayerResources, CardsInHand
+- Established component splitting patterns for large files
+
+### ✅ **Phase 1: Initial Code Cleanup & Organization**
+- Removed duplicate components and consolidated CSS files
+- Created centralized CardUtils.js eliminating duplicate functions
+- Fixed card type naming inconsistencies (Business→Bank, etc.)
+- Extracted RulesModal from ActionPanel
+
+## Current Architecture Features
+
+### 🎯 **Game Systems**
+- **CSV-driven content**: All game data from CSV files with unified API
+- **Manual card actions**: Player-controlled card effects separate from dice outcomes
+- **Interactive decision spaces**: YES/NO choices with CSV-driven destinations and dismissible modals
+- **Smart card filtering**: Context-aware button display (e.g., Bank vs Investor based on scope)
+- **Advanced card combos**: Multi-card synergies with automatic detection
+- **Immediate card effects**: Money and time effects apply when cards are drawn
+
+### 🎮 **User Interface**
+- **Three-panel responsive layout**: Player status (left) + Action controls (bottom) + Results/Explorer (right)
+- **Interactive game board**: Clickable spaces with visual feedback
+- **Enhanced card system**: 3D flip animations, type-specific filtering, Unravel branding
+- **Comprehensive rules modal**: CSV-driven content with proper field mapping
+- **Professional feedback system**: Toast notifications, loading states, progress indicators
+
+### 🏗️ **Technical Architecture**
+- **Event-driven communication**: Components communicate via GameStateManager events
+- **Defensive programming**: Safe database access and null safety throughout
+- **Component-based design**: 35+ focused components with clear separation of concerns
+- **Split architecture**: Large components split into maintainable sub-components
+- **Browser-based compilation**: No build step required, Babel transforms JSX in browser
 
 ---
 
@@ -203,217 +224,3 @@ For detailed information see:
 - Git commit history - Change log with reasoning
 
 **Architecture: CSV-driven content, unified APIs, event-driven communication, consistent design system.**
-
-## Recent Improvements (Latest Session)
-
-### ✅ **Phase 14: Critical Bug Fixes - UI & Card Effects (Current Session)**
-- **Fixed Rules Modal Display**: Corrected CSV field name references that prevented rules from showing
-  - RulesModal.js was using incorrect field names (event_description, action, outcome) instead of CSV fields (Event, Action, Outcome)
-  - Rules button now reliably displays game content from START-QUICK-PLAY-GUIDE CSV data
-  - Fixed empty/broken modal when CSV data loads but fields were mismatched
-- **Fixed Bank/Investment Card Money Effects**: Cards now immediately update player resources when drawn
-  - Added card effect processing to GameStateManager.addCardsToPlayer() method
-  - Bank cards (loan_amount) and Investment cards (investment_amount) now apply money immediately
-  - Updated CardUtils.js to properly display and handle investment_amount field
-  - Fixed missing monetary effects that prevented resource indicators from updating
-- **Fixed PM Decision Modal Dismissal**: Added multiple ways to close decision modals
-  - Added close button (×) in top-right corner with hover effects
-  - Added Escape key functionality to close modal
-  - Added click-outside-to-close behavior on modal overlay
-  - Prevented modal content clicks from accidentally closing modal
-  - Resolves user frustration with "trapped" decision dialogs
-
-### ✅ **Phase 13: Component Splitting - ActionPanel (Previous Session)**
-- **Major Architectural Refactor**: Complete ActionPanel component splitting achieving 56% size reduction
-  - Original ActionPanel: 720 lines → Final: 318 lines (402 lines reduced)
-  - Extracted 4 new focused components with clean separation of concerns
-  - No functionality lost - all features preserved with improved maintainability
-- **New Components Created**: Professional component architecture with event-driven communication
-  - DiceRollSection.js (227 lines): Dice rolling interface with animation and CSV outcome processing
-  - CardActionsSection.js (153 lines): Card actions with smart filtering for OWNER-FUND-INITIATION
-  - MovementSection.js (240 lines): Movement selection, validation, and execution interface
-  - TurnControls.js (264 lines): Turn management, action counting, and validation logic
-- **Enhanced Maintainability**: Each component has single responsibility and clear interfaces
-  - Total ActionPanel refactor: 720 → 318 lines (56% reduction)
-  - Combined with Phase 12: PlayerStatusPanel 902 → 117 lines (87% reduction)
-  - Established pattern for large component extraction and refactoring
-  - Improved event-driven architecture with proper state management
-
-### ✅ **Phase 12: Component Splitting - PlayerStatusPanel (Previous Session)**
-- **Major Architectural Refactor**: Complete PlayerStatusPanel component splitting achieving 87% size reduction
-  - Original PlayerStatusPanel: 902 lines → Final: 117 lines (785 lines reduced)
-  - Extracted 5 new focused components with clean separation of concerns
-  - No functionality lost - all features preserved with improved maintainability
-- **New Components Created**: Professional component architecture with props-based communication
-  - CardModal.js (527 lines): Enhanced card display modal with 3D flip animation and type-specific filtering
-  - PlayerHeader.js (42 lines): Player avatar, name, and turn information display
-  - CurrentSpaceInfo.js (84 lines): Space details, requirements, and CSV-driven content
-  - PlayerResources.js (119 lines): Money, time, and detailed project scope management
-  - CardsInHand.js (140 lines): Card grid display with expand/collapse and interaction handling
-- **Enhanced Maintainability**: Each component has single responsibility and clear interfaces
-  - Improved testability with isolated functionality
-  - Better debugging and development experience
-  - Established pattern for future large component refactoring
-
-### ✅ **Phase 1: Code Cleanup & Organization (Previous Session)**
-- **Component Consolidation & Duplication Removal**: Major codebase cleanup and maintainability improvements
-  - Removed duplicate PlayerSetup.js component, kept EnhancedPlayerSetup as active
-  - Merged game-components.css into main.css, reducing from 15 to 14 CSS files (~17% reduction)
-  - Created centralized CardUtils.js shared module eliminating duplicate card functions across 4+ components
-  - Fixed critical card type naming inconsistencies (Business→Bank, Inspection→Investor, Legal→Life, Emergency→Expeditor)
-  - Extracted RulesModal.js from ActionPanel.js, reducing ActionPanel from 1,137 to 720 lines (36% reduction)
-- **Standardized Card System**: Unified card configurations, icons, colors, and naming throughout codebase
-  - All components now use CardUtils.getCardTypeConfig() for consistent card properties
-  - Eliminated hardcoded card mappings and duplicate configuration objects
-  - Fixed incorrect card type references that caused inconsistent UI display
-- **Architecture Improvements**: Enhanced maintainability through proper separation of concerns
-  - RulesModal now self-contained with CSV-driven content loading
-  - Reduced code duplication by ~2,000+ lines across CSS and JavaScript files
-  - Established pattern for future component extractions from large monolithic components
-
-### ✅ **Action System Fixes & Smart Card Filtering** (Previous Session)
-- **Fixed Card Action Counting Bug**: Spaces with multiple card types now require only ONE action instead of ALL
-  - Code2026 was incorrectly requiring players to click all available card action buttons
-  - Now matches code2025 behavior: choose and execute one card action, then move forward
-  - Fixed in ActionPanel.js checkCanEndTurn() - card actions count as 1 total action regardless of quantity
-  - Resolves "stuck on space" issues for 28+ spaces with multiple card types (L+E, B+I combinations)
-- **Smart Card Filtering for OWNER-FUND-INITIATION**: Contextual button display based on project scope
-  - Bank button only shows if scope ≤ $4M (matches CSV condition: "Draw 1 if scope ≤ $ 4 M")
-  - Investor button only shows if scope > $4M (matches CSV condition: "Draw 1 if scope > $ 4 M")
-  - Eliminates illogical choice between two buttons when only one is correct based on game state
-  - Uses player.scopeTotalCost to determine appropriate funding source
-  - Maintains game narrative consistency: owner provides funding based on pre-determined scope
-
-### ✅ **Enhanced Action System & Button Logic**
-- **Fixed End Turn Button**: Proper state management with action progress counter
-  - Shows "End Turn (2/3)" format displaying completed vs required actions
-  - Disabled by default, only enabled when all actions are completed
-  - Real-time updates when moves selected, dice rolled, or card actions executed
-- **Fixed Negotiate Button**: Complete functionality overhaul for proper turn management
-  - Always available (no longer restricted by dice requirements)
-  - Applies -1 day time penalty
-  - Clears all cards added during turn
-  - Resets dice roll state and all turn selections
-  - Automatically ends turn after clearing state
-- **Action Counter System**: Comprehensive tracking of space requirements
-  - Counts dice rolls, card actions (as 1 total), and movement selections as separate actions
-  - Card actions count as 1 completed action regardless of quantity available
-  - Updates in real-time as actions are completed
-  - Proper validation for spaces with no required actions (e.g., first space)
-
-### ✅ **Card System & Scope Management**
-- **Enhanced W Card Scope Display**: Project scope now shows work types and costs
-  - Removed percentage calculation (no longer "40%" display)
-  - Shows work types like "Plumbing", "Electrical", "General Construction"
-  - Displays estimated costs with automatic summation for multiple cards
-  - Two-column layout: Work Type | Est. Cost with totals
-- **Card Information Display**: Type-specific information filtering
-  - W Cards: Simplified view with costs and work type restrictions
-  - B, I, L, E Cards: Full information display with all available CSV fields
-  - Fixed E card information that was previously missing
-  - Added comprehensive effects, restrictions, and usage information
-- **Card Modal Enhancements**: Professional card flip animation and information display
-  - 3D flip animation reveals Unravel-branded back side
-  - Type-specific information filtering based on card type
-  - Compact left-side icon design (60px) for streamlined appearance
-
-### ✅ **UI System & Color Scheme**
-- **Applied Instructions Modal Colors**: Left status panel now matches rules modal design
-  - Clean white backgrounds replace gradients
-  - Primary blue (#4285f4) for headers and values
-  - Consistent light gray borders (#e0e0e0) throughout
-  - Professional typography matching modal design system
-- **Terminology Standardization**: Replaced all "ticks" references with "days"
-  - Card effects now show "2 days" instead of "2 ticks"
-  - Consistent time terminology across all components
-  - Updated tooltips and descriptions to use "days"
-
-### ✅ **Previous Session Fixes**
-- **Enhanced Card System & Manual Actions**: Separated dice outcomes from space card actions
-- **Interactive Card Display Enhancement**: Streamlined card information with flip animations
-- **Logic Space Decision System**: Enhanced PM-DECISION-CHECK with proper validation
-- **Rules System Enhancement**: Complete rules coverage with perfect two-column layout
-- **Card System Standardization**: Corrected card names (Bank, Investor, Life, Expeditor)
-- **Critical Error Resolution**: Fixed database access errors and defensive programming
-
-## Current Features
-
-### ✅ Advanced Professional Game System with Modern Three-Panel UI
-
-#### 🎯 **Sophisticated Gameplay Mechanics**
-- **Manual Card Action System**: Separated dice outcomes from space card actions for precise control
-  - Dice rolls provide specific card types based on DiceRoll Info.csv
-  - Space actions appear as clickable buttons (e.g., "Life Cards: Draw 3")
-  - Players have full control over when to execute card actions
-- **Complex Logic Spaces**: Interactive decision points with YES/NO choices and branching outcomes
-  - Enhanced PM-DECISION-CHECK with proper validation and CSV-driven destinations
-  - Warning system prevents ending turns without making required decisions
-- **Advanced Card Combos**: Multi-card synergies with automatic detection and bonus calculation
-  - Finance Synergy: Bank + Investor cards (+$75k bonus)
-  - Work-Life Balance: Work + Life cards (+$25k, +2 time)
-  - Type Mastery: Multiple same-type cards (+40k, 1.3x multiplier)
-  - Project Spectrum: All 5 card types (+$150k, +5 time, 2x multiplier)
-- **Intelligent Dice System**: Conditional outcomes, roll-based multipliers, separated from space actions
-- **Deliberate Movement System**: All player movement requires explicit choice, no auto-movement
-
-#### 💫 **Professional UI Experience with Modern Panel Layout**
-- **Streamlined Two-Panel System**: Player status (left) + Results/Explorer (right), actions integrated into left panel
-- **Responsive Design**: Desktop panels and mobile tabbed interface with smooth transitions
-- **Interactive Card Display System**: Enhanced card modal with flip animation and streamlined information
-  - Click cards to view detailed information with compact left-side icon (60px)
-  - Smooth 3D flip animation (0.6s) reveals Unravel-branded back side
-  - Streamlined display for W cards: essential costs and restrictions only
-  - Professional card back with logo from graphics folder
-- **Manual Card Action Interface**: Dedicated "🎴 Available Card Actions" section in ActionPanel
-  - Clickable buttons for space-based card actions (separate from dice outcomes)
-  - Smart contextual filtering: shows only appropriate buttons based on game state
-  - OWNER-FUND-INITIATION displays Bank OR Investor button based on project scope (not both)
-  - Actions execute immediately and are removed from available list
-  - Color-coded buttons matching card type themes
-- **Interactive Feedback System**: Toast notifications with success/warning/error messages
-- **Context-Sensitive Help**: Comprehensive rules modal with CSV-driven content and two-column layout
-- **Visual Movement System**: Smooth animations, path highlighting, position indicators
-- **Rich Player Dashboard**: Financial analysis, scope tracking, combo history, phase progress
-- **Enhanced Visual Feedback**: Button ripple effects, loading states, progress indicators
-- **Integrated Action System**: Choice selection, dice rolling, negotiate button, and turn management in left panel
-- **Unified Color Scheme**: Consistent color coding across rules modal and player status panels
-- **Aligned Layout System**: Perfect cell alignment in rules modal with responsive grid design
-
-#### 🎮 **Complete Game Features**
-- **Interactive Game Board**: Clickable spaces with visual feedback and state indicators
-- **Enhanced Space Explorer**: Comprehensive space information with dice alerts and movement navigation
-- **Complete Card Management**: 5 card types (Work, Bank, Investor, Life, Expeditor) with unified color scheme
-  - Interactive card display with flip animation and Unravel branding
-  - Manual card action buttons for space-based effects
-  - Streamlined information display optimized for W cards
-- **Controlled Turn System**: Deliberate choice selection → Manual card actions → End Turn validation
-  - Decision space validation prevents ending turns without required choices
-  - Manual control over all card actions and movement decisions
-  - Negotiate option available with time penalty
-- **Enhanced Rules System**: Beautiful modal with complete CSV-driven content, perfect two-column alignment
-- **Separated Dice & Card System**: Clear distinction between dice outcomes and space card actions
-  - Dice rolls provide specific cards based on DiceRoll Info.csv
-  - Space card actions appear as dedicated manual buttons
-  - No auto-processing of card effects, full player control
-- **Full Gameplay Loop**: Turn management, win condition detection, real-time timer
-- **Production Systems**: Auto-save/load, import/export, comprehensive error handling
-- **Corrected Card Names**: Bank (not Business), Investor (not Investigation), Life (not Legal), Expeditor (not Emergency)
-
-#### 🏗️ **Advanced Architecture**
-- **CSV-First Design**: All game content driven by data, no hardcoded rules
-- **Event-Driven Communication**: Clean component interactions via GameStateManager with defensive event handling
-- **Unified Design System**: Consistent styling with professional card layouts and typography
-- **Mobile Responsive**: Optimized for all devices with touch-friendly interactions
-- **Accessibility Complete**: ARIA support, keyboard navigation, screen reader compatibility
-- **Defensive Programming**: All database access with loading checks and null safety
-- **Error Resilience**: Graceful handling of undefined data and event format variations
-
-#### 🔧 **Developer Experience**
-- **Component-Based Architecture**: 35 React components with clear separation of concerns
-- **Advanced State Management**: Event system with proper cleanup and memory management
-- **Debug Mode**: Comprehensive logging and development tools
-- **Hot Reload**: Browser-based Babel compilation, no build required
-- **Error Boundaries**: Comprehensive error handling with user feedback
-- **Robust Error Handling**: Fixed all "Cannot read properties of undefined" errors
-- **Consistent Database Access**: Standardized CSV query patterns with safety checks
-- **Event System Reliability**: Defensive event listeners handle data format variations
