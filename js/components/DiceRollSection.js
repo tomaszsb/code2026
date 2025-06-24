@@ -78,12 +78,44 @@ function DiceRollSection({
 
             // Process dice outcome using GameManager
             if (diceOutcomeResult) {
-                gameStateManager.emit('processDiceOutcome', {
-                    playerId: currentPlayer.id,
-                    outcome: diceOutcomeResult,
-                    spaceName: currentPlayer.position,
-                    visitType: 'FIRST_VISIT'
-                });
+                // Convert dice outcome object to string format that GameManager expects
+                let outcomeString = '';
+                if (diceOutcomeResult.cards && diceOutcomeResult.cards !== 'None') {
+                    outcomeString = diceOutcomeResult.cards;
+                }
+                
+                if (outcomeString) {
+                    gameStateManager.emit('processDiceOutcome', {
+                        playerId: currentPlayer.id,
+                        outcome: outcomeString,
+                        spaceName: currentPlayer.position,
+                        visitType: 'FIRST_VISIT'
+                    });
+                }
+
+                // Handle money changes separately
+                if (diceOutcomeResult.money && diceOutcomeResult.money !== '0') {
+                    const moneyChange = parseInt(diceOutcomeResult.money);
+                    if (!isNaN(moneyChange)) {
+                        gameStateManager.emit('moneyChanged', {
+                            playerId: currentPlayer.id,
+                            amount: moneyChange,
+                            source: 'dice_roll'
+                        });
+                    }
+                }
+
+                // Handle time changes separately
+                if (diceOutcomeResult.time && diceOutcomeResult.time !== '0') {
+                    const timeChange = parseInt(diceOutcomeResult.time);
+                    if (!isNaN(timeChange)) {
+                        gameStateManager.emit('timeChanged', {
+                            playerId: currentPlayer.id,
+                            amount: timeChange,
+                            source: 'dice_roll'
+                        });
+                    }
+                }
             }
 
             // Emit completion event

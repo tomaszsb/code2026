@@ -39,24 +39,44 @@ function MovementSection({
         }
     });
 
-    // Handle move selection (preview only, don't execute)
+    // Handle move selection (execute immediately)
     const handleMoveSelect = (spaceName) => {
-        console.log(`MovementSection: Move selected: ${spaceName}`);
+        console.log(`MovementSection: Executing move to ${spaceName}`);
         
+        if (!currentPlayer || !window.CSVDatabase?.loaded) {
+            console.error('MovementSection: Cannot execute move - missing requirements');
+            return;
+        }
+
+        // Execute the move immediately
+        gameStateManager.emit('movePlayerRequest', {
+            playerId: currentPlayer.id,
+            spaceName: spaceName,
+            visitType: 'FIRST_VISIT'
+        });
+
+        // Emit player moved event for turn tracking
+        gameStateManager.emit('playerMoved', {
+            playerId: currentPlayer.id,
+            fromSpace: currentPlayer.position,
+            toSpace: spaceName
+        });
+        
+        // Update state
         if (onMovementStateChange) {
             onMovementStateChange({
-                selectedMove: spaceName,
-                showMoveDetails: true
+                selectedMove: null,
+                showMoveDetails: false,
+                hasMoved: true
             });
         }
 
-        if (onMoveSelect) {
-            onMoveSelect(spaceName);
+        if (onMoveExecute) {
+            onMoveExecute();
         }
 
-        // Update action counter
         if (onActionCompleted) {
-            setTimeout(() => onActionCompleted(), 100);
+            onActionCompleted();
         }
     };
 
@@ -129,11 +149,10 @@ function MovementSection({
             }, 
                 availableMoves.map(spaceName => {
                     const spaceData = getSpaceData(spaceName);
-                    const isSelected = selectedMove === spaceName;
                     
                     return React.createElement('button', {
                         key: spaceName,
-                        className: `move-button ${isSelected ? 'selected' : ''}`,
+                        className: 'move-button',
                         onClick: () => handleMoveSelect(spaceName),
                         title: spaceData ? spaceData.Event : spaceName
                     }, [
@@ -157,82 +176,6 @@ function MovementSection({
                     ]);
                 })
             )
-        ]),
-
-        // Selected Move Details
-        showMoveDetails && selectedMove && React.createElement('div', {
-            key: 'move-details',
-            className: 'move-details'
-        }, [
-            React.createElement('h5', {
-                key: 'details-title',
-                className: 'details-title'
-            }, `Selected Move: ${selectedMove}`),
-            
-            React.createElement('div', {
-                key: 'details-content',
-                className: 'details-content'
-            }, [
-                (() => {
-                    const spaceData = getSpaceData(selectedMove);
-                    if (!spaceData) {
-                        return React.createElement('p', {
-                            key: 'no-data',
-                            className: 'no-data'
-                        }, 'Space information not available');
-                    }
-
-                    return [
-                        spaceData.Phase && React.createElement('div', {
-                            key: 'phase',
-                            className: 'detail-item'
-                        }, [
-                            React.createElement('strong', { key: 'phase-label' }, 'Phase: '),
-                            spaceData.Phase
-                        ]),
-                        
-                        spaceData.Event && React.createElement('div', {
-                            key: 'event',
-                            className: 'detail-item'
-                        }, [
-                            React.createElement('strong', { key: 'event-label' }, 'Event: '),
-                            spaceData.Event
-                        ]),
-                        
-                        spaceData.Actions && React.createElement('div', {
-                            key: 'actions',
-                            className: 'detail-item'
-                        }, [
-                            React.createElement('strong', { key: 'actions-label' }, 'Actions: '),
-                            spaceData.Actions
-                        ])
-                    ];
-                })()
-            ]),
-            
-            React.createElement('div', {
-                key: 'details-actions',
-                className: 'details-actions'
-            }, [
-                React.createElement('button', {
-                    key: 'execute-move',
-                    className: 'execute-move-button',
-                    onClick: executeSelectedMove
-                }, `Move to ${selectedMove}`),
-                
-                React.createElement('button', {
-                    key: 'cancel-move',
-                    className: 'cancel-move-button',
-                    onClick: () => {
-                        if (onMovementStateChange) {
-                            onMovementStateChange({
-                                selectedMove: null,
-                                showMoveDetails: false
-                            });
-                        }
-                    }
-                }, 'Cancel')
-            ])
         ])
     ]);
 }
