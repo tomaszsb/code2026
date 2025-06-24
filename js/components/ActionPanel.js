@@ -165,8 +165,7 @@ function ActionPanel() {
                     showCardActions: cardTypes.length > 0
                 }));
                 
-                // Recalculate action counts when space data changes
-                setTimeout(() => checkCanEndTurn(), 100);
+                // Turn validation now handled by TurnControls component
             }
         }
     }, [currentPlayer?.position, currentPlayer?.id]);
@@ -302,6 +301,7 @@ function ActionPanel() {
 
         // Rules Modal
         React.createElement(window.RulesModal, {
+            key: 'rules-modal',
             show: actionState.showRulesModal,
             onClose: hideRulesModal
         })
