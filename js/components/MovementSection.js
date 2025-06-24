@@ -155,28 +155,12 @@ function MovementSection({
                         className: 'move-button',
                         onClick: () => handleMoveSelect(spaceName),
                         title: spaceData ? spaceData.Event : spaceName
-                    }, [
+                    }, 
                         React.createElement('div', {
                             key: 'space-name',
                             className: 'move-space-name'
-                        }, (() => {
-                            console.log(`MovementSection: Rendering space name: "${spaceName}"`);
-                            return spaceName;
-                        })()),
-                        
-                        spaceData && React.createElement('div', {
-                            key: 'space-phase',
-                            className: 'move-space-phase'
-                        }, spaceData.phase || 'Unknown'),
-                        
-                        spaceData && spaceData.Event && React.createElement('div', {
-                            key: 'space-event',
-                            className: 'space-event'
-                        }, spaceData.Event.length > 50 ? 
-                            spaceData.Event.substring(0, 50) + '...' : 
-                            spaceData.Event
-                        )
-                    ]);
+                        }, spaceName)
+                    );
                 })
             )
         ])
