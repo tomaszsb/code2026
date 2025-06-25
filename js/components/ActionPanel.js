@@ -31,7 +31,9 @@ function ActionPanel() {
         originalCardActionCount: 0, // Track original count to compare against current
         showCardActions: false,
         requiredActions: 0,
-        completedActions: 0
+        completedActions: 0,
+        availableSpaceActions: [],
+        showSpaceActions: false
     });
 
     // Handle dice roll state updates from DiceRollSection
@@ -60,6 +62,19 @@ function ActionPanel() {
 
     // Handle card action completion
     const handleCardActionCompleted = () => {
+        // Turn validation now handled by TurnControls component
+    };
+
+    // Handle space actions state updates from SpaceActionsSection
+    const handleSpaceActionsStateChange = (spaceActionState) => {
+        setActionState(prev => ({
+            ...prev,
+            ...spaceActionState
+        }));
+    };
+
+    // Handle space action completion
+    const handleSpaceActionCompleted = () => {
         // Turn validation now handled by TurnControls component
     };
 
@@ -251,6 +266,18 @@ function ActionPanel() {
             gameStateManager: gameStateManager
         }),
 
+        // Space Actions Section
+        React.createElement(SpaceActionsSection, {
+            key: 'space-actions-section',
+            currentPlayer: currentPlayer,
+            gameStateManager: gameStateManager,
+            currentSpace: currentPlayer?.position,
+            spaceData: currentPlayer?.position && window.CSVDatabase?.loaded ? 
+                window.CSVDatabase.spaces.find(currentPlayer.position, currentPlayer.visitType || 'First') : null,
+            onSpaceActionCompleted: handleSpaceActionCompleted,
+            onSpaceActionsStateChange: handleSpaceActionsStateChange
+        }),
+
         // Movement Section
         React.createElement(MovementSection, {
             key: 'movement-section',
@@ -260,6 +287,7 @@ function ActionPanel() {
             selectedMove: actionState.selectedMove,
             showMoveDetails: actionState.showMoveDetails,
             hasMoved: actionState.hasMoved,
+            hasRolled: actionState.hasRolled,
             onMoveSelect: (spaceName) => {
                 setActionState(prev => ({
                     ...prev,

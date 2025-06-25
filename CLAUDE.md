@@ -168,7 +168,13 @@ gameState.players?.find()  // Defensive
 
 ## Recent Improvements
 
-### ✅ **Phase 14: Critical Bug Fixes (Latest)**
+### ✅ **Phase 15: Button Standardization & UI Polish (Latest)**
+- **Unified Action Buttons**: Standardized all action buttons to consistent width, styling, and fonts
+- **Enhanced Movement Labels**: Changed "NEW" to "FIRST VISIT" and "REVISIT" to "SUBSEQUENT VISIT"
+- **CSS Architecture Cleanup**: Fixed duplicate CSS rules causing styling conflicts
+- **Improved User Experience**: Consistent button behavior across dice, cards, movement, and controls
+
+### ✅ **Phase 14: Critical Bug Fixes**
 - **Fixed Rules Modal**: Corrected CSV field references (Event/Action/Outcome vs event_description/action/outcome)
 - **Fixed Card Money Effects**: Bank loan_amount and Investment investment_amount now apply immediately
 - **Fixed Decision Modals**: Added close button, escape key, and click-outside dismissal
@@ -205,6 +211,7 @@ gameState.players?.find()  // Defensive
 - **Enhanced card system**: 3D flip animations, type-specific filtering, Unravel branding
 - **Comprehensive rules modal**: CSV-driven content with proper field mapping
 - **Professional feedback system**: Toast notifications, loading states, progress indicators
+- **Unified action buttons**: Consistent width, styling, and behavior across all action sections
 
 ### 🏗️ **Technical Architecture**
 - **Event-driven communication**: Components communicate via GameStateManager events
@@ -212,6 +219,12 @@ gameState.players?.find()  // Defensive
 - **Component-based design**: 35+ focused components with clear separation of concerns
 - **Split architecture**: Large components split into maintainable sub-components
 - **Browser-based compilation**: No build step required, Babel transforms JSX in browser
+
+### 🎨 **CSS Architecture**
+- **Unified design system**: `unified-design.css` contains authoritative styles and design tokens
+- **Button standardization**: All action buttons use `.btn` base class with consistent variants
+- **Single source of truth**: Avoid CSS duplicates - `unified-design.css` takes precedence
+- **Movement labels**: Use "FIRST VISIT" and "SUBSEQUENT VISIT" instead of "NEW" and "REVISIT"
 
 ---
 

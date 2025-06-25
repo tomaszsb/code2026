@@ -4,32 +4,25 @@
  */
 
 function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) {
-    // Helper functions to handle cards object structure
-    const getAllCards = (cardsObj) => {
-        console.log('CardsInHand: getAllCards called with:', cardsObj);
-        
-        if (!cardsObj || typeof cardsObj !== 'object') {
-            console.log('CardsInHand: No cards object or not an object, returning empty array');
+    const { useMemo } = React;
+    
+    // Memoized helper functions to prevent excessive recalculation
+    const allCards = useMemo(() => {
+        if (!player?.cards || typeof player.cards !== 'object') {
             return [];
         }
         
-        const allCards = [];
-        Object.keys(cardsObj).forEach(cardType => {
-            console.log(`CardsInHand: Processing card type ${cardType}:`, cardsObj[cardType]);
-            if (Array.isArray(cardsObj[cardType])) {
-                allCards.push(...cardsObj[cardType]);
+        const cards = [];
+        Object.keys(player.cards).forEach(cardType => {
+            if (Array.isArray(player.cards[cardType])) {
+                cards.push(...player.cards[cardType]);
             }
         });
         
-        console.log('CardsInHand: All cards combined:', allCards);
-        return allCards;
-    };
+        return cards;
+    }, [player?.cards]);
     
-    const getAllCardsCount = (cardsObj) => {
-        const count = getAllCards(cardsObj).length;
-        console.log(`CardsInHand: Total card count: ${count}`);
-        return count;
-    };
+    const cardCount = useMemo(() => allCards.length, [allCards]);
     
     // Get icon and color for card type (consistent with rules modal)
     const getCardTypeColor = (cardType) => {
@@ -85,15 +78,15 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
             React.createElement('span', {
                 key: 'card-count',
                 className: 'card-count'
-            }, `${getAllCardsCount(player.cards)}/7`)
+            }, `${cardCount}/7`)
         ]),
         
         cardsExpanded && React.createElement('div', {
             key: 'cards-container',
             className: 'cards-container'
         }, 
-            getAllCards(player.cards).length > 0 ? 
-                getAllCards(player.cards).map((card, index) => {
+            allCards.length > 0 ? 
+                allCards.map((card, index) => {
                     const cardColors = getCardTypeColor(card.card_type);
                     return React.createElement('div', {
                         key: `card-${index}`,

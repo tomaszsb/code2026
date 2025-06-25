@@ -235,7 +235,7 @@ function TurnControls({
         }, [
             React.createElement('button', {
                 key: 'end-turn',
-                className: `end-turn-button ${canEndTurn ? 'enabled' : 'disabled'}`,
+                className: `btn ${canEndTurn ? 'btn--success' : 'btn--secondary is-disabled'} btn--full end-turn-button`,
                 onClick: handleEndTurn,
                 disabled: !canEndTurn,
                 title: canEndTurn ? 'End your turn' : `Complete ${requiredActions - completedActions} more action(s) to end turn`
@@ -243,14 +243,14 @@ function TurnControls({
 
             React.createElement('button', {
                 key: 'negotiate',
-                className: 'negotiate-button',
+                className: 'btn btn--warning btn--full negotiate-button',
                 onClick: handleNegotiate,
                 title: 'Clear all selections and end turn (applies -1 day penalty)'
             }, 'Negotiate'),
 
             React.createElement('button', {
                 key: 'view-rules',
-                className: 'view-rules-button',
+                className: 'btn btn--ghost btn--full view-rules-button',
                 onClick: onShowRulesModal,
                 title: 'View game rules and help'
             }, 'View Rules')

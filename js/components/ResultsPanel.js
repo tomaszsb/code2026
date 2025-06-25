@@ -58,7 +58,7 @@ function ResultsPanel() {
 
     const addAction = (description, type) => {
         const action = {
-            id: Date.now(),
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             description,
             type,
             timestamp: Date.now(),
@@ -73,7 +73,7 @@ function ResultsPanel() {
 
     const addNotification = (message, type = 'info') => {
         const notification = {
-            id: Date.now(),
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             message,
             type,
             timestamp: Date.now()

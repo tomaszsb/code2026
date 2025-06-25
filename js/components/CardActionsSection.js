@@ -121,19 +121,10 @@ function CardActionsSection({
                 
                 return React.createElement('button', {
                     key: `${cardAction.type}-${index}`,
-                    className: `card-action-button card-action-${cardAction.type.toLowerCase()}`,
+                    className: `btn btn--secondary btn--full card-action-button card-action-${cardAction.type.toLowerCase()}`,
                     onClick: () => handleCardAction(cardAction.type, cardAction.action),
                     title: `${cardTypeName}: ${cardAction.action}`
-                }, [
-                    React.createElement('div', {
-                        key: 'card-type',
-                        className: 'card-action-type'
-                    }, `${cardTypeName} Cards`),
-                    React.createElement('div', {
-                        key: 'card-action',
-                        className: 'card-action-text'
-                    }, cardAction.action)
-                ]);
+                }, `${cardTypeName} - ${cardAction.action}`);
             })
         ),
 

@@ -157,58 +157,48 @@ function DiceRollSection({
         }, '🎲 Dice Roll'),
         
         React.createElement('div', { 
-            key: 'dice-content',
-            className: 'dice-content'
+            key: 'dice-controls',
+            className: 'dice-controls'
         }, [
-            React.createElement('p', { 
-                key: 'dice-instruction',
-                className: 'dice-instruction'
-            }, 'Roll the dice to determine your outcome for this space.'),
+            React.createElement('button', {
+                key: 'dice-button',
+                className: `btn ${hasRolled ? 'btn--success' : 'btn--primary'} btn--full ${rolling ? 'is-loading' : ''} dice-roll-button`,
+                onClick: handleDiceRoll,
+                disabled: rolling || hasRolled
+            }, rolling ? 'Rolling...' : hasRolled ? 'Rolled' : 'Roll Dice'),
             
-            React.createElement('div', { 
-                key: 'dice-controls',
-                className: 'dice-controls'
+            hasRolled && diceRollValue && React.createElement('div', {
+                key: 'dice-result',
+                className: 'dice-result'
             }, [
-                React.createElement('button', {
-                    key: 'dice-button',
-                    className: `dice-roll-button ${rolling ? 'rolling' : ''} ${hasRolled ? 'completed' : ''}`,
-                    onClick: handleDiceRoll,
-                    disabled: rolling || hasRolled
-                }, rolling ? '🎲 Rolling...' : hasRolled ? '✅ Rolled' : '🎲 Roll Dice'),
+                React.createElement('div', {
+                    key: 'dice-value',
+                    className: 'dice-value'
+                }, `Rolled: ${diceRollValue}`),
                 
-                hasRolled && diceRollValue && React.createElement('div', {
-                    key: 'dice-result',
-                    className: 'dice-result'
+                diceOutcome && React.createElement('div', {
+                    key: 'dice-outcome',
+                    className: 'dice-outcome'
                 }, [
-                    React.createElement('div', {
-                        key: 'dice-value',
-                        className: 'dice-value'
-                    }, `Rolled: ${diceRollValue}`),
+                    diceOutcome.cards && diceOutcome.cards !== 'None' && React.createElement('div', {
+                        key: 'outcome-cards',
+                        className: 'outcome-item'
+                    }, `📇 Cards: ${diceOutcome.cards}`),
                     
-                    diceOutcome && React.createElement('div', {
-                        key: 'dice-outcome',
-                        className: 'dice-outcome'
-                    }, [
-                        diceOutcome.cards && diceOutcome.cards !== 'None' && React.createElement('div', {
-                            key: 'outcome-cards',
-                            className: 'outcome-item'
-                        }, `📇 Cards: ${diceOutcome.cards}`),
-                        
-                        diceOutcome.money && diceOutcome.money !== '0' && React.createElement('div', {
-                            key: 'outcome-money',
-                            className: 'outcome-item'
-                        }, `💰 Money: ${diceOutcome.money > 0 ? '+' : ''}$${diceOutcome.money}k`),
-                        
-                        diceOutcome.time && diceOutcome.time !== '0' && React.createElement('div', {
-                            key: 'outcome-time',
-                            className: 'outcome-item'
-                        }, `⏰ Time: ${diceOutcome.time > 0 ? '+' : ''}${diceOutcome.time} days`),
-                        
-                        diceOutcome.special_note && React.createElement('div', {
-                            key: 'outcome-note',
-                            className: 'outcome-note'
-                        }, diceOutcome.special_note)
-                    ])
+                    diceOutcome.money && diceOutcome.money !== '0' && React.createElement('div', {
+                        key: 'outcome-money',
+                        className: 'outcome-item'
+                    }, `💰 Money: ${diceOutcome.money > 0 ? '+' : ''}$${diceOutcome.money}k`),
+                    
+                    diceOutcome.time && diceOutcome.time !== '0' && React.createElement('div', {
+                        key: 'outcome-time',
+                        className: 'outcome-item'
+                    }, `⏰ Time: ${diceOutcome.time > 0 ? '+' : ''}${diceOutcome.time} days`),
+                    
+                    diceOutcome.special_note && React.createElement('div', {
+                        key: 'outcome-note',
+                        className: 'outcome-note'
+                    }, diceOutcome.special_note)
                 ])
             ])
         ])
