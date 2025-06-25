@@ -39,7 +39,7 @@ function SpaceActionsSection({
 
         const actions = [];
         
-        // Pattern: "Action Name: $Amount" or "Action Name: Amount"
+        // Pattern 1: "Action Name: $Amount" or "Action Name: Amount"
         const actionMatches = outcomeText.match(/([^:]+):\s*\$?([0-9.]+)([KMB]?)/gi);
         
         if (actionMatches) {
@@ -63,8 +63,18 @@ function SpaceActionsSection({
             });
         }
 
-        // Pattern: Other action types can be added here
-        // For now, focus on money actions
+        // Pattern 2: Simple action buttons (no amount specified)
+        // Check for specific action phrases that should become buttons
+        if (outcomeText.toLowerCase().includes('take owner\'s money') || 
+            outcomeText.toLowerCase().includes('take owner money')) {
+            actions.push({
+                id: 'take_owner_money',
+                name: 'Take Owner\'s Money',
+                amount: 0, // Amount comes from cards
+                amountText: 'From Cards',
+                type: 'card_triggered'
+            });
+        }
 
         return actions;
     };
@@ -113,6 +123,24 @@ function SpaceActionsSection({
                 if (window.InteractiveFeedback) {
                     window.InteractiveFeedback.success(
                         `${currentPlayer.name} received ${action.amountText} from ${action.name}!`,
+                        3000
+                    );
+                }
+            }
+            
+            // Process card-triggered action
+            if (action.type === 'card_triggered') {
+                // Trigger card actions instead of direct money
+                gameStateManager.emit('triggerSpaceCardActions', {
+                    playerId: currentPlayer.id,
+                    spaceName: spaceData.space_name,
+                    actionName: action.name
+                });
+                
+                // Show feedback
+                if (window.InteractiveFeedback) {
+                    window.InteractiveFeedback.info(
+                        `${action.name} triggered - check your card actions!`,
                         3000
                     );
                 }

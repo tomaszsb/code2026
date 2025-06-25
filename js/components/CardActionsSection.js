@@ -76,6 +76,11 @@ function CardActionsSection({
                 const scopeCost = currentPlayer.scopeTotalCost || 0;
                 const fourMillion = 4000000; // $4M threshold
                 
+                // Work card: hide on OWNER-FUND-INITIATION (funding space, not work space)
+                if (cardAction.type === 'W') {
+                    return false;
+                }
+                
                 // Bank card: only show if scope ≤ $4M
                 if (cardAction.type === 'B' && scopeCost > fourMillion) {
                     return false;
