@@ -20,6 +20,13 @@ function TurnControls({
     debugMode = false
 }) {
     const { useState, useEffect } = React;
+    
+    // Initialize MovementEngine for visit type determination
+    const [movementEngine] = useState(() => {
+        const engine = new window.MovementEngine();
+        engine.initialize(gameStateManager);
+        return engine;
+    });
 
     // Listen for turn started events to reset state
     useEventListener('turnStarted', ({ player, turnNumber }) => {
@@ -78,6 +85,28 @@ function TurnControls({
         }
 
         console.log(`TurnControls: Actions ${completedActionsCount}/${requiredActionsCount}, canEndTurn: ${canEnd}`);
+    };
+
+    // Check if negotiate button should be enabled
+    const checkNegotiateEnabled = () => {
+        if (!currentPlayer || !window.CSVDatabase || !window.CSVDatabase.loaded) return false;
+
+        const currentSpaceData = window.CSVDatabase.spaces.find(
+            currentPlayer.position, 
+            currentPlayer.visitType || 'First'
+        );
+
+        if (!currentSpaceData) return false;
+
+        // Negotiate is enabled if space has immediate time data
+        // It's disabled if time is determined by choice, roll, or drawing cards
+        const hasImmediateTime = currentSpaceData.Time && 
+                                currentSpaceData.Time !== '' && 
+                                !currentSpaceData.Time.includes('roll') &&
+                                !currentSpaceData.Time.includes('choice') &&
+                                !currentSpaceData.Time.includes('draw');
+
+        return hasImmediateTime;
     };
 
     // Handle negotiate action
@@ -168,11 +197,15 @@ function TurnControls({
         if (selectedMove) {
             console.log(`TurnControls: Executing selected move to ${selectedMove}`);
             
+            // Determine correct visit type using MovementEngine
+            const visitType = movementEngine.getVisitType(currentPlayer, selectedMove);
+            console.log(`TurnControls: Visit type for ${selectedMove}: ${visitType}`);
+            
             // Execute the move
             gameStateManager.emit('movePlayerRequest', {
                 playerId: currentPlayer.id,
                 spaceName: selectedMove,
-                visitType: 'First'
+                visitType: visitType
             });
 
             // Emit player moved event for turn tracking
@@ -243,9 +276,12 @@ function TurnControls({
 
             React.createElement('button', {
                 key: 'negotiate',
-                className: 'btn btn--warning btn--full negotiate-button',
-                onClick: handleNegotiate,
-                title: 'Clear all selections and end turn (applies -1 day penalty)'
+                className: `btn btn--warning btn--full negotiate-button ${!checkNegotiateEnabled() ? 'is-disabled' : ''}`,
+                onClick: checkNegotiateEnabled() ? handleNegotiate : undefined,
+                disabled: !checkNegotiateEnabled(),
+                title: checkNegotiateEnabled() ? 
+                    'Clear all selections and end turn (applies -1 day penalty)' : 
+                    'Negotiate unavailable - time determined by roll/choice/cards'
             }, 'Negotiate'),
 
             React.createElement('button', {

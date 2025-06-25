@@ -168,7 +168,19 @@ gameState.players?.find()  // Defensive
 
 ## Recent Improvements
 
-### ✅ **Phase 15: Button Standardization & UI Polish (Latest)**
+### ✅ **Phase 17: Critical Database & UI Fixes (Latest)**
+- **Fixed Space Lookup Error**: Resolved "Space OWNER-FUND-INITIATION/First not found" by fixing missing comma in Spaces.csv line 6
+- **Enhanced CSVDatabase Safety**: Added comprehensive loading checks to prevent unsafe database access across 10+ components
+- **Smart Negotiate Button**: Negotiate now activates only when space has immediate time data, deactivates for roll/choice/card-based timing
+- **Improved Error Handling**: Added retry logic and detailed debugging for space lookup failures
+
+### ✅ **Phase 16: CSS Deduplication & Game Logic Fixes**
+- **Comprehensive CSS Cleanup**: Eliminated all duplicate CSS rules across multiple files (~200+ lines removed)
+- **Move Button Sizing Fix**: Standardized move button height to match other action buttons perfectly
+- **GameStateManager Error Fix**: Fixed hardcoded visit types by implementing proper MovementEngine integration
+- **Architecture Consolidation**: Established unified-design.css as single source of truth for all styling
+
+### ✅ **Phase 15: Button Standardization & UI Polish**
 - **Unified Action Buttons**: Standardized all action buttons to consistent width, styling, and fonts
 - **Enhanced Movement Labels**: Changed "NEW" to "FIRST VISIT" and "REVISIT" to "SUBSEQUENT VISIT"
 - **CSS Architecture Cleanup**: Fixed duplicate CSS rules causing styling conflicts
@@ -219,6 +231,8 @@ gameState.players?.find()  // Defensive
 - **Component-based design**: 35+ focused components with clear separation of concerns
 - **Split architecture**: Large components split into maintainable sub-components
 - **Browser-based compilation**: No build step required, Babel transforms JSX in browser
+- **Comprehensive error handling**: Robust CSV data validation and space lookup safety
+- **Smart UI state management**: Context-aware button activation based on game state
 
 ### 🎨 **CSS Architecture**
 - **Unified design system**: `unified-design.css` contains authoritative styles and design tokens

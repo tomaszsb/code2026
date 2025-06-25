@@ -272,7 +272,7 @@ function ActionPanel() {
             currentPlayer: currentPlayer,
             gameStateManager: gameStateManager,
             currentSpace: currentPlayer?.position,
-            spaceData: currentPlayer?.position && window.CSVDatabase?.loaded ? 
+            spaceData: currentPlayer?.position && window.CSVDatabase && window.CSVDatabase.loaded ? 
                 window.CSVDatabase.spaces.find(currentPlayer.position, currentPlayer.visitType || 'First') : null,
             onSpaceActionCompleted: handleSpaceActionCompleted,
             onSpaceActionsStateChange: handleSpaceActionsStateChange

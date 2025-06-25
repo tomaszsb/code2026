@@ -20,7 +20,7 @@ function GameBoard() {
     
     // Update available moves when current player or position changes
     useEffect(() => {
-        if (currentPlayer) {
+        if (currentPlayer && window.CSVDatabase && window.CSVDatabase.loaded) {
             const currentSpaceData = window.CSVDatabase.spaces.find(
                 currentPlayer.position, 
                 currentPlayer.visitType || 'First'
@@ -46,6 +46,8 @@ function GameBoard() {
     
     // Handle space selection - only updates Space Explorer, never moves player
     const handleSpaceClick = useCallback((spaceName) => {
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
+        
         const spaceData = window.CSVDatabase.spaces.find(spaceName, 'First');
         
         // Check if this is a valid move (for display purposes only)
@@ -66,7 +68,7 @@ function GameBoard() {
     
     // Handle player move with CSV-driven logic
     const handleMovePlayer = useCallback((spaceName, visitType = 'First') => {
-        if (!currentPlayer) return;
+        if (!currentPlayer || !window.CSVDatabase || !window.CSVDatabase.loaded) return;
         
         // Get space data to determine effects
         const spaceData = window.CSVDatabase.spaces.find(spaceName, visitType);
@@ -122,6 +124,8 @@ function GameBoard() {
     
     // Process card effects from CSV
     const processCardEffect = (cardEffect, cardType, player) => {
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
+        
         if (cardEffect.includes('Draw')) {
             const drawCount = parseInt(cardEffect.match(/\d+/)?.[0]) || 1;
             const cards = window.CSVDatabase.cards.query({ card_type: cardType });
@@ -153,6 +157,8 @@ function GameBoard() {
     
     // Take action on current space (dice or direct action)
     const takeAction = () => {
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
+        
         const spaceData = window.CSVDatabase.spaces.find(
             currentPlayer.position, 
             currentPlayer.visitType || 'First'
@@ -340,6 +346,8 @@ function GameBoard() {
  * SpaceDisplay - Shows current space information
  */
 function SpaceDisplay({ spaceName, visitType, onMoveRequest }) {
+    if (!window.CSVDatabase || !window.CSVDatabase.loaded) return null;
+    
     const spaceData = window.CSVDatabase.spaces.find(spaceName, visitType);
     
     if (!spaceData) {
@@ -435,7 +443,7 @@ function VisualBoard({ gameState, onSpaceClick, availableMoves, boardState, curr
     
     useEffect(() => {
         // Load all unique spaces for the board
-        if (window.CSVDatabase.loaded) {
+        if (window.CSVDatabase && window.CSVDatabase.loaded) {
             const spaces = window.CSVDatabase.spaces.query();
             // Get unique spaces by name (ignoring visit type for board display)
             const uniqueSpaces = spaces.reduce((acc, space) => {

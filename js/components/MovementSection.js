@@ -106,6 +106,7 @@ function MovementSection({
             visitType = movementEngine.getVisitType(currentPlayer, spaceName);
         }
         
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return null;
         return window.CSVDatabase.spaces.find(spaceName, visitType);
     };
 

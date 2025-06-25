@@ -46,6 +46,8 @@ function SpaceExplorer() {
     
     // Explore related space
     const exploreSpace = useCallback((spaceName) => {
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
+        
         const spaceData = window.CSVDatabase.spaces.find(spaceName, 'First');
         if (spaceData) {
             gameStateManager.emit('spaceSelected', {
@@ -269,8 +271,10 @@ function DiceOutcomes({ spaceName, spaceData }) {
     const [diceData, setDiceData] = useState(null);
     
     useEffect(() => {
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
+        
         // Get dice data for this space
-        const diceOutcomes = window.CSVDatabase?.dice?.query({ space: spaceName });
+        const diceOutcomes = window.CSVDatabase.dice.query({ space: spaceName });
         if (diceOutcomes && diceOutcomes.length > 0) {
             setDiceData(diceOutcomes[0]);
         }

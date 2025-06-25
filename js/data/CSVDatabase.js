@@ -85,6 +85,7 @@ class CSVDatabase {
                 headers.forEach((header, index) => {
                     row[header] = values[index]?.trim() || '';
                 });
+                
                 rows.push(row);
             }
         }

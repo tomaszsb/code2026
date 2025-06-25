@@ -46,6 +46,10 @@ function DiceRollSection({
             const diceValue = Math.floor(Math.random() * 6) + 1;
             
             // Get current space data
+            if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+                console.error('DiceRollSection: CSVDatabase not loaded');
+                return;
+            }
             const currentSpaceData = window.CSVDatabase.spaces.find(currentPlayer.position, 'First');
             
             // Look up dice outcome from CSV

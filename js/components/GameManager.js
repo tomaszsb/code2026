@@ -7,9 +7,21 @@
 function GameManager() {
     const [gameState, gameStateManager] = useGameState();
     
+    // Initialize MovementEngine for advanced movement logic
+    const [movementEngine] = React.useState(() => {
+        const engine = new window.MovementEngine();
+        engine.initialize(gameStateManager);
+        return engine;
+    });
+    
     // Handle player movement
     useEventListener('movePlayerRequest', ({ playerId, spaceName, visitType }) => {
         try {
+            // Check if CSVDatabase is loaded before accessing it
+            if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+                throw new Error('CSVDatabase not loaded yet');
+            }
+            
             // Validate the space exists
             const spaceData = window.CSVDatabase.spaces.find(spaceName, visitType);
             if (!spaceData) {
@@ -23,8 +35,18 @@ function GameManager() {
             // This captures clean state when entering the space
             gameStateManager.savePlayerSnapshot(playerId);
             
-            // Process space effects
-            processSpaceEffects(playerId, spaceData);
+            // Get player object for MovementEngine
+            const player = gameState.players.find(p => p.id === playerId);
+            if (player && movementEngine) {
+                // Use MovementEngine for advanced space effect processing
+                const currentSpaceData = movementEngine.getSpaceData(spaceName, visitType || 'First');
+                if (currentSpaceData) {
+                    movementEngine.applySpaceEffects(player, currentSpaceData, visitType || 'First');
+                }
+            } else {
+                // Fallback to legacy space effects processing
+                processSpaceEffects(playerId, spaceData);
+            }
             
         } catch (error) {
             gameStateManager.handleError(error, 'Player Movement');
