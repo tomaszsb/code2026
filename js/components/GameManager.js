@@ -23,7 +23,7 @@ function GameManager() {
             }
             
             // Validate the space exists
-            const spaceData = window.CSVDatabase.spaces.find(spaceName, visitType);
+            const spaceData = window.CSVDatabase.spaceContent.find(spaceName, visitType);
             if (!spaceData) {
                 throw new Error(`Space ${spaceName}/${visitType} not found in CSV data`);
             }
@@ -56,9 +56,15 @@ function GameManager() {
     // Handle dice roll outcomes
     useEventListener('diceRollComplete', ({ playerId, spaceName, visitType, rollValue }) => {
         try {
-            const outcome = window.CSVDatabase.diceOutcomes.find(spaceName, visitType);
-            if (outcome) {
-                processDiceOutcome(playerId, outcome);
+            const diceConfig = window.CSVDatabase.diceOutcomes.find(spaceName, visitType);
+            if (diceConfig) {
+                // Get the destination space for the specific dice roll
+                const destination = diceConfig[`roll_${rollValue}`];
+                if (destination) {
+                    console.log(`GameManager: Dice roll ${rollValue} moving player ${playerId} from ${spaceName} to ${destination}`);
+                    // Move player to the destination space
+                    movePlayerToSpace(playerId, destination, 'First');
+                }
             }
         } catch (error) {
             gameStateManager.handleError(error, 'Dice Roll');
@@ -66,9 +72,9 @@ function GameManager() {
     });
     
     // Handle dice outcome processing
-    useEventListener('processDiceOutcome', ({ playerId, outcome, spaceName, visitType }) => {
+    useEventListener('processDiceOutcome', ({ playerId, outcome, cardType, spaceName, visitType }) => {
         try {
-            processDiceOutcome(playerId, outcome, spaceName, visitType);
+            processDiceOutcome(playerId, outcome, cardType, spaceName, visitType);
         } catch (error) {
             gameStateManager.handleError(error, 'Dice Outcome Processing');
         }
@@ -195,7 +201,7 @@ function GameManager() {
             return;
         }
         
-        const availableCards = window.CSVDatabase.cards.query({type: cardType});
+        const availableCards = window.CSVDatabase.cards.query({card_type: cardType});
         console.log(`GameManager: Found ${availableCards.length} available ${cardType} cards`);
         
         if (availableCards.length === 0) {
@@ -346,8 +352,8 @@ function GameManager() {
     /**
      * Process dice roll outcomes from CSV data
      */
-    function processDiceOutcome(playerId, outcome, spaceName, visitType) {
-        console.log(`GameManager: processDiceOutcome called with playerId=${playerId}, outcome="${outcome}", spaceName=${spaceName}, visitType=${visitType}`);
+    function processDiceOutcome(playerId, outcome, cardType, spaceName, visitType) {
+        console.log(`GameManager: processDiceOutcome called with playerId=${playerId}, outcome="${outcome}", cardType="${cardType}", spaceName=${spaceName}, visitType=${visitType}`);
         
         if (!outcome || outcome === 'No change') {
             console.log('GameManager: No outcome to process or outcome is "No change"');
@@ -356,12 +362,12 @@ function GameManager() {
         
         // Check if outcome is a card action
         if (outcome.includes('Draw') || outcome.includes('Replace') || outcome.includes('Remove')) {
-            // Parse card action from outcome
-            const cardType = ComponentUtils.parseCardTypeFromOutcome(outcome);
-            console.log(`GameManager: Parsed card type "${cardType}" from outcome "${outcome}"`);
+            // Use the provided cardType if available, otherwise parse from outcome
+            const effectiveCardType = cardType || ComponentUtils.parseCardTypeFromOutcome(outcome);
+            console.log(`GameManager: Using card type "${effectiveCardType}" for outcome "${outcome}"`);
             
-            if (cardType) {
-                processCardAction(playerId, cardType, outcome);
+            if (effectiveCardType) {
+                processCardAction(playerId, effectiveCardType, outcome);
             } else {
                 // If no specific card type, default to drawing any type of card
                 console.log(`GameManager: No specific card type found, defaulting to 'W' card for outcome "${outcome}"`);

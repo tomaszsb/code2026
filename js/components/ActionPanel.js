@@ -157,7 +157,7 @@ function ActionPanel() {
     // Get available moves and check if current space requires dice
     useEffect(() => {
         if (currentPlayer && window.CSVDatabase && window.CSVDatabase.loaded) {
-            const currentSpaceData = window.CSVDatabase.spaces.find(
+            const currentSpaceData = window.CSVDatabase.spaceContent.find(
                 currentPlayer.position, 
                 currentPlayer.visitType || 'First'
             );
@@ -273,7 +273,7 @@ function ActionPanel() {
             gameStateManager: gameStateManager,
             currentSpace: currentPlayer?.position,
             spaceData: currentPlayer?.position && window.CSVDatabase && window.CSVDatabase.loaded ? 
-                window.CSVDatabase.spaces.find(currentPlayer.position, currentPlayer.visitType || 'First') : null,
+                window.CSVDatabase.spaceContent.find(currentPlayer.position, currentPlayer.visitType || 'First') : null,
             onSpaceActionCompleted: handleSpaceActionCompleted,
             onSpaceActionsStateChange: handleSpaceActionsStateChange
         }),

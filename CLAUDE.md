@@ -179,7 +179,15 @@ gameState.players?.find()  // Defensive
 
 ## Recent Improvements
 
-### ✅ **Phase 20: Legacy Code Removal & Architecture Finalization (Latest)**
+### ✅ **Phase 21: Critical Bug Fixes & React Optimization (Latest)**
+- **Legacy API Violations Fixed**: Corrected 18+ critical violations where components used removed `spaces` API
+- **Database Initialization Fixed**: Added missing `cleanArchitecture = true` flag that broke movement API completely  
+- **Dice Functionality Restored**: Fixed dice rolls to trigger card drawing, money/time effects, and player movement
+- **Phase Display Implemented**: Phases now show in left panel, center board, and mobile tabs via GAME_CONFIG.csv
+- **Card Drawing Pipeline Fixed**: Resolved missing cardType parameter and incorrect field queries
+- **React Warnings Eliminated**: Fixed all key prop warnings by replacing `&&` with spread array conditional rendering
+
+### ✅ **Phase 20: Legacy Code Removal & Architecture Finalization**
 - **Complete Legacy Removal**: All legacy CSV files (Spaces.csv, DiceRoll Info.csv) and APIs removed
 - **Clean API Migration**: Fixed all legacy `dice.getRollOutcome()` and `cards.byType()` calls across 16 components
 - **ComponentUtils Modernization**: Updated utility functions to work with clean CSV architecture

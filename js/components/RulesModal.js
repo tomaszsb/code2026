@@ -11,8 +11,8 @@ function RulesModal({ show, onClose }) {
             return { first: null, subsequent: null };
         }
         
-        const rulesSpaceFirst = window.CSVDatabase.spaces.find('START-QUICK-PLAY-GUIDE', 'First');
-        const rulesSpaceSubsequent = window.CSVDatabase.spaces.find('START-QUICK-PLAY-GUIDE', 'Subsequent');
+        const rulesSpaceFirst = window.CSVDatabase.spaceContent.find('START-QUICK-PLAY-GUIDE', 'First');
+        const rulesSpaceSubsequent = window.CSVDatabase.spaceContent.find('START-QUICK-PLAY-GUIDE', 'Subsequent');
         
         return {
             first: rulesSpaceFirst,

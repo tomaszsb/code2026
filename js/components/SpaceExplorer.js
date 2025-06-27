@@ -48,7 +48,7 @@ function SpaceExplorer() {
     const exploreSpace = useCallback((spaceName) => {
         if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
         
-        const spaceData = window.CSVDatabase.spaces.find(spaceName, 'First');
+        const spaceData = window.CSVDatabase.spaceContent.find(spaceName, 'First');
         if (spaceData) {
             gameStateManager.emit('spaceSelected', {
                 spaceName,
@@ -274,7 +274,7 @@ function DiceOutcomes({ spaceName, spaceData }) {
         if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
         
         // Get dice data for this space
-        const diceOutcomes = window.CSVDatabase.dice.query({ space: spaceName });
+        const diceOutcomes = window.CSVDatabase.diceOutcomes.query({ space: spaceName });
         if (diceOutcomes && diceOutcomes.length > 0) {
             setDiceData(diceOutcomes[0]);
         }

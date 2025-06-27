@@ -26,7 +26,7 @@ function LogicSpaceManager() {
 
         // Query CSV for current space data
         if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
-        const spaceData = window.CSVDatabase.spaces.find(player.position, player.visitType || 'First');
+        const spaceData = window.CSVDatabase.spaceContent.find(player.position, player.visitType || 'First');
         
         if (spaceData && spaceData.Event) {
             // Check if Event contains logic decision markers OR if space name indicates decision
@@ -65,7 +65,7 @@ function LogicSpaceManager() {
         }
         
         if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
-        const spaceData = window.CSVDatabase.spaces.find(
+        const spaceData = window.CSVDatabase.spaceContent.find(
             state.currentPlayer.position, 
             state.currentPlayer.visitType || 'First'
         );

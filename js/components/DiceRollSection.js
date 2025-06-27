@@ -52,33 +52,62 @@ function DiceRollSection({
             }
             const currentSpaceData = window.CSVDatabase.spaceContent.find(currentPlayer.position, 'First');
             
-            // Look up dice outcome from CSV
+            // Look up dice effects and movement outcomes
             let diceOutcomeResult = null;
+            let destination = null;
+            
             if (currentSpaceData) {
-                // Find dice configuration for this space
-                const diceConfig = window.CSVDatabase.diceOutcomes.find(
+                // Check for dice effects (cards/money/time)
+                const diceEffects = window.CSVDatabase.diceEffects.query({
+                    space_name: currentPlayer.position,
+                    visit_type: currentPlayer.visitType || 'First'
+                });
+                
+                if (diceEffects.length > 0) {
+                    for (const effect of diceEffects) {
+                        const rollEffect = effect[`roll_${diceValue}`];
+                        if (rollEffect && rollEffect !== 'No change') {
+                            if (!diceOutcomeResult) diceOutcomeResult = {};
+                            
+                            if (effect.effect_type === 'cards') {
+                                diceOutcomeResult.cards = rollEffect;
+                                diceOutcomeResult.cardType = effect.card_type;
+                            } else if (effect.effect_type === 'money') {
+                                diceOutcomeResult.money = rollEffect;
+                            } else if (effect.effect_type === 'time') {
+                                diceOutcomeResult.time = rollEffect;
+                            }
+                        }
+                    }
+                }
+                
+                // Check for movement destinations
+                const movementConfig = window.CSVDatabase.diceOutcomes.find(
                     currentPlayer.position,
-                    'First'
+                    currentPlayer.visitType || 'First'
                 );
                 
-                if (diceConfig) {
-                    // Get the outcome for the specific dice value (1-6)
-                    const outcome = diceConfig[diceValue.toString()]; // Use dice value as column name
-                    
-                    if (outcome) {
-                        diceOutcomeResult = {
-                            cards: outcome,
-                            money: '0',
-                            time: '0'
-                        };
+                if (movementConfig) {
+                    destination = movementConfig[`roll_${diceValue}`];
+                    if (destination) {
+                        if (!diceOutcomeResult) diceOutcomeResult = {};
+                        diceOutcomeResult.destination = destination;
                     }
                 }
             }
 
             // Format outcome for display
-            const formattedOutcome = diceOutcomeResult ? 
-                `${diceOutcomeResult.cards || 'No cards'} | ${diceOutcomeResult.money ? '$' + diceOutcomeResult.money + 'k' : '$0'} | ${diceOutcomeResult.time ? diceOutcomeResult.time + ' days' : '0 days'}` :
-                `No outcome data for roll ${diceValue}`;
+            let formattedOutcome = `Roll ${diceValue}: `;
+            if (diceOutcomeResult) {
+                const parts = [];
+                if (diceOutcomeResult.cards) parts.push(diceOutcomeResult.cards);
+                if (diceOutcomeResult.money) parts.push(`$${diceOutcomeResult.money}`);
+                if (diceOutcomeResult.time) parts.push(`${diceOutcomeResult.time} days`);
+                if (diceOutcomeResult.destination) parts.push(`Move to ${diceOutcomeResult.destination}`);
+                formattedOutcome += parts.join(' | ') || 'No effect';
+            } else {
+                formattedOutcome += 'No effect';
+            }
 
             // Update state with results
             onDiceRoll({
@@ -89,53 +118,59 @@ function DiceRollSection({
                 diceOutcomeText: formattedOutcome
             });
 
-            // Process dice outcome using GameManager
+            // Process dice effects if any
             if (diceOutcomeResult) {
-                // Convert dice outcome object to string format that GameManager expects
-                let outcomeString = '';
-                if (diceOutcomeResult.cards && diceOutcomeResult.cards !== 'None') {
-                    outcomeString = diceOutcomeResult.cards;
-                }
-                
-                if (outcomeString) {
+                // Process card effects
+                if (diceOutcomeResult.cards && diceOutcomeResult.cardType) {
                     gameStateManager.emit('processDiceOutcome', {
                         playerId: currentPlayer.id,
-                        outcome: outcomeString,
+                        outcome: diceOutcomeResult.cards,
+                        cardType: diceOutcomeResult.cardType,
                         spaceName: currentPlayer.position,
-                        visitType: 'First'
+                        visitType: currentPlayer.visitType || 'First'
                     });
                 }
 
-                // Handle money changes separately
-                if (diceOutcomeResult.money && diceOutcomeResult.money !== '0') {
-                    const moneyChange = parseInt(diceOutcomeResult.money);
-                    if (!isNaN(moneyChange)) {
+                // Process money effects
+                if (diceOutcomeResult.money) {
+                    let moneyAmount = 0;
+                    if (diceOutcomeResult.money.includes('%')) {
+                        // Percentage-based (like fees)
+                        const percentage = parseFloat(diceOutcomeResult.money.replace('%', ''));
+                        // Apply percentage to player's current money (this would need player data)
+                        moneyAmount = Math.floor((currentPlayer.money || 0) * percentage / 100);
+                    } else {
+                        moneyAmount = parseInt(diceOutcomeResult.money);
+                    }
+                    
+                    if (!isNaN(moneyAmount) && moneyAmount !== 0) {
                         gameStateManager.emit('moneyChanged', {
                             playerId: currentPlayer.id,
-                            amount: moneyChange,
+                            amount: moneyAmount,
                             source: 'dice_roll'
                         });
                     }
                 }
 
-                // Handle time changes separately
-                if (diceOutcomeResult.time && diceOutcomeResult.time !== '0') {
-                    const timeChange = parseInt(diceOutcomeResult.time);
-                    if (!isNaN(timeChange)) {
+                // Process time effects
+                if (diceOutcomeResult.time) {
+                    const timeAmount = parseInt(diceOutcomeResult.time);
+                    if (!isNaN(timeAmount) && timeAmount !== 0) {
                         gameStateManager.emit('timeChanged', {
                             playerId: currentPlayer.id,
-                            amount: timeChange,
+                            amount: timeAmount,
                             source: 'dice_roll'
                         });
                     }
                 }
             }
 
-            // Emit completion event
-            gameStateManager.emit('diceRollCompleted', {
+            // Emit completion event for movement (if destination exists)
+            gameStateManager.emit('diceRollComplete', {
                 playerId: currentPlayer.id,
-                diceValue: diceValue,
-                outcome: diceOutcomeResult
+                spaceName: currentPlayer.position,
+                visitType: currentPlayer.visitType || 'First',
+                rollValue: diceValue
             });
 
         } catch (error) {

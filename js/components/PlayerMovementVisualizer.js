@@ -77,8 +77,8 @@ function PlayerMovementVisualizer() {
     const calculateMovementPath = (fromSpace, toSpace) => {
         // Use CSV data to find space connections
         if (!window.CSVDatabase || !window.CSVDatabase.loaded) return null;
-        const fromSpaceData = window.CSVDatabase.spaces.find(fromSpace, 'First');
-        const toSpaceData = window.CSVDatabase.spaces.find(toSpace, 'First');
+        const fromSpaceData = window.CSVDatabase.spaceContent.find(fromSpace, 'First');
+        const toSpaceData = window.CSVDatabase.spaceContent.find(toSpace, 'First');
         
         if (!fromSpaceData || !toSpaceData) return null;
 

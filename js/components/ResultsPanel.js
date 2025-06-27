@@ -119,7 +119,7 @@ function ResultsPanel() {
         // Calculate average phase progress
         let phaseProgress = {};
         gameState.players.forEach(player => {
-            const spaceData = window.CSVDatabase.spaces.find(player.position, 'First');
+            const spaceData = window.CSVDatabase.spaceContent.find(player.position, 'First');
             if (spaceData && spaceData.phase) {
                 phaseProgress[spaceData.phase] = (phaseProgress[spaceData.phase] || 0) + 1;
             }

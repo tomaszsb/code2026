@@ -26,6 +26,7 @@ class CSVDatabase {
         this.debug = false;
         this.loaded = false;
         this.loadStartTime = null;
+        this.cleanArchitecture = true;
     }
 
     /**
@@ -301,6 +302,24 @@ class CSVDatabase {
         };
     }
 
+    get diceEffects() {
+        return {
+            find: (spaceName, visitType) => {
+                return this.data.diceEffects.find(row => 
+                    row.space_name === spaceName && row.visit_type === visitType
+                );
+            },
+            query: (filters) => {
+                if (!filters || typeof filters !== 'object') {
+                    return this.data.diceEffects;
+                }
+                return this.data.diceEffects.filter(row => {
+                    return Object.entries(filters).every(([key, value]) => row[key] === value);
+                });
+            }
+        };
+    }
+
     get gameConfig() {
         return {
             find: (spaceName) => {
@@ -348,7 +367,7 @@ class CSVDatabase {
             if (this.cleanArchitecture) {
                 console.log(`  🔄 Clean Architecture: ${this.data.movement.length} movements, ${this.data.spaceEffects.length} effects, ${this.data.spaceContent.length} content`);
             }
-            console.log(`  📦 Legacy Support: ${this.data.spaces.length} spaces, ${this.data.dice.length} dice, ${this.data.cards.length} cards`);
+            console.log(`  📦 Cards: ${this.data.cards.length} cards loaded`);
             console.log(`  🏗️ Primary System: ${this.cleanArchitecture ? 'Clean Architecture' : 'Legacy'}`);
         }
     }
@@ -383,9 +402,7 @@ class CSVDatabase {
                 spaceContent: this.data.spaceContent.length,
                 diceOutcomes: this.data.diceOutcomes.length,
                 gameConfig: this.data.gameConfig.length,
-                cards: this.data.cards.length,
-                spacesLegacy: this.data.spaces.length,
-                diceLegacy: this.data.dice.length
+                cards: this.data.cards.length
             }
         };
     }

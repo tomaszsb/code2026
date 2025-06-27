@@ -64,33 +64,33 @@ function PlayerStatusPanel() {
         className: 'player-status-panel'
     }, [
         // Player Header
-        window.PlayerHeader && React.createElement(PlayerHeader, {
+        ...(window.PlayerHeader ? [React.createElement(PlayerHeader, {
             key: 'player-header',
             player: currentPlayer,
             currentPlayerIndex: gameState.currentPlayer,
             totalPlayers: gameState.players.length
-        }),
+        })] : []),
 
         // Current Space Info
-        window.CurrentSpaceInfo && React.createElement(CurrentSpaceInfo, {
+        ...(window.CurrentSpaceInfo ? [React.createElement(CurrentSpaceInfo, {
             key: 'space-info',
             player: currentPlayer
-        }),
+        })] : []),
 
         // Player Resources
-        window.PlayerResources && React.createElement(PlayerResources, {
+        ...(window.PlayerResources ? [React.createElement(PlayerResources, {
             key: 'resources',
             player: currentPlayer
-        }),
+        })] : []),
 
         // Cards in Hand
-        window.CardsInHand && React.createElement(CardsInHand, {
+        ...(window.CardsInHand ? [React.createElement(CardsInHand, {
             key: 'cards-section',
             player: currentPlayer,
             onCardSelect: handleCardSelect,
             cardsExpanded: panelState.cardsExpanded,
             onToggleExpanded: toggleCardsExpanded
-        }),
+        })] : []),
 
         // Action Panel Section - Integrated into Player Status
         React.createElement('div', {
@@ -106,12 +106,12 @@ function PlayerStatusPanel() {
         ]),
 
         // Card Details Modal
-        window.CardModal && React.createElement(CardModal, {
+        ...(window.CardModal ? [React.createElement(CardModal, {
             key: 'card-modal',
             selectedCard: panelState.selectedCard,
             isVisible: panelState.showCardDetails,
             onClose: closeCardDetails
-        })
+        })] : [])
     ]);
 }
 

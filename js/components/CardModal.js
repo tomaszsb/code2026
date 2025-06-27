@@ -71,6 +71,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
             }
         }, [
             React.createElement('button', {
+                key: 'close-button',
                 className: 'close-button',
                 onClick: onClose,
                 style: {
@@ -86,6 +87,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
             }, '×'),
             
             React.createElement('div', {
+                key: 'card-container',
                 style: {
                     width: '400px',
                     height: '600px',
@@ -95,6 +97,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                 onClick: flipCard
             }, [
                 React.createElement('div', {
+                    key: 'card-flip-inner',
                     style: {
                         width: '100%',
                         height: '100%',
@@ -106,6 +109,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                 }, [
                     // Front side (card details)
                     React.createElement('div', {
+                        key: 'card-front',
                         style: {
                             position: 'absolute',
                             width: '100%',
@@ -149,6 +153,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                         
                         // Card name with small graphic on left
                         React.createElement('div', {
+                            key: 'card-name-section',
                             style: {
                                 padding: '20px',
                                 borderBottom: '1px solid #dee2e6',
@@ -191,6 +196,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                         
                         // Scrollable card content area
                         React.createElement('div', {
+                            key: 'card-content-area',
                             style: {
                                 padding: '20px',
                                 maxHeight: '300px',
@@ -227,22 +233,22 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                         }, 'Costs & Requirements'),
                                         
                                         // Work Cost
-                                        card.work_cost && React.createElement('div', {
+                                        ...(card.work_cost ? [React.createElement('div', {
                                             key: 'work-cost',
                                             style: { marginBottom: '8px' }
                                         }, [
                                             React.createElement('strong', {key: 'work-cost-label'}, 'Work Cost: '),
                                             React.createElement('span', {key: 'work-cost-value'}, `$${parseInt(card.work_cost).toLocaleString()}`)
-                                        ]),
+                                        ])] : []),
                                         
                                         // Money Cost
-                                        card.money_cost && React.createElement('div', {
+                                        ...(card.money_cost ? [React.createElement('div', {
                                             key: 'money-cost',
                                             style: { marginBottom: '8px' }
                                         }, [
                                             React.createElement('strong', {key: 'money-cost-label'}, 'Money Cost: '),
                                             React.createElement('span', {key: 'money-cost-value'}, card.money_cost)
-                                        ])
+                                        ])] : [])
                                     ]),
                                     
                                     // Restrictions section
@@ -268,22 +274,22 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                         }, 'Restrictions & Limits'),
                                         
                                         // Work Type Restriction
-                                        card.work_type_restriction && React.createElement('div', {
+                                        ...(card.work_type_restriction ? [React.createElement('div', {
                                             key: 'work-type',
                                             style: { marginBottom: '8px' }
                                         }, [
                                             React.createElement('strong', {key: 'work-type-label'}, 'Work Type: '),
                                             React.createElement('span', {key: 'work-type-value'}, card.work_type_restriction)
-                                        ]),
+                                        ])] : []),
                                         
                                         // Space Restriction
-                                        card.space_restriction && React.createElement('div', {
+                                        ...(card.space_restriction ? [React.createElement('div', {
                                             key: 'space-restriction',
                                             style: { marginBottom: '8px' }
                                         }, [
                                             React.createElement('strong', {key: 'space-restriction-label'}, 'Space: '),
                                             React.createElement('span', {key: 'space-restriction-value'}, card.space_restriction)
-                                        ])
+                                        ])] : [])
                                     ])
                                 ];
                             } else {
@@ -356,8 +362,8 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                                 key: `effect-${index}`,
                                                 style: { marginBottom: '8px' }
                                             }, [
-                                                React.createElement('strong', {key: 'label'}, `${label}: `),
-                                                React.createElement('span', {key: 'value'}, value)
+                                                React.createElement('strong', {key: `effect-label-${index}`}, `${label}: `),
+                                                React.createElement('span', {key: `effect-value-${index}`}, value)
                                             ])
                                         )
                                     ]));
@@ -400,8 +406,8 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                                 key: `info-${index}`,
                                                 style: { marginBottom: '8px' }
                                             }, [
-                                                React.createElement('strong', {key: 'label'}, `${label}: `),
-                                                React.createElement('span', {key: 'value'}, value)
+                                                React.createElement('strong', {key: `info-label-${index}`}, `${label}: `),
+                                                React.createElement('span', {key: `info-value-${index}`}, value)
                                             ])
                                         )
                                     ]));
@@ -441,8 +447,8 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                                 key: `usage-${index}`,
                                                 style: { marginBottom: '8px' }
                                             }, [
-                                                React.createElement('strong', {key: 'label'}, `${label}: `),
-                                                React.createElement('span', {key: 'value'}, value)
+                                                React.createElement('strong', {key: `usage-label-${index}`}, `${label}: `),
+                                                React.createElement('span', {key: `usage-value-${index}`}, value)
                                             ])
                                         )
                                     ]));
@@ -454,6 +460,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                         
                         // Card footer
                         React.createElement('div', {
+                            key: 'card-footer',
                             style: {
                                 background: '#f8f9fa',
                                 padding: '10px 20px',
@@ -470,6 +477,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
 
                     // Back side (Unravel logo)
                     React.createElement('div', {
+                        key: 'card-back',
                         style: {
                             position: 'absolute',
                             width: '100%',
@@ -489,6 +497,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                         }
                     }, [
                         React.createElement('img', {
+                            key: 'unravel-logo',
                             src: './graphics/My ChatGPT image.png',
                             alt: 'Unravel Logo',
                             style: {
@@ -502,6 +511,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                             }
                         }),
                         React.createElement('h3', {
+                            key: 'unravel-title',
                             style: {
                                 fontSize: '24px',
                                 fontWeight: 'bold',
@@ -510,6 +520,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                             }
                         }, 'UNRAVEL'),
                         React.createElement('p', {
+                            key: 'game-subtitle',
                             style: {
                                 fontSize: '14px',
                                 opacity: 0.8,
@@ -517,6 +528,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                             }
                         }, 'Project Management Game'),
                         React.createElement('p', {
+                            key: 'flip-instruction',
                             style: {
                                 fontSize: '12px',
                                 opacity: 0.6,

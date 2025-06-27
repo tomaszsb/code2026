@@ -8,12 +8,18 @@ function CurrentSpaceInfo({ player }) {
     const getCurrentSpaceInfo = () => {
         if (!player || !window.CSVDatabase || !window.CSVDatabase.loaded) return null;
         
-        const spaceData = window.CSVDatabase.spaces.find(
+        const spaceData = window.CSVDatabase.spaceContent.find(
             player.position, 
             player.visitType || 'First'
         );
         
-        return spaceData;
+        const configData = window.CSVDatabase.gameConfig.find(player.position);
+        
+        // Merge space content with config data for complete information
+        return spaceData ? {
+            ...spaceData,
+            phase: configData?.phase || 'N/A'
+        } : null;
     };
 
     const currentSpace = getCurrentSpaceInfo();

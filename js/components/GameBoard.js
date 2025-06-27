@@ -21,7 +21,7 @@ function GameBoard() {
     // Update available moves when current player or position changes
     useEffect(() => {
         if (currentPlayer && window.CSVDatabase && window.CSVDatabase.loaded) {
-            const currentSpaceData = window.CSVDatabase.spaces.find(
+            const currentSpaceData = window.CSVDatabase.spaceContent.find(
                 currentPlayer.position, 
                 currentPlayer.visitType || 'First'
             );
@@ -48,7 +48,7 @@ function GameBoard() {
     const handleSpaceClick = useCallback((spaceName) => {
         if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
         
-        const spaceData = window.CSVDatabase.spaces.find(spaceName, 'First');
+        const spaceData = window.CSVDatabase.spaceContent.find(spaceName, 'First');
         
         // Check if this is a valid move (for display purposes only)
         const isValidMove = availableMoves.includes(spaceName);
@@ -71,7 +71,7 @@ function GameBoard() {
         if (!currentPlayer || !window.CSVDatabase || !window.CSVDatabase.loaded) return;
         
         // Get space data to determine effects
-        const spaceData = window.CSVDatabase.spaces.find(spaceName, visitType);
+        const spaceData = window.CSVDatabase.spaceContent.find(spaceName, visitType);
         if (!spaceData) {
             gameStateManager.handleError(`Space ${spaceName}/${visitType} not found`);
             return;
@@ -159,7 +159,7 @@ function GameBoard() {
     const takeAction = () => {
         if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
         
-        const spaceData = window.CSVDatabase.spaces.find(
+        const spaceData = window.CSVDatabase.spaceContent.find(
             currentPlayer.position, 
             currentPlayer.visitType || 'First'
         );
@@ -348,7 +348,7 @@ function GameBoard() {
 function SpaceDisplay({ spaceName, visitType, onMoveRequest }) {
     if (!window.CSVDatabase || !window.CSVDatabase.loaded) return null;
     
-    const spaceData = window.CSVDatabase.spaces.find(spaceName, visitType);
+    const spaceData = window.CSVDatabase.spaceContent.find(spaceName, visitType);
     
     if (!spaceData) {
         return React.createElement('div', 
@@ -444,11 +444,17 @@ function VisualBoard({ gameState, onSpaceClick, availableMoves, boardState, curr
     useEffect(() => {
         // Load all unique spaces for the board
         if (window.CSVDatabase && window.CSVDatabase.loaded) {
-            const spaces = window.CSVDatabase.spaces.query();
-            // Get unique spaces by name (ignoring visit type for board display)
+            const spaces = window.CSVDatabase.spaceContent.query();
+            const gameConfig = window.CSVDatabase.gameConfig.query();
+            
+            // Get unique spaces by name and merge with config data for phase info
             const uniqueSpaces = spaces.reduce((acc, space) => {
                 if (!acc.find(s => s.space_name === space.space_name)) {
-                    acc.push(space);
+                    const configData = gameConfig.find(config => config.space_name === space.space_name);
+                    acc.push({
+                        ...space,
+                        phase: configData?.phase || 'MISC'
+                    });
                 }
                 return acc;
             }, []);

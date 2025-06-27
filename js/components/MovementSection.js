@@ -107,7 +107,7 @@ function MovementSection({
         }
         
         if (!window.CSVDatabase || !window.CSVDatabase.loaded) return null;
-        return window.CSVDatabase.spaces.find(spaceName, visitType);
+        return window.CSVDatabase.spaceContent.find(spaceName, visitType);
     };
 
     // Get space type for display styling
