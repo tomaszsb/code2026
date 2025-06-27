@@ -110,6 +110,16 @@ function GameManager() {
         }
     });
     
+    // Handle using cards from hand
+    useEventListener('useCard', ({ playerId, cardType, cardId, card }) => {
+        try {
+            console.log('GameManager: Received useCard event', { playerId, cardType, cardId });
+            gameStateManager.useCard(playerId, cardType, cardId, card);
+        } catch (error) {
+            gameStateManager.handleError(error, 'Use Card');
+        }
+    });
+    
     // Handle time changes (for negotiation penalties, etc.)
     useEventListener('timeChanged', ({ playerId, amount, source }) => {
         try {

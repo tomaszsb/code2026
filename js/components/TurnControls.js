@@ -63,7 +63,7 @@ function TurnControls({
         // Count required actions
         if (diceRequired) requiredActionsCount++;
         if (originalCardActionCount > 0) requiredActionsCount++; // Card actions count as 1 total action
-        if (availableMoves && availableMoves.length > 0) requiredActionsCount++; // Movement selection
+        if (availableMoves && availableMoves.length > 1) requiredActionsCount++; // Only count movement if multiple choices
 
         // Count completed actions
         if (diceRequired && hasRolled) completedActionsCount++;
@@ -72,7 +72,7 @@ function TurnControls({
         const cardActionsCompleted = originalCardActionCount - (availableCardActions ? availableCardActions.length : 0);
         if (cardActionsCompleted > 0) completedActionsCount++; // Any card action completion counts as 1
         
-        if (selectedMove) completedActionsCount++; // Movement selected
+        if (selectedMove && availableMoves && availableMoves.length > 1) completedActionsCount++; // Only count movement if choice was required
 
         const canEnd = completedActionsCount >= requiredActionsCount;
 
@@ -219,16 +219,24 @@ function TurnControls({
             });
         }
 
-        console.log('TurnControls: Reset turn state, ending turn');
+        console.log('TurnControls: Reset turn state, triggering immediate action rediscovery');
 
-        // End the turn after negotiating (player stays on same space)
+        // Immediately trigger action rediscovery before ending turn
         setTimeout(() => {
+            // Trigger spaceReentry immediately to rediscover actions
+            gameStateManager.emit('spaceReentry', {
+                playerId: currentPlayer.id,
+                spaceName: currentPlayer.position,
+                visitType: currentPlayer.visitType || 'First'
+            });
+            
+            // Then end the turn
             gameStateManager.emit('turnEnded', {
                 playerId: currentPlayer.id,
                 source: 'negotiation'
             });
-            console.log('TurnControls: Turn ended after negotiation - player remains on current space');
-        }, 500); // Small delay to ensure state is cleared first
+            console.log('TurnControls: Turn ended after negotiation with immediate action rediscovery');
+        }, 100); // Reduced delay and immediate action rediscovery
     };
 
     // Handle end turn action

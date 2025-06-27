@@ -31,6 +31,98 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
             text: window.CardUtils.getCardColor(cardType)
         };
     };
+    
+    // Check if E card can be used based on current phase
+    const canUseECard = (card) => {
+        if (!card || card.card_type !== 'E') return false;
+        if (!card.phase_restriction || card.phase_restriction === 'Any') return true;
+        
+        // Get current game phase
+        const currentPhase = getCurrentGamePhase();
+        return currentPhase === card.phase_restriction;
+    };
+    
+    // Get current game phase
+    const getCurrentGamePhase = () => {
+        if (!player || !player.position || !window.CSVDatabase || !window.CSVDatabase.loaded) {
+            return null;
+        }
+        
+        const configData = window.CSVDatabase.gameConfig.find(player.position);
+        return configData?.phase || null;
+    };
+    
+    // Handle using an E card from hand
+    const handleUseCard = (card) => {
+        if (!player || !card || card.card_type !== 'E') return;
+        
+        if (!canUseECard(card)) {
+            window.GameStateManager.emit('showMessage', {
+                type: 'warning',
+                message: 'Card Cannot Be Used',
+                description: `This card can only be used in ${card.phase_restriction} phase. Current phase: ${getCurrentGamePhase() || 'Unknown'}`
+            });
+            return;
+        }
+        
+        console.log('CardsInHand: Using E card:', card);
+        
+        // Apply card effects based on card properties
+        const effects = {
+            money: 0,
+            time: 0,
+            messages: []
+        };
+        
+        // Process general money effects
+        if (card.money_effect) {
+            const moneyEffect = parseInt(card.money_effect) || 0;
+            effects.money += moneyEffect;
+            effects.messages.push(`Money effect: ${moneyEffect >= 0 ? '+' : ''}$${moneyEffect.toLocaleString()}`);
+        }
+        
+        // Process time effects
+        if (card.time_effect) {
+            const timeEffect = parseInt(card.time_effect) || 0;
+            effects.time += timeEffect;
+            effects.messages.push(`Time effect: ${timeEffect >= 0 ? '+' : ''}${timeEffect} days`);
+        }
+        
+        // Apply effects via GameStateManager
+        if (effects.money !== 0) {
+            window.GameStateManager.emit('moneyChanged', {
+                playerId: player.id,
+                amount: effects.money,
+                source: `card_E_${card.card_id}`
+            });
+        }
+        
+        if (effects.time !== 0) {
+            window.GameStateManager.emit('timeChanged', {
+                playerId: player.id,
+                amount: effects.time,
+                source: `card_E_${card.card_id}`
+            });
+        }
+        
+        // Remove card from hand
+        window.GameStateManager.emit('useCard', {
+            playerId: player.id,
+            cardType: card.card_type,
+            cardId: card.card_id,
+            card: card
+        });
+        
+        // Show feedback message
+        const baseMessage = effects.messages.length > 0 ? effects.messages.join(', ') : 'Card effect applied';
+        window.GameStateManager.emit('showMessage', {
+            type: 'success',
+            message: `Used ${card.card_name || 'E Card'}`,
+            description: baseMessage
+        });
+        
+        console.log('CardsInHand: E card effects applied:', effects);
+    };
 
     if (!player) {
         return React.createElement('div', {
@@ -91,7 +183,6 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
                     return React.createElement('div', {
                         key: `card-${index}`,
                         className: 'card-mini',
-                        onClick: () => onCardSelect(card),
                         title: card.card_name || `${card.card_type} Card`,
                         style: {
                             backgroundColor: cardColors.bg,
@@ -99,8 +190,10 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
                             borderRadius: '8px',
                             padding: '8px',
                             margin: '4px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease'
+                            transition: 'all 0.2s ease',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px'
                         }
                     }, [
                         React.createElement('div', {
@@ -120,7 +213,56 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
                                 fontSize: '10px',
                                 marginTop: '4px'
                             }
-                        }, (card.card_name || 'Unknown').substring(0, 10) + '...')
+                        }, (card.card_name || 'Unknown').substring(0, 10) + '...'),
+                        
+                        // Only show buttons for E cards
+                        ...(card.card_type === 'E' ? [
+                            // Use card button (disabled if wrong phase)
+                            React.createElement('button', {
+                                key: 'use-button',
+                                className: `btn btn--sm ${!canUseECard(card) ? 'btn--disabled' : ''}`,
+                                onClick: (e) => {
+                                    e.stopPropagation();
+                                    handleUseCard(card);
+                                },
+                                disabled: !canUseECard(card),
+                                title: !canUseECard(card) ? `Can only be used in ${card.phase_restriction} phase` : 'Use this card',
+                                style: {
+                                    fontSize: '10px',
+                                    padding: '2px 6px',
+                                    marginTop: '2px'
+                                }
+                            }, 'Use'),
+                            
+                            // View card button
+                            React.createElement('button', {
+                                key: 'view-button',
+                                className: 'btn btn--outline btn--sm',
+                                onClick: (e) => {
+                                    e.stopPropagation();
+                                    onCardSelect(card);
+                                },
+                                style: {
+                                    fontSize: '10px',
+                                    padding: '2px 6px'
+                                }
+                            }, 'View')
+                        ] : [
+                            // Only View button for non-E cards (W, B, I, L)
+                            React.createElement('button', {
+                                key: 'view-button',
+                                className: 'btn btn--outline btn--sm',
+                                onClick: (e) => {
+                                    e.stopPropagation();
+                                    onCardSelect(card);
+                                },
+                                style: {
+                                    fontSize: '10px',
+                                    padding: '2px 6px',
+                                    marginTop: '2px'
+                                }
+                            }, 'View')
+                        ])
                     ]);
                 }) :
                 React.createElement('p', {

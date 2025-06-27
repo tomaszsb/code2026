@@ -15,11 +15,19 @@ function CurrentSpaceInfo({ player, debugMode = false }) {
         
         const configData = window.CSVDatabase.gameConfig.find(player.position);
         
-        // Merge space content with config data for complete information
-        return spaceData ? {
+        console.log('CurrentSpaceInfo debug:', {
+            playerPosition: player.position,
+            visitType: player.visitType,
+            spaceData,
+            configData,
+            phase: configData?.phase
+        });
+        
+        // Always return an object with phase, even if spaceData is null
+        return {
             ...spaceData,
             phase: configData?.phase || 'N/A'
-        } : null;
+        };
     };
 
     // Get all space data for debug mode
@@ -69,34 +77,29 @@ function CurrentSpaceInfo({ player, debugMode = false }) {
             key: 'space-card',
             className: 'space-card'
         }, [
-            React.createElement('h5', {
-                key: 'space-name',
-                className: 'space-name'
-            }, player.position || 'Unknown'),
+            // Phase • Space Name • Visit format
+            React.createElement('div', {
+                key: 'phase-space-visit',
+                className: 'space-meta-line primary'
+            }, `${currentSpace?.phase || 'UNKNOWN'} • ${player.position || 'Unknown'} • ${player.visitType === 'Subsequent' ? 'SUBSEQUENT' : 'FIRST'}`),
             
-            currentSpace && React.createElement('div', {
+            React.createElement('div', {
                 key: 'space-details',
-                className: 'space-details'
+                className: 'space-details compact'
             }, [
-                React.createElement('p', {
-                    key: 'phase',
-                    className: 'space-phase'
-                }, [
-                    React.createElement('strong', {key: 'label'}, 'Phase: '),
-                    currentSpace.phase || 'N/A'
-                ]),
                 
-                currentSpace.Event && React.createElement('p', {
+                // Event and Action on separate lines if they exist
+                currentSpace?.Event && React.createElement('div', {
                     key: 'event',
-                    className: 'space-event'
+                    className: 'space-event compact'
                 }, [
                     React.createElement('strong', {key: 'label'}, 'Event: '),
                     currentSpace.Event
                 ]),
                 
-                currentSpace.Action && React.createElement('p', {
+                currentSpace?.Action && React.createElement('div', {
                     key: 'action',
-                    className: 'space-action'
+                    className: 'space-action compact'
                 }, [
                     React.createElement('strong', {key: 'label'}, 'Action: '),
                     currentSpace.Action

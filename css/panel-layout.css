@@ -221,7 +221,6 @@
     align-items: center;
     gap: 8px;
     padding-bottom: 8px;
-    border-bottom: 1px solid #e0e0e0;
 }
 
 .subsection-title {
@@ -233,7 +232,6 @@
     align-items: center;
     gap: 6px;
     padding-bottom: 4px;
-    border-bottom: 1px solid #e0e0e0;
 }
 
 /* Player Header */
@@ -274,16 +272,15 @@
 
 /* Space Info */
 .current-space-info {
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
 }
 
 .space-card {
     background: white;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
-    padding: 14px;
+    padding: 7px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
@@ -300,6 +297,30 @@
     line-height: 1.4;
 }
 
+.space-details.compact {
+    margin: 4px 0;
+}
+
+.space-meta-line {
+    font-size: 11px;
+    color: #666;
+    margin: 2px 0;
+    font-weight: 500;
+}
+
+.space-meta-line.primary {
+    font-size: 12px;
+    color: #4285f4;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+}
+
+.space-details.compact .space-event,
+.space-details.compact .space-action {
+    margin: 2px 0;
+    font-size: 11px;
+}
+
 /* Resource Grid */
 .resource-grid {
     display: grid;
@@ -310,7 +331,7 @@
 
 .resource-item {
     background: white;
-    padding: 10px;
+    padding: 5px;
     border-radius: 8px;
     border: 1px solid #e0e0e0;
     display: flex;
@@ -348,7 +369,6 @@
     font-weight: 600;
     color: #4285f4;
     padding-bottom: 6px;
-    border-bottom: 1px solid #e0e0e0;
     margin-bottom: 6px;
 }
 
@@ -403,9 +423,8 @@
 
 /* Cards Section */
 .cards-section {
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
 }
 
 .cards-header {
@@ -479,7 +498,6 @@
 .action-section {
     margin-top: 24px;
     padding-top: 16px;
-    border-top: 2px solid var(--border-color);
 }
 
 /* Action Panel */
@@ -515,9 +533,8 @@
 
 /* Take Action Section */
 .take-action-section {
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px dashed var(--border-color);
+    margin-bottom: 10px;
+    padding-bottom: 8px;
 }
 
 .take-action-button {

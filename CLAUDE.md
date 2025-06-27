@@ -185,7 +185,24 @@ gameState.players?.find()  // Defensive
 
 ## Recent Improvements
 
-### ✅ **Phase 25: Fix End Turn Player Movement System (Latest)**
+### ✅ **Phase 27: Snake Layout Board Design (Latest)**
+- **Complete Board Redesign**: Replaced phase-grouped layout with flowing snake pattern showing all 27 spaces
+- **Responsive Wrapping**: Snake layout automatically adjusts to screen width using flex-wrap
+- **Visual Hierarchy**: Current player space 2x bigger (240×160px), destination spaces 1.5x bigger (180×120px)
+- **Flow Indicators**: Numbered circles (1-27) show progression order through project phases
+- **Enhanced UX**: Pulsing animations for available moves, green highlighting for current position
+- **Compact Design**: Optimized spacing and sizing to fit all spaces in viewport
+- **True Snake Behavior**: Spaces flow left-to-right and wrap naturally like a snake winding across screen
+
+### ✅ **Phase 26: Correct Card Usage System**
+- **Fixed Card Types**: W, B, I, L cards apply immediate effects when drawn (as intended)
+- **E Cards Only**: Only E (Expeditor) cards remain in hand for player-controlled usage
+- **Phase Restrictions**: E cards disabled until player reaches correct phase (from card's phase_restriction field)
+- **Smart UI**: Use/View buttons only on E cards, View-only buttons on immediate effect cards
+- **Proper Effects**: E cards apply money/time effects only when explicitly used by player
+- **Card Removal**: E cards removed from hand after use, preventing multiple uses
+
+### ✅ **Phase 25: Fix End Turn Player Movement System**
 - **Core Movement Fix**: End turn button now properly advances players to next space (OWNER-SCOPE-INITIATION → OWNER-FUND-INITIATION)
 - **CSV Field Mapping Fix**: Corrected critical field name mismatch in MovementEngine (space_1/space_2 → destination_1/destination_2)
 - **Event Loop Resolution**: Fixed infinite spaceReentry event loop that prevented turn completion and reset actions continuously
@@ -300,12 +317,13 @@ gameState.players?.find()  // Defensive
 
 ### 🎮 **User Interface**
 - **Three-panel responsive layout**: Player status (left) + Action controls (bottom) + Results/Explorer (right)
-- **Interactive game board**: Clickable spaces with visual feedback
-- **Enhanced card system**: 3D flip animations, type-specific filtering, Unravel branding
+- **Snake layout game board**: All 27 spaces in flowing pattern with responsive wrapping
+- **Visual hierarchy**: Current player space 2x larger, destination spaces 1.5x larger
+- **Enhanced card system**: Phase-restricted E cards, immediate effects for W/B/I/L cards
 - **Comprehensive rules modal**: CSV-driven content with proper field mapping
 - **Professional feedback system**: Toast notifications, loading states, progress indicators
 - **Unified dice system**: Single "Roll Dice & Apply Effects" button with smart action filtering
-- **Unified action buttons**: Consistent width, styling, and behavior across all action sections
+- **Compact interface**: Reduced padding and spacing for better space utilization
 
 ### 🏗️ **Technical Architecture**
 - **Event-driven communication**: Components communicate via GameStateManager events

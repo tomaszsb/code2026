@@ -468,35 +468,43 @@ function VisualBoard({ gameState, onSpaceClick, availableMoves, boardState, curr
         return React.createElement('div', { className: 'board-loading' }, 'Loading board...');
     }
     
-    // Group spaces by phase for visual organization
-    const spacesByPhase = allSpaces.reduce((acc, space) => {
-        const phase = space.phase || 'MISC';
-        if (!acc[phase]) acc[phase] = [];
-        acc[phase].push(space);
+    // Define all spaces in snake flow order for wrapping layout
+    const snakeFlow = [
+        'START-QUICK-PLAY-GUIDE', 'OWNER-SCOPE-INITIATION', 'OWNER-FUND-INITIATION', 'PM-DECISION-CHECK',
+        'OWNER-DECISION-REVIEW', 'LEND-SCOPE-CHECK', 'BANK-FUND-REVIEW', 'INVESTOR-FUND-REVIEW',
+        'ARCH-INITIATION', 'ARCH-FEE-REVIEW', 'ARCH-SCOPE-CHECK', 'ENG-INITIATION',
+        'ENG-FEE-REVIEW', 'ENG-SCOPE-CHECK', 'REG-DOB-FEE-REVIEW', 'REG-DOB-TYPE-SELECT',
+        'REG-DOB-PLAN-EXAM', 'REG-DOB-PROF-CERT', 'REG-FDNY-FEE-REVIEW', 'REG-FDNY-PLAN-EXAM',
+        'REG-DOB-AUDIT', 'REG-DOB-FINAL-REVIEW', 'CON-INITIATION', 'CON-ISSUES',
+        'CON-INSPECT', 'FINISH', 'CHEAT-BYPASS'
+    ];
+    
+    // Create space lookup for quick access
+    const spaceMap = allSpaces.reduce((acc, space) => {
+        acc[space.space_name] = space;
         return acc;
     }, {});
     
     return React.createElement('div', 
-        { className: 'visual-board' },
-        Object.entries(spacesByPhase).map(([phase, spaces]) =>
-            React.createElement('div', 
-                { key: phase, className: 'phase-section' },
-                React.createElement('h4', { className: 'phase-title' }, phase),
-                React.createElement('div', 
-                    { className: 'spaces-container' },
-                    spaces.map(space => 
-                        React.createElement(BoardSpace, {
-                            key: space.space_name,
-                            space,
-                            players: gameState.players.filter(p => p.position === space.space_name),
-                            onClick: () => onSpaceClick(space.space_name),
-                            isAvailableMove: availableMoves.includes(space.space_name),
-                            isCurrentPosition: currentPlayer && currentPlayer.position === space.space_name,
-                            isVisited: boardState.visitedSpaces.includes(space.space_name)
-                        })
-                    )
-                )
-            )
+        { className: 'visual-board snake-layout' },
+        React.createElement('div', { className: 'board-title' }, 'Project Management Board'),
+        React.createElement('div', 
+            { className: 'snake-grid' },
+            snakeFlow.map((spaceName, index) => {
+                const space = spaceMap[spaceName];
+                if (!space) return null;
+                
+                return React.createElement(BoardSpace, {
+                    key: space.space_name,
+                    space,
+                    players: gameState.players.filter(p => p.position === space.space_name),
+                    onClick: () => onSpaceClick(space.space_name),
+                    isAvailableMove: availableMoves.includes(space.space_name),
+                    isCurrentPosition: currentPlayer && currentPlayer.position === space.space_name,
+                    isVisited: boardState.visitedSpaces.includes(space.space_name),
+                    'data-order': index + 1
+                });
+            })
         )
     );
 }
