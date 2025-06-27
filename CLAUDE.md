@@ -185,7 +185,15 @@ gameState.players?.find()  // Defensive
 
 ## Recent Improvements
 
-### ✅ **Phase 22: Dice-Based Card Effects Integration (Latest)**
+### ✅ **Phase 23: Unified Dice System and UI Cleanup (Latest)**
+- **Single Button Interface**: Combined dice rolling and card effects into one "Roll Dice & Apply Effects" button
+- **Smart Action Filtering**: CardActionsSection now automatically hides dice-based card actions to prevent duplication
+- **Enhanced User Experience**: Players see dice preview ("Work: Draw 1-3") before rolling, then automatic effect application
+- **Improved Button Text**: Fixed ComponentUtils to show ranges like "Draw 1-3" instead of "Draw dice"
+- **Debugging Infrastructure**: Added comprehensive logging for dice action detection and filtering
+- **Clean UI Architecture**: Eliminated confusing dual dice buttons while preserving separate fixed-amount actions
+
+### ✅ **Phase 22: Dice-Based Card Effects Integration**
 - **Hybrid CSV Architecture**: Enhanced SPACE_EFFECTS.csv with `use_dice` column for dice-based randomization
 - **EffectsEngine Enhanced**: Added dice lookup system that references DICE_EFFECTS.csv for variable card amounts
 - **Original Game Logic Restored**: Card types and dice-based amounts now match original Spaces.csv design
@@ -276,6 +284,7 @@ gameState.players?.find()  // Defensive
 - **Enhanced card system**: 3D flip animations, type-specific filtering, Unravel branding
 - **Comprehensive rules modal**: CSV-driven content with proper field mapping
 - **Professional feedback system**: Toast notifications, loading states, progress indicators
+- **Unified dice system**: Single "Roll Dice & Apply Effects" button with smart action filtering
 - **Unified action buttons**: Consistent width, styling, and behavior across all action sections
 
 ### 🏗️ **Technical Architecture**

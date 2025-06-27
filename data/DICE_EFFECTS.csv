@@ -1,6 +1,6 @@
 space_name,visit_type,effect_type,card_type,roll_1,roll_2,roll_3,roll_4,roll_5,roll_6
-OWNER-SCOPE-INITIATION,First,cards,E,Draw 1,Draw 1,Draw 2,Draw 2,Draw 3,Draw 3
-OWNER-SCOPE-INITIATION,Subsequent,cards,E,Draw 1,Draw 1,Draw 2,Draw 2,Draw 3,Draw 3
+OWNER-SCOPE-INITIATION,First,cards,W,Draw 1,Draw 1,Draw 2,Draw 2,Draw 3,Draw 3
+OWNER-SCOPE-INITIATION,Subsequent,cards,W,Draw 1,Draw 1,Draw 2,Draw 2,Draw 3,Draw 3
 ARCH-FEE-REVIEW,First,money,fee,8%,8%,10%,10%,12%,12%
 ARCH-FEE-REVIEW,Subsequent,money,fee,0%,0%,1%,1%,2%,2%
 ARCH-SCOPE-CHECK,First,cards,W,Remove 1,Draw 1,Replace 1,No change,No change,No change

@@ -68,16 +68,21 @@ function CardActionsSection({
 
     // Check if a card action is dice-based
     const isDiceBasedAction = (cardAction) => {
-        if (!currentPlayer || !window.CSVDatabase?.loaded) return false;
+        if (!currentPlayer || !window.CSVDatabase?.loaded || !window.CSVDatabase.diceEffects) {
+            console.log('CardActionsSection: isDiceBasedAction - missing dependencies');
+            return false;
+        }
         
         // Check if this space has dice effects for this card type
-        const diceEffects = window.CSVDatabase.diceEffects.query({
-            space_name: currentPlayer.position,
-            visit_type: currentPlayer.visitType || 'First',
-            card_type: cardAction.type
-        });
+        const diceEffects = window.CSVDatabase.diceEffects.data || [];
+        const matchingEffect = diceEffects.find(row => 
+            row.space_name === currentPlayer.position && 
+            row.visit_type === (currentPlayer.visitType || 'First') && 
+            row.card_type === cardAction.type
+        );
         
-        return diceEffects.length > 0;
+        console.log(`CardActionsSection: isDiceBasedAction for ${cardAction.type} at ${currentPlayer.position}:`, !!matchingEffect);
+        return !!matchingEffect;
     };
 
     // Smart filtering for card actions
@@ -87,6 +92,13 @@ function CardActionsSection({
         return availableCardActions.filter((cardAction) => {
             // Filter out dice-based card actions (these are handled by dice roll automatically)
             if (isDiceBasedAction(cardAction)) {
+                console.log(`CardActionsSection: Filtering out dice-based action: ${cardAction.type} - ${cardAction.action}`);
+                return false;
+            }
+            
+            // Temporary aggressive filter: remove any "Draw dice" actions
+            if (cardAction.action && cardAction.action.includes('dice')) {
+                console.log(`CardActionsSection: Filtering out dice action by text: ${cardAction.type} - ${cardAction.action}`);
                 return false;
             }
             
