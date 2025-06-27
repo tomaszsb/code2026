@@ -6,6 +6,17 @@
 function App({ debugMode = false, logLevel = 'info' }) {
     const { loaded, error } = useCSVData();
     const [gameState, gameManager] = useGameState();
+    const { useState } = React;
+    
+    // Card replacement modal state
+    const [cardReplacementModal, setCardReplacementModal] = useState({
+        show: false,
+        playerId: null,
+        cardType: null,
+        amount: 0,
+        playerCards: {},
+        playerName: ''
+    });
     
     // Initialize app state
     useEffect(() => {
@@ -14,6 +25,32 @@ function App({ debugMode = false, logLevel = 'info' }) {
             gameManager.emit('appReady');
         }
     }, [loaded, error]);
+    
+    // Listen for card replacement modal events
+    useEventListener('showCardReplacementModal', (data) => {
+        setCardReplacementModal({
+            show: true,
+            playerId: data.playerId,
+            cardType: data.cardType,
+            amount: data.amount,
+            playerCards: data.playerCards,
+            playerName: data.playerName
+        });
+    });
+    
+    // Handle card replacement modal actions
+    const handleCardReplacementConfirm = (selectedCardIndices) => {
+        gameManager.emit('executeCardReplacement', {
+            playerId: cardReplacementModal.playerId,
+            cardType: cardReplacementModal.cardType,
+            cardIndices: selectedCardIndices
+        });
+        setCardReplacementModal(prev => ({ ...prev, show: false }));
+    };
+    
+    const handleCardReplacementClose = () => {
+        setCardReplacementModal(prev => ({ ...prev, show: false }));
+    };
     
     // Handle errors
     if (error) {
@@ -81,7 +118,19 @@ function App({ debugMode = false, logLevel = 'info' }) {
                   ),
             
             // Debug overlay
-            debugMode && React.createElement(DebugInfo, { enabled: true })
+            debugMode && React.createElement(DebugInfo, { enabled: true }),
+            
+            // Card Replacement Modal
+            window.CardReplacementModal && React.createElement(CardReplacementModal, {
+                key: 'card-replacement-modal',
+                show: cardReplacementModal.show,
+                onClose: handleCardReplacementClose,
+                onConfirm: handleCardReplacementConfirm,
+                cardType: cardReplacementModal.cardType,
+                amount: cardReplacementModal.amount,
+                playerCards: cardReplacementModal.playerCards,
+                playerName: cardReplacementModal.playerName
+            })
         )
     );
 }

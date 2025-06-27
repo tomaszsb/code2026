@@ -50,21 +50,20 @@ function DiceRollSection({
                 console.error('DiceRollSection: CSVDatabase not loaded');
                 return;
             }
-            const currentSpaceData = window.CSVDatabase.spaces.find(currentPlayer.position, 'First');
+            const currentSpaceData = window.CSVDatabase.spaceContent.find(currentPlayer.position, 'First');
             
             // Look up dice outcome from CSV
             let diceOutcomeResult = null;
             if (currentSpaceData) {
                 // Find dice configuration for this space
-                const diceConfig = window.CSVDatabase.dice.query({
-                    space_name: currentPlayer.position,
-                    visit_type: 'First'
-                });
+                const diceConfig = window.CSVDatabase.diceOutcomes.find(
+                    currentPlayer.position,
+                    'First'
+                );
                 
-                if (diceConfig && diceConfig.length > 0) {
+                if (diceConfig) {
                     // Get the outcome for the specific dice value (1-6)
-                    const config = diceConfig[0];
-                    const outcome = config[diceValue.toString()]; // Use dice value as column name
+                    const outcome = diceConfig[diceValue.toString()]; // Use dice value as column name
                     
                     if (outcome) {
                         diceOutcomeResult = {

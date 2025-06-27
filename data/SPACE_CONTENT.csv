@@ -1,0 +1,15 @@
+space_name,visit_type,title,story,action_description,outcome_description,can_negotiate
+START-QUICK-PLAY-GUIDE,First,Getting Started,Congratulations! You are hired as the project manager.,Learn the game rules and mechanics,Understand how to play the game,No
+START-QUICK-PLAY-GUIDE,Subsequent,Strategy Guide,Now that you know the rules - here is your strategy guide,Plan your optimal path to victory,Choose the best strategy for success,No
+OWNER-SCOPE-INITIATION,First,Project Scope,The owner dreams up an idea of project scope.,Review and accept or negotiate scope,Determine initial project scope,Yes
+OWNER-SCOPE-INITIATION,Subsequent,Scope Changes,You changed the owner's mind.,Roll to determine your path,Path determined by dice roll,No
+OWNER-FUND-INITIATION,First,Initial Funding,Owner does some number crunching and comes up with their share of money.,Accept funding or negotiate for more,Take Owner's Money,Yes
+OWNER-FUND-INITIATION,Subsequent,Funding Negotiations,Owner is quite upset and comes up with a new number.,Review revised funding offer,Accept revised terms or continue,No
+PM-DECISION-CHECK,First,Strategic Decision,As project manager your first decision is to determine the direction of project.,Strategize with expeditor and choose path,Life happens and you choose a path forward,No
+PM-DECISION-CHECK,Subsequent,Reassessment,You are a thinker and need to reassess the situation.,Consider your options carefully,Staff changes and time passes,No
+LEND-SCOPE-CHECK,First,Funding Review,You need more money! The lender reviews the business plan.,Negotiate scope for better rates,Deal is struck with lender,Yes
+LEND-SCOPE-CHECK,Subsequent,More Funding,Burning through cash faster than expected.,Seek additional funding sources,More money means more scope and changes,No
+BANK-FUND-REVIEW,First,Bank Underwriting,You wait patiently as the bank underwrites the loan.,Wait for loan approval and terms,Money allows you to hire and spend,Yes
+BANK-FUND-REVIEW,Subsequent,Bank Delays,You wait impatiently for bank approval.,Credibility concerns arise,Staff leaving and time passing,No
+INVESTOR-FUND-REVIEW,First,Investor Review,You wait patiently as investors determine loan terms.,Wait for investor decision,Money allows expansion,Yes
+INVESTOR-FUND-REVIEW,Subsequent,Investor Pressure,You wait impatiently for investor approval.,Late game credibility issues,Staff and time concerns,No

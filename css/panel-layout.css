@@ -463,11 +463,11 @@
     display: inline-block;
 }
 
-.card-type-indicator.W { background: var(--primary-blue); color: white; }
-.card-type-indicator.B { background: var(--secondary-green); color: white; }
-.card-type-indicator.I { background: var(--accent-orange); color: white; }
-.card-type-indicator.L { background: var(--error-red); color: white; }
-.card-type-indicator.E { background: var(--warning-amber); color: white; }
+.card-type-indicator.W { background: var(--card-work); color: white; }
+.card-type-indicator.B { background: var(--card-bank); color: white; }
+.card-type-indicator.I { background: var(--card-investor); color: white; }
+.card-type-indicator.L { background: var(--card-life); color: white; }
+.card-type-indicator.E { background: var(--card-expeditor); color: white; }
 
 .card-name-mini {
     font-size: 10px;
@@ -500,39 +500,10 @@
     margin-top: 8px;
 }
 
-.move-button {
-    background: var(--surface-secondary);
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    padding: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: left;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
+/* Move button styles moved to unified-design.css for consistency */
+/* Remove duplicate .move-button definition to avoid conflicts */
 
-.move-button:hover {
-    background: var(--surface-hover);
-    border-color: var(--primary-color);
-}
-
-.move-button.selected {
-    background: var(--primary-light);
-    border-color: var(--primary-color);
-    color: var(--primary-dark);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-
-.move-space-name {
-    font-size: 12px;
-    font-weight: 600;
-    margin-bottom: 2px;
-}
-
-.move-space-phase {
-    font-size: 10px;
-    color: var(--text-secondary);
-}
+/* Move space styling moved to unified-design.css */
 
 .action-buttons {
     display: flex;
@@ -540,73 +511,7 @@
     margin-top: 12px;
 }
 
-.confirm-button,
-.cancel-button,
-.dice-button,
-.negotiate-button,
-.end-turn-button,
-.secondary-button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.confirm-button {
-    background: var(--success-color);
-    color: white;
-}
-
-.confirm-button:hover {
-    background: var(--success-dark);
-}
-
-.cancel-button {
-    background: var(--error-color);
-    color: white;
-}
-
-.dice-button {
-    background: var(--warning-color);
-    color: white;
-    width: 100%;
-}
-
-.negotiate-button {
-    background: var(--info-color);
-    color: white;
-    flex: 1;
-}
-
-.end-turn-button {
-    background: var(--primary-color);
-    color: white;
-    flex: 1;
-    transition: all 0.2s ease;
-}
-
-.end-turn-button:disabled,
-.end-turn-button.disabled {
-    background: #cccccc;
-    color: #666666;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-.end-turn-button:disabled:hover,
-.end-turn-button.disabled:hover {
-    background: #cccccc;
-    transform: none;
-}
-
-.secondary-button {
-    background: var(--surface-secondary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-}
+/* Button styles moved to unified-design.css - using single source of truth */
 
 /* Take Action Section */
 .take-action-section {

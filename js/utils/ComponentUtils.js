@@ -195,31 +195,47 @@ const ComponentUtils = {
         return { type: 'custom', text: actionText };
     },
     
-    // Get next spaces from space data
-    getNextSpaces: (spaceData) => {
+    // Get next spaces from space name and visit type
+    getNextSpaces: (spaceName, visitType = 'First') => {
+        if (!window.CSVDatabase?.loaded) return [];
+        const movement = window.CSVDatabase.movement.find(spaceName, visitType);
+        if (!movement) return [];
+        
         const nextSpaces = [];
         for (let i = 1; i <= 5; i++) {
             const spaceKey = `space_${i}`;
-            if (spaceData[spaceKey] && spaceData[spaceKey].trim()) {
-                nextSpaces.push(spaceData[spaceKey].trim());
+            if (movement[spaceKey] && movement[spaceKey].trim()) {
+                nextSpaces.push(movement[spaceKey].trim());
             }
         }
         return nextSpaces;
     },
     
     // Check if space requires dice roll
-    requiresDiceRoll: (spaceData) => {
-        return spaceData.requires_dice_roll === 'Yes';
+    requiresDiceRoll: (spaceName, visitType = 'First') => {
+        if (!window.CSVDatabase?.loaded) return false;
+        const diceOutcome = window.CSVDatabase.diceOutcomes.find(spaceName, visitType);
+        return diceOutcome !== null;
     },
     
     // Get card types that space affects
-    getCardTypes: (spaceData) => {
+    getCardTypes: (spaceName, visitType = 'First') => {
+        if (!window.CSVDatabase?.loaded) return [];
+        const effects = window.CSVDatabase.spaceEffects.query({
+            space_name: spaceName,
+            visit_type: visitType
+        });
+        
         const types = [];
-        if (spaceData.w_card) types.push({ type: 'W', action: spaceData.w_card });
-        if (spaceData.b_card) types.push({ type: 'B', action: spaceData.b_card });
-        if (spaceData.i_card) types.push({ type: 'I', action: spaceData.i_card });
-        if (spaceData.l_card) types.push({ type: 'L', action: spaceData.l_card });
-        if (spaceData.e_card) types.push({ type: 'E', action: spaceData.e_card });
+        effects.forEach(effect => {
+            if (effect.effect_type && effect.effect_type.includes('_cards')) {
+                const cardType = effect.effect_type.replace('_cards', '').toUpperCase();
+                types.push({ 
+                    type: cardType, 
+                    action: `Draw ${effect.effect_value || 1}` 
+                });
+            }
+        });
         return types;
     },
     

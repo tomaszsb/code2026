@@ -159,6 +159,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                         }, [
                             // Small graphic on left
                             React.createElement('div', {
+                                key: 'card-icon',
                                 style: {
                                     width: '60px',
                                     height: '60px',
@@ -176,6 +177,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                             
                             // Card title
                             React.createElement('h3', {
+                                key: 'card-title',
                                 style: {
                                     margin: '0',
                                     fontSize: '18px',
@@ -229,8 +231,8 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                             key: 'work-cost',
                                             style: { marginBottom: '8px' }
                                         }, [
-                                            React.createElement('strong', {key: 'label'}, 'Work Cost: '),
-                                            React.createElement('span', {key: 'value'}, `$${parseInt(card.work_cost).toLocaleString()}`)
+                                            React.createElement('strong', {key: 'work-cost-label'}, 'Work Cost: '),
+                                            React.createElement('span', {key: 'work-cost-value'}, `$${parseInt(card.work_cost).toLocaleString()}`)
                                         ]),
                                         
                                         // Money Cost
@@ -238,8 +240,8 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                             key: 'money-cost',
                                             style: { marginBottom: '8px' }
                                         }, [
-                                            React.createElement('strong', {key: 'label'}, 'Money Cost: '),
-                                            React.createElement('span', {key: 'value'}, card.money_cost)
+                                            React.createElement('strong', {key: 'money-cost-label'}, 'Money Cost: '),
+                                            React.createElement('span', {key: 'money-cost-value'}, card.money_cost)
                                         ])
                                     ]),
                                     
@@ -270,8 +272,8 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                             key: 'work-type',
                                             style: { marginBottom: '8px' }
                                         }, [
-                                            React.createElement('strong', {key: 'label'}, 'Work Type: '),
-                                            React.createElement('span', {key: 'value'}, card.work_type_restriction)
+                                            React.createElement('strong', {key: 'work-type-label'}, 'Work Type: '),
+                                            React.createElement('span', {key: 'work-type-value'}, card.work_type_restriction)
                                         ]),
                                         
                                         // Space Restriction
@@ -279,8 +281,8 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                                             key: 'space-restriction',
                                             style: { marginBottom: '8px' }
                                         }, [
-                                            React.createElement('strong', {key: 'label'}, 'Space: '),
-                                            React.createElement('span', {key: 'value'}, card.space_restriction)
+                                            React.createElement('strong', {key: 'space-restriction-label'}, 'Space: '),
+                                            React.createElement('span', {key: 'space-restriction-value'}, card.space_restriction)
                                         ])
                                     ])
                                 ];

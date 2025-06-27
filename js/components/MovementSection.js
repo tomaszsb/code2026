@@ -19,7 +19,7 @@ function MovementSection({
 }) {
     const { useState, useEffect } = React;
     const [movementEngine] = useState(() => {
-        const engine = new window.MovementEngine();
+        const engine = window.MovementEngine.getInstance();
         engine.initialize(gameStateManager);
         engine.enableDebug(); // Enable debug logging
         return engine;

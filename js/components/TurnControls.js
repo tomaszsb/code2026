@@ -21,9 +21,9 @@ function TurnControls({
 }) {
     const { useState, useEffect } = React;
     
-    // Initialize MovementEngine for visit type determination
+    // Get singleton MovementEngine instance for visit type determination
     const [movementEngine] = useState(() => {
-        const engine = new window.MovementEngine();
+        const engine = window.MovementEngine.getInstance();
         engine.initialize(gameStateManager);
         return engine;
     });
@@ -91,7 +91,7 @@ function TurnControls({
     const checkNegotiateEnabled = () => {
         if (!currentPlayer || !window.CSVDatabase || !window.CSVDatabase.loaded) return false;
 
-        const currentSpaceData = window.CSVDatabase.spaces.find(
+        const currentSpaceData = window.CSVDatabase.spaceContent.find(
             currentPlayer.position, 
             currentPlayer.visitType || 'First'
         );
@@ -174,7 +174,7 @@ function TurnControls({
 
         // Check if current space requires a decision
         if (window.CSVDatabase && window.CSVDatabase.loaded) {
-            const currentSpaceData = window.CSVDatabase.spaces.find(
+            const currentSpaceData = window.CSVDatabase.spaceContent.find(
                 currentPlayer.position, 
                 currentPlayer.visitType || 'First'
             );

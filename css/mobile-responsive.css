@@ -174,15 +174,17 @@
         padding-bottom: 2rem; /* Extra padding for mobile */
     }
 
-    /* Movement choices for mobile */
-    .movement-choices {
+    /* Movement choices and move buttons for mobile */
+    .movement-choices,
+    .moves-grid {
         display: grid;
         grid-template-columns: 1fr;
         gap: 0.75rem;
         margin-top: 1rem;
     }
 
-    .movement-choice {
+    .movement-choice,
+    .move-button {
         padding: 1rem !important;
         font-size: 1rem;
         border-radius: 8px;
@@ -193,11 +195,40 @@
         text-align: center;
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
+        flex-direction: column;
+        gap: 0.25rem;
     }
 
-    .movement-choice:active {
+    .movement-choice:active,
+    .move-button:active {
         transform: scale(0.98);
         transition: transform 0.1s ease;
+    }
+
+    /* Mobile-specific move button styling */
+    .move-button {
+        min-height: 70px !important;
+        padding: 0.75rem 1rem !important;
+    }
+
+    .move-space-name {
+        font-size: 0.9rem !important;
+        margin-bottom: 0.25rem !important;
+        font-weight: 600;
+    }
+
+    .move-space-type {
+        font-size: 0.75rem !important;
+        opacity: 0.8;
+    }
+
+    /* Adjust badges for mobile */
+    .move-button.visit-first::after,
+    .move-button.visit-subsequent::after {
+        top: 0.25rem !important;
+        right: 0.25rem !important;
+        font-size: 0.6rem !important;
+        padding: 0.125rem 0.375rem !important;
     }
 
     /* Dice outcomes table mobile */

@@ -40,11 +40,11 @@ function DiceRoll() {
         const rollValue = Math.floor(Math.random() * 6) + 1;
         
         // Get outcome from CSV
-        const outcome = window.CSVDatabase.dice.getRollOutcome(
+        const diceData = window.CSVDatabase.diceOutcomes.find(
             state.spaceName, 
-            state.visitType, 
-            rollValue
+            state.visitType
         );
+        const outcome = diceData ? diceData[rollValue.toString()] : null;
         
         setState(prevState => ({
             ...prevState,

@@ -3,14 +3,8 @@
  * Enhanced transitions, micro-interactions, and visual feedback
  */
 
-/* Base transition settings */
-:root {
-    --transition-fast: 0.15s ease-out;
-    --transition-normal: 0.3s ease-out;
-    --transition-slow: 0.5s ease-out;
-    --bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    --smooth: cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* Animation System - Extends unified-design.css */
+/* Transition variables moved to unified-design.css for consistency */
 
 /* Enable smooth scrolling globally */
 html {
@@ -135,20 +129,82 @@ html {
 .space-details > *:nth-child(3) { animation-delay: 0.3s; }
 .space-details > *:nth-child(4) { animation-delay: 0.4s; }
 
-/* Movement choice animations */
-.movement-choice {
+/* Movement choice and move button animations */
+.movement-choice,
+.move-button {
     transition: all var(--transition-fast) var(--smooth);
-    transform: translateX(0);
+    transform: translateY(0);
+    will-change: transform, box-shadow, background-color;
 }
 
-.movement-choice:hover {
-    transform: translateX(5px) scale(1.02);
+.movement-choice:hover,
+.move-button:hover {
+    transform: translateY(-2px) scale(1.02);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.movement-choice:active {
-    transform: translateX(3px) scale(0.98);
+.movement-choice:active,
+.move-button:active {
+    transform: translateY(0) scale(0.98);
+    transition: all 0.1s var(--smooth);
 }
+
+/* Move button selection animation */
+.move-button.selected {
+    animation: moveButtonSelected 0.3s var(--bounce);
+}
+
+@keyframes moveButtonSelected {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Space type specific animations */
+.move-button.space-main:hover {
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
+}
+
+.move-button.space-side-quest:hover {
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.2);
+}
+
+.move-button.space-special:hover {
+    box-shadow: 0 4px 12px rgba(56, 142, 60, 0.2);
+}
+
+.move-button.space-logic:hover {
+    box-shadow: 0 4px 12px rgba(156, 39, 176, 0.2);
+}
+
+/* Visit type badge animations */
+.move-button.visit-first::after,
+.move-button.visit-subsequent::after {
+    transition: all var(--transition-fast) var(--smooth);
+    animation: badgeAppear 0.4s var(--bounce);
+}
+
+@keyframes badgeAppear {
+    0% { opacity: 0; transform: scale(0.5); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* Enhanced move grid animations */
+.moves-grid {
+    animation: fadeIn var(--transition-normal) var(--smooth);
+}
+
+.moves-grid .move-button {
+    animation: slideInFromBottom var(--transition-normal) var(--smooth);
+    animation-fill-mode: both;
+}
+
+.moves-grid .move-button:nth-child(1) { animation-delay: 0.05s; }
+.moves-grid .move-button:nth-child(2) { animation-delay: 0.10s; }
+.moves-grid .move-button:nth-child(3) { animation-delay: 0.15s; }
+.moves-grid .move-button:nth-child(4) { animation-delay: 0.20s; }
+.moves-grid .move-button:nth-child(5) { animation-delay: 0.25s; }
+.moves-grid .move-button:nth-child(6) { animation-delay: 0.30s; }
 
 /* Card animations */
 .game-card {

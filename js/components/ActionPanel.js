@@ -163,9 +163,9 @@ function ActionPanel() {
             );
             
             if (currentSpaceData) {
-                const moves = ComponentUtils.getNextSpaces(currentSpaceData);
-                const requiresDice = ComponentUtils.requiresDiceRoll(currentSpaceData);
-                const cardTypes = ComponentUtils.getCardTypes(currentSpaceData);
+                const moves = ComponentUtils.getNextSpaces(currentPlayer.position, currentPlayer.visitType || 'First');
+                const requiresDice = ComponentUtils.requiresDiceRoll(currentPlayer.position, currentPlayer.visitType || 'First');
+                const cardTypes = ComponentUtils.getCardTypes(currentPlayer.position, currentPlayer.visitType || 'First');
                 
                 console.log(`ActionPanel: Current space ${currentPlayer.position} has ${cardTypes.length} card actions:`, cardTypes);
                 

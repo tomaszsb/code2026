@@ -138,9 +138,9 @@ function SpaceDetails({ spaceName, spaceData, isValidMove, player, onExploreSpac
         );
     }
     
-    const nextSpaces = ComponentUtils.getNextSpaces(spaceData);
-    const cardTypes = ComponentUtils.getCardTypes(spaceData);
-    const requiresDice = ComponentUtils.requiresDiceRoll(spaceData);
+    const nextSpaces = ComponentUtils.getNextSpaces(spaceName, spaceData?.visit_type || 'First');
+    const cardTypes = ComponentUtils.getCardTypes(spaceName, spaceData?.visit_type || 'First');
+    const requiresDice = ComponentUtils.requiresDiceRoll(spaceName, spaceData?.visit_type || 'First');
     
     // Determine visit status
     const visitStatus = 'First Visit'; // TODO: Track actual visit history

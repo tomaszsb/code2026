@@ -117,7 +117,7 @@ function AdvancedDiceManager() {
         
         // Get base outcome from CSV
         if (!window.CSVDatabase || !window.CSVDatabase.loaded) return null;
-        const baseOutcome = window.CSVDatabase.dice.getRollOutcome(spaceName, visitType, rollValue);
+        const baseOutcome = window.CSVDatabase.diceOutcomes.find(spaceName, visitType);
         
         if (!baseOutcome) {
             return [{
@@ -129,24 +129,22 @@ function AdvancedDiceManager() {
 
         const outcomes = [];
 
-        // Process movement outcomes
-        if (baseOutcome.movement_options) {
-            const movementOptions = parseMovementOptions(baseOutcome.movement_options);
-            outcomes.push({
-                type: 'movement',
-                description: baseOutcome.description || `Rolled ${rollValue}`,
-                effects: { movementOptions },
-                rollValue
-            });
+        // Get the specific outcome for this dice roll value
+        const rollOutcome = baseOutcome[rollValue.toString()];
+        if (!rollOutcome) {
+            return [{
+                type: 'default',
+                description: `Rolled ${rollValue} - No outcome for this roll`,
+                effects: { rollValue }
+            }];
         }
 
-        // Process card draw outcomes
-        if (baseOutcome.card_draw) {
-            const cardDraws = parseCardDrawOutcome(baseOutcome.card_draw, rollValue);
+        // Process dice outcome as card draw
+        if (rollOutcome && rollOutcome !== 'None') {
             outcomes.push({
                 type: 'cardDraw',
-                description: `Draw ${cardDraws.count} ${cardDraws.type} card${cardDraws.count > 1 ? 's' : ''}`,
-                effects: { cardDraws },
+                description: `Draw ${rollOutcome}`,
+                effects: { cardDraws: { outcome: rollOutcome } },
                 rollValue
             });
         }
@@ -499,7 +497,7 @@ function AdvancedDiceManager() {
         }
 
         if (!window.CSVDatabase || !window.CSVDatabase.loaded) return null;
-        const spaceData = window.CSVDatabase.spaces.find(player.position, player.visitType || 'First');
+        const spaceData = window.CSVDatabase.spaceContent.find(player.position, player.visitType || 'First');
         
         if (spaceData && spaceData.Event && spaceData.Event.toLowerCase().includes('roll dice')) {
             // Auto-trigger dice roll requirement

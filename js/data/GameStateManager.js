@@ -407,7 +407,7 @@ class GameStateManager {
         // Get current space time cost for penalty if not provided
         let actualTimePenalty = timePenalty;
         if (actualTimePenalty === null && window.CSVDatabase && window.CSVDatabase.loaded) {
-            const currentSpaceData = window.CSVDatabase.spaces.find(
+            const currentSpaceData = window.CSVDatabase.spaceEffects.find(
                 player.position, 
                 player.visitType || 'First'
             );

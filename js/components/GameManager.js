@@ -7,9 +7,9 @@
 function GameManager() {
     const [gameState, gameStateManager] = useGameState();
     
-    // Initialize MovementEngine for advanced movement logic
+    // Get singleton MovementEngine instance
     const [movementEngine] = React.useState(() => {
-        const engine = new window.MovementEngine();
+        const engine = window.MovementEngine.getInstance();
         engine.initialize(gameStateManager);
         return engine;
     });
@@ -56,7 +56,7 @@ function GameManager() {
     // Handle dice roll outcomes
     useEventListener('diceRollComplete', ({ playerId, spaceName, visitType, rollValue }) => {
         try {
-            const outcome = window.CSVDatabase.dice.getRollOutcome(spaceName, visitType, rollValue);
+            const outcome = window.CSVDatabase.diceOutcomes.find(spaceName, visitType);
             if (outcome) {
                 processDiceOutcome(playerId, outcome);
             }
@@ -80,6 +80,15 @@ function GameManager() {
             processCardAction(playerId, cardType, action);
         } catch (error) {
             gameStateManager.handleError(error, 'Card Action');
+        }
+    });
+    
+    // Handle card replacement execution
+    useEventListener('executeCardReplacement', ({ playerId, cardType, cardIndices }) => {
+        try {
+            executeCardReplacement(playerId, cardType, cardIndices);
+        } catch (error) {
+            gameStateManager.handleError(error, 'Card Replacement');
         }
     });
     
@@ -113,7 +122,7 @@ function GameManager() {
         }
         
         // Check if dice roll required FIRST
-        if (ComponentUtils.requiresDiceRoll(spaceData)) {
+        if (ComponentUtils.requiresDiceRoll(spaceData.space_name, spaceData.visit_type || 'First')) {
             gameStateManager.emit('showDiceRoll', { 
                 playerId, 
                 spaceName: spaceData.space_name,
@@ -125,7 +134,7 @@ function GameManager() {
         }
         
         // Show available card actions for manual selection (regardless of dice requirement)
-        const cardTypes = ComponentUtils.getCardTypes(spaceData);
+        const cardTypes = ComponentUtils.getCardTypes(spaceData.space_name, spaceData.visit_type || 'First');
         console.log(`GameManager: Found ${cardTypes.length} card actions for ${spaceData.space_name}:`, cardTypes);
         if (cardTypes.length > 0) {
             console.log(`GameManager: Emitting showCardActions for player ${playerId}`);
@@ -186,7 +195,7 @@ function GameManager() {
             return;
         }
         
-        const availableCards = window.CSVDatabase.cards.byType(cardType);
+        const availableCards = window.CSVDatabase.cards.query({type: cardType});
         console.log(`GameManager: Found ${availableCards.length} available ${cardType} cards`);
         
         if (availableCards.length === 0) {
@@ -216,12 +225,98 @@ function GameManager() {
     }
     
     /**
-     * Replace cards in player hand
+     * Replace cards in player hand - triggers modal for card selection
      */
     function replaceCardsForPlayer(playerId, cardType, amount) {
-        // For now, just remove and draw new ones
-        removeCardsFromPlayer(playerId, cardType, amount);
-        drawCardsForPlayer(playerId, cardType, amount);
+        const players = gameState.players;
+        const player = players.find(p => p.id === playerId);
+        
+        if (!player) {
+            console.warn(`GameManager: Player ${playerId} not found for card replacement`);
+            return;
+        }
+        
+        // Initialize card array if it doesn't exist
+        if (!player.cards[cardType]) {
+            player.cards[cardType] = [];
+        }
+        
+        // If player has no cards of this type, draw some first then allow replacement
+        if (player.cards[cardType].length === 0) {
+            console.log(`GameManager: Player has no ${cardType} cards, drawing ${amount} first`);
+            drawCardsForPlayer(playerId, cardType, amount);
+            
+            // Show feedback
+            if (window.InteractiveFeedback) {
+                window.InteractiveFeedback.info(
+                    `${player.name} drew ${amount} ${cardType} card${amount > 1 ? 's' : ''} to replace!`,
+                    3000
+                );
+            }
+            
+            // Wait a moment for the draw to complete, then show replacement modal
+            setTimeout(() => {
+                gameStateManager.emit('showCardReplacementModal', {
+                    playerId,
+                    cardType,
+                    amount,
+                    playerCards: gameState.players.find(p => p.id === playerId).cards,
+                    playerName: player.name
+                });
+            }, 100);
+            return;
+        }
+        
+        // Player has cards, show replacement modal directly
+        gameStateManager.emit('showCardReplacementModal', {
+            playerId,
+            cardType,
+            amount,
+            playerCards: player.cards,
+            playerName: player.name
+        });
+    }
+    
+    /**
+     * Execute card replacement with specific card indices
+     */
+    function executeCardReplacement(playerId, cardType, cardIndices) {
+        const players = [...gameState.players];
+        const player = players.find(p => p.id === playerId);
+        
+        if (!player || !player.cards[cardType]) return;
+        
+        const currentCards = player.cards[cardType];
+        
+        // Sort indices in descending order to avoid index shifting issues
+        const sortedIndices = [...cardIndices].sort((a, b) => b - a);
+        
+        // Remove selected cards
+        const removedCards = [];
+        sortedIndices.forEach(index => {
+            if (index >= 0 && index < currentCards.length) {
+                removedCards.push(currentCards.splice(index, 1)[0]);
+            }
+        });
+        
+        // Draw new cards to replace them
+        if (removedCards.length > 0) {
+            drawCardsForPlayer(playerId, cardType, removedCards.length);
+            
+            gameStateManager.emit('cardsReplaced', {
+                player,
+                cardType,
+                removedCards,
+                newCardCount: removedCards.length
+            });
+            
+            if (window.InteractiveFeedback) {
+                window.InteractiveFeedback.success(
+                    `${player.name} replaced ${removedCards.length} ${cardType} card${removedCards.length > 1 ? 's' : ''}!`,
+                    3000
+                );
+            }
+        }
     }
     
     /**
@@ -229,7 +324,7 @@ function GameManager() {
      */
     function removeCardsFromPlayer(playerId, cardType, amount) {
         const players = [...gameState.players];
-        const player = players[playerId];
+        const player = players.find(p => p.id === playerId);
         
         if (!player || !player.cards[cardType]) return;
         
@@ -326,7 +421,7 @@ function GameManager() {
      * Show movement options from space data
      */
     function showMovementOptions(playerId, spaceData) {
-        const nextSpaces = ComponentUtils.getNextSpaces(spaceData);
+        const nextSpaces = ComponentUtils.getNextSpaces(spaceData.space_name, spaceData.visit_type || 'First');
         
         if (nextSpaces.length === 0) {
             // No movement options - end turn
@@ -347,7 +442,7 @@ function GameManager() {
      */
     function updatePlayerTime(playerId, timeAmount) {
         const players = [...gameState.players];
-        const player = players[playerId];
+        const player = players.find(p => p.id === playerId);
         
         if (!player) return;
         

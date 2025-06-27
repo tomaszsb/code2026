@@ -27,7 +27,7 @@ function GameBoard() {
             );
             
             if (currentSpaceData) {
-                const moves = ComponentUtils.getNextSpaces(currentSpaceData);
+                const moves = ComponentUtils.getNextSpaces(currentPlayer.position, currentPlayer.visitType || 'First');
                 setAvailableMoves(moves);
                 
                 // Update board state
@@ -164,7 +164,7 @@ function GameBoard() {
             currentPlayer.visitType || 'First'
         );
         
-        if (ComponentUtils.requiresDiceRoll(spaceData)) {
+        if (ComponentUtils.requiresDiceRoll(currentPlayer.position, currentPlayer.visitType || 'First')) {
             // Show dice roll
             gameStateManager.emit('showDiceRoll', {
                 playerId: gameState.currentPlayer,
@@ -357,8 +357,8 @@ function SpaceDisplay({ spaceName, visitType, onMoveRequest }) {
         );
     }
     
-    const nextSpaces = ComponentUtils.getNextSpaces(spaceData);
-    const cardTypes = ComponentUtils.getCardTypes(spaceData);
+    const nextSpaces = ComponentUtils.getNextSpaces(spaceName, visitType || 'First');
+    const cardTypes = ComponentUtils.getCardTypes(spaceName, visitType || 'First');
     
     return React.createElement('div', 
         { className: 'flex flex-col gap-4' },

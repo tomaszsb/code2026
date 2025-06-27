@@ -1,39 +1,147 @@
 /**
- * CSVDatabase - Unified CSV Query System
- * Single source of truth for all game data
+ * CSVDatabase - Clean Multi-File CSV System
+ * Handles the 6-file clean CSV architecture
  * 
  * Architecture principles:
- * - CSV files contain ALL game content
+ * - 6 separate CSV files for single responsibilities
+ * - Movement, Effects, Content, Configuration separated
  * - Unified API for all data types
- * - No fallbacks, no hardcoded data
- * - Error early if data not found
+ * - Zero data loss from original messy CSVs
+ * - Single data access pattern (legacy code removed in Phase 20)
  */
 
 class CSVDatabase {
     constructor() {
         this.data = {
-            cards: [],
-            spaces: [],
-            dice: []
+            // Clean CSV architecture
+            movement: [],      // MOVEMENT.csv - space connections
+            diceOutcomes: [],  // DICE_OUTCOMES.csv - dice roll destinations  
+            spaceEffects: [],  // SPACE_EFFECTS.csv - card/time/money effects
+            diceEffects: [],   // DICE_EFFECTS.csv - dice-based effects
+            spaceContent: [],  // SPACE_CONTENT.csv - UI display content
+            gameConfig: [],    // GAME_CONFIG.csv - metadata & configuration
+            cards: [],         // cards.csv - card definitions
+            
         };
         this.debug = false;
         this.loaded = false;
+        this.loadStartTime = null;
     }
 
     /**
-     * Load all CSV data files
+     * Load all CSV data files - clean architecture only
      */
     async loadAll() {
+        this.loadStartTime = Date.now();
         try {
+            // Load clean architecture files
             await Promise.all([
-                this.loadCards(),
-                this.loadSpaces(),
-                this.loadDice()
+                this.loadMovement(),
+                this.loadDiceOutcomes(),
+                this.loadSpaceEffects(),
+                this.loadDiceEffects(),
+                this.loadSpaceContent(),
+                this.loadGameConfig(),
+                this.loadCards()
             ]);
+            
             this.loaded = true;
-            this.log('All CSV data loaded successfully');
+            const loadTime = Date.now() - this.loadStartTime;
+            this.log(`All CSV data loaded successfully in ${loadTime}ms`);
+            this.logDataSummary();
+            
         } catch (error) {
-            console.error('Failed to load CSV data:', error);
+            console.error('CSV loading failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Load MOVEMENT.csv - Pure space-to-space connections
+     */
+    async loadMovement() {
+        try {
+            const response = await fetch('data/MOVEMENT.csv');
+            const csvText = await response.text();
+            this.data.movement = this.parseCSV(csvText);
+            this.log(`Loaded ${this.data.movement.length} movement configurations`);
+        } catch (error) {
+            console.error('Failed to load MOVEMENT.csv:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Load DICE_OUTCOMES.csv - Dice roll destinations
+     */
+    async loadDiceOutcomes() {
+        try {
+            const response = await fetch('data/DICE_OUTCOMES.csv');
+            const csvText = await response.text();
+            this.data.diceOutcomes = this.parseCSV(csvText);
+            this.log(`Loaded ${this.data.diceOutcomes.length} dice outcome configurations`);
+        } catch (error) {
+            console.error('Failed to load DICE_OUTCOMES.csv:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Load SPACE_EFFECTS.csv - Card/time/money effects
+     */
+    async loadSpaceEffects() {
+        try {
+            const response = await fetch('data/SPACE_EFFECTS.csv');
+            const csvText = await response.text();
+            this.data.spaceEffects = this.parseCSV(csvText);
+            this.log(`Loaded ${this.data.spaceEffects.length} space effects`);
+        } catch (error) {
+            console.error('Failed to load SPACE_EFFECTS.csv:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Load DICE_EFFECTS.csv - Dice-based effects
+     */
+    async loadDiceEffects() {
+        try {
+            const response = await fetch('data/DICE_EFFECTS.csv');
+            const csvText = await response.text();
+            this.data.diceEffects = this.parseCSV(csvText);
+            this.log(`Loaded ${this.data.diceEffects.length} dice effects`);
+        } catch (error) {
+            console.error('Failed to load DICE_EFFECTS.csv:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Load SPACE_CONTENT.csv - UI display content
+     */
+    async loadSpaceContent() {
+        try {
+            const response = await fetch('data/SPACE_CONTENT.csv');
+            const csvText = await response.text();
+            this.data.spaceContent = this.parseCSV(csvText);
+            this.log(`Loaded ${this.data.spaceContent.length} space content entries`);
+        } catch (error) {
+            console.error('Failed to load SPACE_CONTENT.csv:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Load GAME_CONFIG.csv - Metadata & configuration
+     */
+    async loadGameConfig() {
+        try {
+            const response = await fetch('data/GAME_CONFIG.csv');
+            const csvText = await response.text();
+            this.data.gameConfig = this.parseCSV(csvText);
+            this.log(`Loaded ${this.data.gameConfig.length} game configuration entries`);
+        } catch (error) {
+            console.error('Failed to load GAME_CONFIG.csv:', error);
             throw error;
         }
     }
@@ -42,31 +150,17 @@ class CSVDatabase {
      * Load cards.csv
      */
     async loadCards() {
-        const response = await fetch('data/cards.csv');
-        const csvText = await response.text();
-        this.data.cards = this.parseCSV(csvText);
-        this.log(`Loaded ${this.data.cards.length} cards`);
+        try {
+            const response = await fetch('data/cards.csv');
+            const csvText = await response.text();
+            this.data.cards = this.parseCSV(csvText);
+            this.log(`Loaded ${this.data.cards.length} cards`);
+        } catch (error) {
+            console.error('Failed to load cards.csv:', error);
+            throw error;
+        }
     }
 
-    /**
-     * Load Spaces.csv
-     */
-    async loadSpaces() {
-        const response = await fetch('data/Spaces.csv');
-        const csvText = await response.text();
-        this.data.spaces = this.parseCSV(csvText);
-        this.log(`Loaded ${this.data.spaces.length} spaces`);
-    }
-
-    /**
-     * Load DiceRoll Info.csv
-     */
-    async loadDice() {
-        const response = await fetch('data/DiceRoll Info.csv');
-        const csvText = await response.text();
-        this.data.dice = this.parseCSV(csvText);
-        this.log(`Loaded ${this.data.dice.length} dice configurations`);
-    }
 
     /**
      * Parse CSV text into JavaScript objects
@@ -83,9 +177,8 @@ class CSVDatabase {
             if (values.length === headers.length) {
                 const row = {};
                 headers.forEach((header, index) => {
-                    row[header] = values[index]?.trim() || '';
+                    row[header] = values[index].trim().replace(/"/g, '');
                 });
-                
                 rows.push(row);
             }
         }
@@ -94,7 +187,7 @@ class CSVDatabase {
     }
 
     /**
-     * Parse a single CSV line handling commas in quoted strings
+     * Parse a single CSV line, handling commas within quotes
      */
     parseCSVLine(line) {
         const result = [];
@@ -103,7 +196,6 @@ class CSVDatabase {
 
         for (let i = 0; i < line.length; i++) {
             const char = line[i];
-            
             if (char === '"') {
                 inQuotes = !inQuotes;
             } else if (char === ',' && !inQuotes) {
@@ -113,136 +205,164 @@ class CSVDatabase {
                 current += char;
             }
         }
-        
         result.push(current);
         return result;
     }
 
     /**
-     * CARDS API - Query card data
+     * Query API for clean architecture
      */
+    get movement() {
+        return {
+            find: (spaceName, visitType) => {
+                if (!this.cleanArchitecture) {
+                    throw new Error('Movement API requires clean architecture. Use legacy spaces API.');
+                }
+                return this.data.movement.find(row => 
+                    row.space_name === spaceName && row.visit_type === visitType
+                );
+            },
+            query: (filters) => {
+                if (!this.cleanArchitecture) {
+                    throw new Error('Movement API requires clean architecture. Use legacy spaces API.');
+                }
+                if (!filters || typeof filters !== 'object') {
+                    return this.data.movement;
+                }
+                return this.data.movement.filter(row => {
+                    return Object.entries(filters).every(([key, value]) => row[key] === value);
+                });
+            },
+            getDestinations: (spaceName, visitType) => {
+                const movement = this.movement.find(spaceName, visitType);
+                if (!movement) return [];
+                return [
+                    movement.destination_1,
+                    movement.destination_2,
+                    movement.destination_3,
+                    movement.destination_4,
+                    movement.destination_5
+                ].filter(dest => dest && dest.trim());
+            }
+        };
+    }
+
+    get spaceEffects() {
+        return {
+            find: (spaceName, visitType) => {
+                return this.data.spaceEffects.find(row => 
+                    row.space_name === spaceName && row.visit_type === visitType
+                );
+            },
+            query: (filters) => {
+                if (!filters || typeof filters !== 'object') {
+                    return this.data.spaceEffects;
+                }
+                return this.data.spaceEffects.filter(row => {
+                    return Object.entries(filters).every(([key, value]) => row[key] === value);
+                });
+            }
+        };
+    }
+
+    get spaceContent() {
+        return {
+            find: (spaceName, visitType) => {
+                return this.data.spaceContent.find(row => 
+                    row.space_name === spaceName && row.visit_type === visitType
+                );
+            },
+            query: (filters) => {
+                if (!filters || typeof filters !== 'object') {
+                    return this.data.spaceContent;
+                }
+                return this.data.spaceContent.filter(row => {
+                    return Object.entries(filters).every(([key, value]) => row[key] === value);
+                });
+            }
+        };
+    }
+
+    get diceOutcomes() {
+        return {
+            find: (spaceName, visitType) => {
+                return this.data.diceOutcomes.find(row => 
+                    row.space_name === spaceName && row.visit_type === visitType
+                );
+            },
+            query: (filters) => {
+                if (!filters || typeof filters !== 'object') {
+                    return this.data.diceOutcomes;
+                }
+                return this.data.diceOutcomes.filter(row => {
+                    return Object.entries(filters).every(([key, value]) => row[key] === value);
+                });
+            }
+        };
+    }
+
+    get gameConfig() {
+        return {
+            find: (spaceName) => {
+                return this.data.gameConfig.find(row => row.space_name === spaceName);
+            },
+            query: (filters) => {
+                if (!filters || typeof filters !== 'object') {
+                    return this.data.gameConfig;
+                }
+                return this.data.gameConfig.filter(row => {
+                    return Object.entries(filters).every(([key, value]) => row[key] === value);
+                });
+            }
+        };
+    }
+
+
     get cards() {
         return {
-            // Get all cards matching filters
-            query: (filters = {}) => {
-                this.ensureLoaded();
-                let results = this.data.cards;
-
-                Object.entries(filters).forEach(([key, value]) => {
-                    results = results.filter(card => {
-                        if (Array.isArray(value)) {
-                            return value.includes(card[key]);
-                        }
-                        return card[key] === value;
-                    });
+            query: (filters) => {
+                if (!filters || typeof filters !== 'object') {
+                    return this.data.cards;
+                }
+                return this.data.cards.filter(row => {
+                    return Object.entries(filters).every(([key, value]) => row[key] === value);
                 });
-
-                this.log(`Cards query ${JSON.stringify(filters)} returned ${results.length} results`);
-                return results;
             },
-
-            // Get single card by ID
-            find: (cardId) => {
-                this.ensureLoaded();
-                const card = this.data.cards.find(c => c.card_id === cardId);
-                this.log(`Cards find ${cardId} returned ${card ? 'found' : 'not found'}`);
-                return card;
-            },
-
-            // Get cards by type
-            byType: (cardType) => {
-                return this.cards.query({ card_type: cardType });
-            },
-
-            // Get cards by phase restriction
-            byPhase: (phase) => {
-                return this.cards.query({ phase_restriction: phase });
+            find: (filters) => {
+                if (!filters || typeof filters !== 'object') {
+                    return this.data.cards[0] || null;
+                }
+                return this.data.cards.find(row => {
+                    return Object.entries(filters).every(([key, value]) => row[key] === value);
+                });
             }
         };
     }
 
     /**
-     * SPACES API - Query space data
+     * Log data summary
      */
-    get spaces() {
-        return {
-            // Find space by name and visit type
-            find: (spaceName, visitType = 'First') => {
-                this.ensureLoaded();
-                const space = this.data.spaces.find(s => 
-                    s.space_name === spaceName && s.visit_type === visitType
-                );
-                this.log(`Spaces find ${spaceName}/${visitType} returned ${space ? 'found' : 'not found'}`);
-                return space;
-            },
-
-            // Get all spaces matching filters
-            query: (filters = {}) => {
-                this.ensureLoaded();
-                let results = this.data.spaces;
-
-                Object.entries(filters).forEach(([key, value]) => {
-                    results = results.filter(space => {
-                        if (Array.isArray(value)) {
-                            return value.includes(space[key]);
-                        }
-                        return space[key] === value;
-                    });
-                });
-
-                this.log(`Spaces query ${JSON.stringify(filters)} returned ${results.length} results`);
-                return results;
-            },
-
-            // Get spaces by phase
-            byPhase: (phase) => {
-                return this.spaces.query({ phase });
+    logDataSummary() {
+        if (this.debug) {
+            console.log('📊 CSV Database Summary:');
+            if (this.cleanArchitecture) {
+                console.log(`  🔄 Clean Architecture: ${this.data.movement.length} movements, ${this.data.spaceEffects.length} effects, ${this.data.spaceContent.length} content`);
             }
-        };
+            console.log(`  📦 Legacy Support: ${this.data.spaces.length} spaces, ${this.data.dice.length} dice, ${this.data.cards.length} cards`);
+            console.log(`  🏗️ Primary System: ${this.cleanArchitecture ? 'Clean Architecture' : 'Legacy'}`);
+        }
     }
 
     /**
-     * DICE API - Query dice roll data
+     * Enable debug logging
      */
-    get dice() {
-        return {
-            // Find dice configuration for space and visit type
-            find: (spaceName, visitType = 'First') => {
-                this.ensureLoaded();
-                const config = this.data.dice.find(d => 
-                    d.space_name === spaceName && d.visit_type === visitType
-                );
-                this.log(`Dice find ${spaceName}/${visitType} returned ${config ? 'found' : 'not found'}`);
-                return config;
-            },
-
-            // Get dice outcomes for a roll
-            getRollOutcome: (spaceName, visitType, rollValue) => {
-                const config = this.dice.find(spaceName, visitType);
-                if (!config) return null;
-
-                const outcome = config[rollValue.toString()];
-                this.log(`Dice roll ${spaceName}/${visitType}/${rollValue} = ${outcome}`);
-                return outcome;
-            },
-
-            // Query dice configurations
-            query: (filters = {}) => {
-                this.ensureLoaded();
-                let results = this.data.dice;
-
-                Object.entries(filters).forEach(([key, value]) => {
-                    results = results.filter(dice => dice[key] === value);
-                });
-
-                this.log(`Dice query ${JSON.stringify(filters)} returned ${results.length} results`);
-                return results;
-            }
-        };
+    enableDebug() {
+        this.debug = true;
+        this.log('Debug mode enabled');
     }
 
     /**
-     * Utility methods
+     * Log message if debug enabled
      */
     log(message) {
         if (this.debug) {
@@ -250,29 +370,28 @@ class CSVDatabase {
         }
     }
 
-    ensureLoaded() {
-        if (!this.loaded) {
-            throw new Error('CSVDatabase not loaded. Call loadAll() first.');
-        }
-    }
-
     /**
-     * Get raw data (for debugging)
+     * Get system status
      */
-    getRawData() {
-        return { ...this.data };
+    getStatus() {
+        return {
+            loaded: this.loaded,
+            cleanArchitecture: this.cleanArchitecture,
+            dataCount: {
+                movement: this.data.movement.length,
+                spaceEffects: this.data.spaceEffects.length,
+                spaceContent: this.data.spaceContent.length,
+                diceOutcomes: this.data.diceOutcomes.length,
+                gameConfig: this.data.gameConfig.length,
+                cards: this.data.cards.length,
+                spacesLegacy: this.data.spaces.length,
+                diceLegacy: this.data.dice.length
+            }
+        };
     }
 }
 
 // Create singleton instance
-const CSVDatabaseInstance = new CSVDatabase();
-
-// Export for browser usage
 if (typeof window !== 'undefined') {
-    window.CSVDatabase = CSVDatabaseInstance;
-}
-
-// Export for Node.js usage
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = CSVDatabaseInstance;
+    window.CSVDatabase = new CSVDatabase();
 }

@@ -65,28 +65,36 @@ js/components/CurrentSpaceInfo.js   # Space details/requirements (84 lines)
 js/components/PlayerResources.js    # Money/time management (119 lines)
 js/components/CardsInHand.js        # Card grid display (140 lines)
 
-# Data Files
-data/cards.csv                      # Card properties and effects
-data/Spaces.csv                     # Space actions and outcomes
-data/DiceRoll Info.csv              # Dice result mappings
+# Data Files - Clean CSV Architecture
+data/cards.csv                      # Card properties and effects (unchanged)
+data/MOVEMENT.csv                   # Space-to-space connections
+data/DICE_OUTCOMES.csv              # Dice roll destinations  
+data/SPACE_EFFECTS.csv              # Card/time/money effects with conditions
+data/SPACE_CONTENT.csv              # UI display text and story content
+data/GAME_CONFIG.csv                # Metadata & configuration
 ```
 
 ## Development Rules
 
-### CSV Data Standards
+### CSV Data Standards - Clean Architecture
 ```javascript
-// ✅ Query CSV data with unified API (with safety checks)
+// ✅ Query clean CSV data with unified API (with safety checks)
 if (!window.CSVDatabase || !window.CSVDatabase.loaded) return null;
+
+// Clean data access patterns (ONLY patterns allowed):
 const cards = window.CSVDatabase.cards.query({type: 'W', phase: 'DESIGN'});
-const space = window.CSVDatabase.spaces.find(spaceName, visitType);
-const dice = window.CSVDatabase.dice.query({space: spaceName, visitType});
+const movement = window.CSVDatabase.movement.find(spaceName, visitType);
+const spaceEffects = window.CSVDatabase.spaceEffects.query({space: spaceName, visitType});
+const spaceContent = window.CSVDatabase.spaceContent.find(spaceName, visitType);
+const diceOutcomes = window.CSVDatabase.diceOutcomes.find(spaceName, visitType);
+const gameConfig = window.CSVDatabase.gameConfig.find(spaceName);
 
 // ❌ No direct array manipulation
 spaces.find(s => s.space_name === name);  // Forbidden
 
 // ❌ No unsafe database access
-const space = CSVDatabase.spaces.find(name, type);  // Missing window prefix
-const space = window.CSVDatabase.spaces.find(name, type);  // Missing loading check
+const space = CSVDatabase.spaceContent.find(name, type);  // Missing window prefix
+const space = window.CSVDatabase.spaceContent.find(name, type);  // Missing loading check
 ```
 
 ### Card System Standards
@@ -129,27 +137,30 @@ gameState.players?.find()  // Defensive
 ### What's Forbidden
 - ❌ **Magic strings in JS** - no `if (spaceName === 'OWNER-SCOPE-INITIATION')`
 - ❌ **Hardcoded amounts** - no `drawCards('W', 3)` without CSV lookup
-- ❌ **Multiple data access paths** - one API only
+- ❌ **Multiple data access paths** - use clean CSV API only
 - ❌ **Component-to-component calls** - events only
-- ❌ **Fallback data sources** - CSV or error, no alternatives
+- ❌ **Fallback data sources** - clean CSV or error, no alternatives
 - ❌ **Unsafe database access** - always check loading state first
 - ❌ **Direct property access** - always use optional chaining and fallbacks
 - ❌ **Event data assumptions** - handle multiple event formats gracefully
 - ❌ **Duplicate card configurations** - use CardUtils.js only
 - ❌ **Hardcoded card type names** - no `{ 'B': 'Business' }` mappings
 - ❌ **Large monolithic components** - split components >500 lines
+- ❌ **Legacy CSV patterns** - ALL LEGACY CODE REMOVED (Phase 20)
+- ❌ **Mixed data concerns** - use specialized files (movement vs effects vs content)
 
 ## Loading Order (Critical)
 ```html
 1. Unified Design System (CSS)
-2. CSVDatabase system
+2. CSVDatabase system (clean CSV architecture only)
 3. GameStateManager
 4. Shared utilities (CardUtils.js)
-5. Component utilities  
-6. Manager components
-7. UI components (GameBoard, SpaceExplorer, RulesModal)
-8. Panel components (PlayerStatusPanel, ActionPanel)
-9. Main App
+5. New engines (MovementEngine.js, EffectsEngine.js, ContentEngine.js)
+6. Component utilities  
+7. Manager components
+8. UI components (GameBoard, SpaceExplorer, RulesModal)
+9. Panel components (PlayerStatusPanel, ActionPanel)
+10. Main App
 ```
 
 ## What Lives Where
@@ -168,7 +179,27 @@ gameState.players?.find()  // Defensive
 
 ## Recent Improvements
 
-### ✅ **Phase 17: Critical Database & UI Fixes (Latest)**
+### ✅ **Phase 20: Legacy Code Removal & Architecture Finalization (Latest)**
+- **Complete Legacy Removal**: All legacy CSV files (Spaces.csv, DiceRoll Info.csv) and APIs removed
+- **Clean API Migration**: Fixed all legacy `dice.getRollOutcome()` and `cards.byType()` calls across 16 components
+- **ComponentUtils Modernization**: Updated utility functions to work with clean CSV architecture
+- **Single Data Access Path**: Only clean CSV APIs remain - no more confusion between old/new patterns
+- **Documentation Updated**: CLAUDE.md reflects finalized architecture without legacy references
+- **Zero Technical Debt**: Codebase now has single, consistent data access pattern
+
+### ✅ **Phase 19: Clean CSV Architecture Integration**
+- **Complete Migration**: Successfully integrated code2027 clean CSV architecture
+- **6-File Structure**: MOVEMENT.csv, DICE_OUTCOMES.csv, SPACE_EFFECTS.csv, DICE_EFFECTS.csv, SPACE_CONTENT.csv, GAME_CONFIG.csv
+- **Enhanced Engines**: Added EffectsEngine.js (18KB) and ContentEngine.js (12KB) for specialized processing
+- **Defensive Programming**: Fixed null safety issues in all query methods
+
+### ✅ **Phase 18: Documentation & Integration Preparation**
+- **Updated CLAUDE.md**: Added clean CSV architecture patterns and migration guidance
+- **Updated DEVELOPMENT.md**: Documented Phase 19 migration status and next actions
+- **Integration Testing**: Created test-integration.html for comprehensive validation
+- **File Organization**: Structured migration with proper backups and fallback support
+
+### ✅ **Phase 17: Critical Database & UI Fixes**
 - **Fixed Space Lookup Error**: Resolved "Space OWNER-FUND-INITIATION/First not found" by fixing missing comma in Spaces.csv line 6
 - **Enhanced CSVDatabase Safety**: Added comprehensive loading checks to prevent unsafe database access across 10+ components
 - **Smart Negotiate Button**: Negotiate now activates only when space has immediate time data, deactivates for roll/choice/card-based timing
@@ -250,4 +281,30 @@ For detailed information see:
 - `DEVELOPMENT.md` - Phase tracking, patterns, debugging, detailed examples
 - Git commit history - Change log with reasoning
 
-**Architecture: CSV-driven content, unified APIs, event-driven communication, consistent design system.**
+**Architecture: Clean CSV architecture, specialized engines, complete legacy removal, single data access pattern.**
+
+## What Lives Where
+
+### CSV Files (Game Content) - Clean Architecture
+- ✅ **MOVEMENT.csv**: Pure space-to-space connections (54 entries)
+- ✅ **SPACE_EFFECTS.csv**: Card/time/money effects with conditions (120 entries)  
+- ✅ **SPACE_CONTENT.csv**: UI display text and story content (54 entries)
+- ✅ **DICE_OUTCOMES.csv**: Dice roll destination mapping (18 entries)
+- ✅ **DICE_EFFECTS.csv**: Dice-based card/money effects (33 entries)
+- ✅ **GAME_CONFIG.csv**: Metadata, phases, game configuration (27 entries)
+- ✅ **cards.csv**: Card properties and effects (405 entries)
+
+### JavaScript Engines - Enhanced Architecture
+- ✅ **MovementEngine.js**: Advanced movement logic with audit trails and decision tracking (20KB)
+- ✅ **EffectsEngine.js**: Specialized card/time/money effects processor with condition evaluation (18KB)
+- ✅ **ContentEngine.js**: UI content and configuration manager with caching (12KB)
+- ✅ **CSVDatabase.js**: Unified API for clean CSV architecture with null safety
+- ✅ **CardUtils.js**: Centralized card configurations eliminating hardcoded mappings
+
+### Clean Architecture Benefits
+- 🔧 **Single Responsibility**: Each CSV file handles one concern (movement vs effects vs content)
+- 🛡️ **Defensive Programming**: All APIs handle null/undefined gracefully
+- ✨ **Single Data Path**: Only one way to access data - no legacy confusion
+- 📊 **Structured Data**: No more complex parsing like `"Draw 1 if scope ≤ $ 4 M"`
+- 🐛 **Easy Debugging**: Issues isolated to specific data types and engines
+- 🚀 **Performance**: Specialized engines with caching and optimized queries

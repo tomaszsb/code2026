@@ -1,5 +1,4 @@
 /* static-player-status.css file is beginning to be used - UPDATED 2025-06-20 */
-console.log('static-player-status.css file is beginning to be used - UPDATED 2025-06-20');
 
 /* Main container styling - BALANCED HEIGHT */
 .info-panels-container .player-panel .static-player-status,
@@ -241,25 +240,25 @@ console.log('static-player-status.css file is beginning to be used - UPDATED 202
   margin-right: 5px;
 }
 
-/* Card type colors */
+/* Card type colors - Using unified design system */
 .card-type-w {
-  background-color: #4285f4; /* Blue for Work Type */
+  background-color: var(--card-work); /* Blue for Work Type */
 }
 
 .card-type-b {
-  background-color: #ea4335; /* Red for Bank */
+  background-color: var(--card-bank); /* Red for Bank */
 }
 
 .card-type-i {
-  background-color: #fbbc05; /* Yellow for Investor */
+  background-color: var(--card-investor); /* Yellow for Investor */
 }
 
 .card-type-l {
-  background-color: #34a853; /* Green for Life */
+  background-color: var(--card-life); /* Green for Life */
 }
 
 .card-type-e {
-  background-color: #8e44ad; /* Purple for Expeditor */
+  background-color: var(--card-expeditor); /* Purple for Expeditor */
 }
 
 .card-type-name {
@@ -328,4 +327,3 @@ console.log('static-player-status.css file is beginning to be used - UPDATED 202
   font-style: italic;
 }
 
-console.log('static-player-status.css code execution finished');

@@ -3,6 +3,7 @@
  * Integrates sophisticated movement features while preserving code2026 patterns
  * 
  * Architecture:
+ * - Singleton pattern to prevent multiple instances
  * - CSV-first database integration
  * - Event-driven communication
  * - Defensive programming with null safety
@@ -11,11 +12,21 @@
 
 class MovementEngine {
     constructor() {
+        // Singleton pattern - prevent multiple instances
+        if (MovementEngine.instance) {
+            return MovementEngine.instance;
+        }
+        
         this.spaceTypeCache = new Map();
         this.visitHistory = new Map(); // playerId -> Set of visited spaces
         this.singleChoiceDecisions = new Map(); // playerId -> Map of space -> decision
         this.auditStates = new Map(); // playerId -> audit status
         this.debug = false;
+        this.gameStateManager = null;
+        this.databaseRetryCount = 0;
+        this.maxRetries = 3;
+        
+        MovementEngine.instance = this;
     }
 
     /**
@@ -23,18 +34,30 @@ class MovementEngine {
      */
     initialize(gameStateManager) {
         this.gameStateManager = gameStateManager;
-        this.log('MovementEngine initialized');
+        this.log('MovementEngine initialized as singleton');
     }
 
     /**
      * Get available moves for a player with advanced logic
      */
     getAvailableMoves(player) {
-        if (!this.validateDatabaseAccess()) return [];
-        if (!player || !player.position) return [];
+        // Return empty array if database not available, but don't fail silently
+        const databaseReady = this.validateDatabaseAccess();
+        if (!databaseReady) {
+            this.log('Database not ready, returning empty moves');
+            return [];
+        }
+        
+        if (!player || !player.position) {
+            this.log('Invalid player or position provided');
+            return [];
+        }
 
         const currentSpace = this.getCurrentSpaceData(player);
-        if (!currentSpace) return [];
+        if (!currentSpace) {
+            this.log(`No space data found for ${player.position}`);
+            return [];
+        }
 
         const spaceType = this.getSpaceType(currentSpace);
         const visitType = this.getVisitType(player, player.position);
@@ -141,8 +164,19 @@ class MovementEngine {
     getVisitType(player, spaceName) {
         if (!player || !spaceName) return 'First';
 
-        const playerHistory = this.visitHistory.get(player.id) || new Set();
-        return playerHistory.has(spaceName) ? 'Subsequent' : 'First';
+        // Initialize player history if not exists
+        if (!this.visitHistory.has(player.id)) {
+            this.visitHistory.set(player.id, new Set());
+        }
+        
+        const playerHistory = this.visitHistory.get(player.id);
+        
+        // If player is currently at this space but it's not in history,
+        // it means this is their first visit (they haven't moved away yet)
+        const isFirstVisit = !playerHistory.has(spaceName);
+        
+        this.log(`Visit type for ${player.name} at ${spaceName}: ${isFirstVisit ? 'First' : 'Subsequent'}`);
+        return isFirstVisit ? 'First' : 'Subsequent';
     }
 
     /**
@@ -161,18 +195,34 @@ class MovementEngine {
     getMainPathMoves(spaceData, player, visitType) {
         const moves = [];
         
-        // Check for dice roll requirement
+        // For dice roll spaces, check if we have dice roll results available
         if (spaceData.requires_dice_roll === 'Yes') {
-            // Movement determined by dice roll - return empty for now
-            // This will be handled by dice roll system
-            return [];
+            // Look for dice roll outcomes in the DiceRoll Info.csv
+            const diceConfig = this.getDiceConfiguration(spaceData.space_name, visitType);
+            if (diceConfig) {
+                // Return all possible dice outcomes as potential moves
+                for (let roll = 1; roll <= 6; roll++) {
+                    const outcome = diceConfig[roll.toString()];
+                    if (outcome && outcome.trim() && !moves.includes(outcome)) {
+                        moves.push(outcome);
+                    }
+                }
+            }
+            
+            // If no dice config found, fall back to direct space connections
+            if (moves.length === 0) {
+                this.log(`No dice config found for ${spaceData.space_name}, using direct connections`);
+            }
         }
 
-        // Get direct destinations from space_1, space_2, etc.
+        // Always include direct destinations from space_1, space_2, etc.
         for (let i = 1; i <= 5; i++) {
             const spaceKey = `space_${i}`;
             if (spaceData[spaceKey] && spaceData[spaceKey].trim()) {
-                moves.push(spaceData[spaceKey]);
+                const destination = spaceData[spaceKey].trim();
+                if (!moves.includes(destination)) {
+                    moves.push(destination);
+                }
             }
         }
 
@@ -461,18 +511,52 @@ class MovementEngine {
      */
     getSpaceData(spaceName, visitType = 'First') {
         if (!this.validateDatabaseAccess()) return null;
-        return window.CSVDatabase.spaces.find(spaceName, visitType);
+        // Use spaceContent for movement data - it contains space connection info
+        return window.CSVDatabase.spaceContent.find(spaceName, visitType) || 
+               window.CSVDatabase.movement.find(spaceName, visitType);
     }
 
     /**
-     * Validate CSV database access
+     * Validate CSV database access with retry logic
      */
     validateDatabaseAccess() {
-        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
-            this.log('CSVDatabase not loaded yet');
+        if (!window.CSVDatabase) {
+            this.log('CSVDatabase object not available');
             return false;
         }
+        
+        if (!window.CSVDatabase.loaded) {
+            this.databaseRetryCount++;
+            this.log(`CSVDatabase not loaded yet (attempt ${this.databaseRetryCount}/${this.maxRetries})`);
+            
+            // Try to trigger loading if possible
+            if (this.databaseRetryCount <= this.maxRetries && typeof window.CSVDatabase.loadAll === 'function') {
+                this.log('Attempting to load CSV database...');
+                window.CSVDatabase.loadAll().catch(error => {
+                    this.log(`Failed to load CSV database: ${error.message}`);
+                });
+            }
+            
+            return false;
+        }
+        
+        // Reset retry count on successful access
+        this.databaseRetryCount = 0;
         return true;
+    }
+    
+    /**
+     * Get dice configuration for a space
+     */
+    getDiceConfiguration(spaceName, visitType) {
+        if (!this.validateDatabaseAccess()) return null;
+        
+        try {
+            return window.CSVDatabase.diceOutcomes.find(spaceName, visitType);
+        } catch (error) {
+            this.log(`Error getting dice configuration for ${spaceName}: ${error.message}`);
+            return null;
+        }
     }
 
     /**
@@ -527,7 +611,29 @@ class MovementEngine {
     clearCaches() {
         this.spaceTypeCache.clear();
     }
+    
+    /**
+     * Get singleton instance
+     */
+    static getInstance() {
+        if (!MovementEngine.instance) {
+            MovementEngine.instance = new MovementEngine();
+        }
+        return MovementEngine.instance;
+    }
+    
+    /**
+     * Force recreation of singleton (for testing/debugging)
+     */
+    static resetInstance() {
+        MovementEngine.instance = null;
+    }
 }
 
-// Make MovementEngine available globally
+// Initialize singleton instance
+MovementEngine.instance = null;
+
+// Create singleton instance and make it available globally
+const movementEngineInstance = MovementEngine.getInstance();
 window.MovementEngine = MovementEngine;
+window.movementEngine = movementEngineInstance;

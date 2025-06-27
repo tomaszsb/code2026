@@ -103,25 +103,25 @@
   margin-right: 6px;
 }
 
-/* Card color indicators */
+/* Card color indicators - Using unified design system */
 .card-color-w {
-  background-color: #4285f4; /* Work Type - Blue */
+  background-color: var(--card-work); /* Work Type - Blue */
 }
 
 .card-color-b {
-  background-color: #ea4335; /* Bank - Red */
+  background-color: var(--card-bank); /* Bank - Red */
 }
 
 .card-color-i {
-  background-color: #fbbc05; /* Investor - Yellow */
+  background-color: var(--card-investor); /* Investor - Yellow */
 }
 
 .card-color-l {
-  background-color: #34a853; /* Life - Green */
+  background-color: var(--card-life); /* Life - Green */
 }
 
 .card-color-e {
-  background-color: #8e44ad; /* Expeditor - Purple */
+  background-color: var(--card-expeditor); /* Expeditor - Purple */
 }
 
 .card-type-count-text {
@@ -993,35 +993,35 @@
   transform: translateY(-1px);
 }
 
-/* Card type specific color themes */
+/* Card type specific color themes - Using unified design system */
 .card-type-w .card-header,
 .animated-card-type-w .animated-card-header,
 .card-detail-type-w .card-detail-header {
-  background-color: #4285f4; /* Work Type - Blue */
+  background-color: var(--card-work); /* Work Type - Blue */
 }
 
 .card-type-b .card-header,
 .animated-card-type-b .animated-card-header,
 .card-detail-type-b .card-detail-header {
-  background-color: #ea4335; /* Bank - Red */
+  background-color: var(--card-bank); /* Bank - Red */
 }
 
 .card-type-i .card-header,
 .animated-card-type-i .animated-card-header,
 .card-detail-type-i .card-detail-header {
-  background-color: #fbbc05; /* Investor - Yellow */
+  background-color: var(--card-investor); /* Investor - Yellow */
 }
 
 .card-type-l .card-header,
 .animated-card-type-l .animated-card-header,
 .card-detail-type-l .card-detail-header {
-  background-color: #34a853; /* Life - Green */
+  background-color: var(--card-life); /* Life - Green */
 }
 
 .card-type-e .card-header,
 .animated-card-type-e .animated-card-header,
 .card-detail-type-e .card-detail-header {
-  background-color: #8e44ad; /* Expeditor - Purple */
+  background-color: var(--card-expeditor); /* Expeditor - Purple */
 }
 
 /* ======================

@@ -273,23 +273,23 @@
 }
 
 .work-card {
-  background-color: #4285f4;
+  background-color: var(--card-work);
 }
 
 .business-card {
-  background-color: #ea4335;
+  background-color: var(--card-bank);
 }
 
 .innovation-card {
-  background-color: #fbbc05;
+  background-color: var(--card-investor);
 }
 
 .leadership-card {
-  background-color: #34a853;
+  background-color: var(--card-life);
 }
 
 .environment-card {
-  background-color: #8e44ad;
+  background-color: var(--card-expeditor);
 }
 
 /* Ensure all sections in space explorer have proper spacing */
