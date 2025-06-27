@@ -544,6 +544,24 @@
     margin-bottom: 20px;
 }
 
+.dice-effects-preview {
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: var(--neutral-50);
+    border-radius: 6px;
+    border: 1px solid var(--neutral-200);
+}
+
+.dice-effects-preview .preview-label {
+    font-weight: var(--font-weight-medium);
+    color: var(--neutral-600);
+}
+
+.dice-effects-preview .preview-text {
+    color: var(--neutral-800);
+    font-size: var(--font-size-sm);
+}
+
 .dice-container {
     display: flex;
     align-items: center;

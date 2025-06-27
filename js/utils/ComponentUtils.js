@@ -230,13 +230,74 @@ const ComponentUtils = {
         effects.forEach(effect => {
             if (effect.effect_type && effect.effect_type.includes('_cards')) {
                 const cardType = effect.effect_type.replace('_cards', '').toUpperCase();
+                
+                let action;
+                if (effect.effect_value === 'dice' && effect.use_dice === 'true') {
+                    // Look up dice effects to show range
+                    action = ComponentUtils.getDiceActionText(spaceName, visitType, cardType);
+                } else {
+                    action = `Draw ${effect.effect_value || 1}`;
+                }
+                
                 types.push({ 
                     type: cardType, 
-                    action: `Draw ${effect.effect_value || 1}` 
+                    action: action
                 });
             }
         });
         return types;
+    },
+    
+    // Get dice action text showing range (e.g., "Draw 1-3")
+    getDiceActionText: (spaceName, visitType, cardType) => {
+        if (!window.CSVDatabase?.loaded || !window.CSVDatabase.diceEffects) {
+            return "Draw dice";
+        }
+        
+        // Find dice effects for this space/visit/card type
+        const diceEffects = window.CSVDatabase.diceEffects.data || [];
+        const matchingEffect = diceEffects.find(row => 
+            row.space_name === spaceName && 
+            row.visit_type === visitType && 
+            row.card_type === cardType
+        );
+        
+        if (!matchingEffect) {
+            return "Draw dice";
+        }
+        
+        // Get all dice outcomes
+        const outcomes = [
+            matchingEffect.roll_1,
+            matchingEffect.roll_2, 
+            matchingEffect.roll_3,
+            matchingEffect.roll_4,
+            matchingEffect.roll_5,
+            matchingEffect.roll_6
+        ].filter(outcome => outcome && outcome !== 'No change');
+        
+        if (outcomes.length === 0) {
+            return "Draw dice";
+        }
+        
+        // Extract numbers from outcomes (e.g., "Draw 1" -> 1)
+        const amounts = outcomes.map(outcome => {
+            const match = outcome.match(/Draw (\d+)/i);
+            return match ? parseInt(match[1]) : 0;
+        }).filter(amount => amount > 0);
+        
+        if (amounts.length === 0) {
+            return "Draw dice";
+        }
+        
+        const min = Math.min(...amounts);
+        const max = Math.max(...amounts);
+        
+        if (min === max) {
+            return `Draw ${min}`;
+        } else {
+            return `Draw ${min}-${max}`;
+        }
     },
     
     // Parse card type from dice outcome

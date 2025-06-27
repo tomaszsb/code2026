@@ -185,6 +185,39 @@ function DiceRollSection({
         return null;
     }
 
+    // Get available dice effects for preview
+    const getDiceEffectsPreview = () => {
+        if (!currentPlayer || !window.CSVDatabase?.loaded || hasRolled) return null;
+        
+        const diceEffects = window.CSVDatabase.diceEffects.query({
+            space_name: currentPlayer.position,
+            visit_type: currentPlayer.visitType || 'First'
+        });
+        
+        if (diceEffects.length === 0) return null;
+        
+        const effectTypes = [];
+        diceEffects.forEach(effect => {
+            if (effect.effect_type === 'cards' && effect.card_type) {
+                const cardTypeName = window.CardUtils?.getCardTypeConfig(effect.card_type)?.name || effect.card_type;
+                const actionText = window.ComponentUtils?.getDiceActionText(
+                    currentPlayer.position, 
+                    currentPlayer.visitType || 'First', 
+                    effect.card_type
+                ) || 'Draw dice';
+                effectTypes.push(`${cardTypeName}: ${actionText}`);
+            } else if (effect.effect_type === 'money') {
+                effectTypes.push('Money effects');
+            } else if (effect.effect_type === 'time') {
+                effectTypes.push('Time effects');
+            }
+        });
+        
+        return effectTypes.length > 0 ? effectTypes.join(' • ') : null;
+    };
+
+    const effectsPreview = getDiceEffectsPreview();
+
     return React.createElement('div', {
         key: 'dice-roll-section',
         className: 'dice-roll-section'
@@ -194,6 +227,20 @@ function DiceRollSection({
             className: 'section-title'
         }, '🎲 Dice Roll'),
         
+        effectsPreview && React.createElement('div', {
+            key: 'effects-preview',
+            className: 'dice-effects-preview'
+        }, [
+            React.createElement('small', {
+                key: 'preview-label',
+                className: 'preview-label'
+            }, 'Dice-based effects: '),
+            React.createElement('span', {
+                key: 'preview-text',
+                className: 'preview-text'
+            }, effectsPreview)
+        ]),
+        
         React.createElement('div', { 
             key: 'dice-controls',
             className: 'dice-controls'
@@ -202,8 +249,9 @@ function DiceRollSection({
                 key: 'dice-button',
                 className: `btn ${hasRolled ? 'btn--success' : 'btn--primary'} btn--full ${rolling ? 'is-loading' : ''} dice-roll-button`,
                 onClick: handleDiceRoll,
-                disabled: rolling || hasRolled
-            }, rolling ? 'Rolling...' : hasRolled ? 'Rolled' : 'Roll Dice'),
+                disabled: rolling || hasRolled,
+                title: hasRolled ? 'Dice rolled' : 'Roll dice and apply all dice-based effects'
+            }, rolling ? 'Rolling...' : hasRolled ? 'Rolled' : 'Roll Dice & Apply Effects'),
             
             hasRolled && diceRollValue && React.createElement('div', {
                 key: 'dice-result',

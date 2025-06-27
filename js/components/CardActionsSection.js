@@ -66,11 +66,30 @@ function CardActionsSection({
         }
     };
 
-    // Smart filtering for OWNER-FUND-INITIATION space
+    // Check if a card action is dice-based
+    const isDiceBasedAction = (cardAction) => {
+        if (!currentPlayer || !window.CSVDatabase?.loaded) return false;
+        
+        // Check if this space has dice effects for this card type
+        const diceEffects = window.CSVDatabase.diceEffects.query({
+            space_name: currentPlayer.position,
+            visit_type: currentPlayer.visitType || 'First',
+            card_type: cardAction.type
+        });
+        
+        return diceEffects.length > 0;
+    };
+
+    // Smart filtering for card actions
     const getFilteredCardActions = () => {
         if (!availableCardActions) return [];
 
         return availableCardActions.filter((cardAction) => {
+            // Filter out dice-based card actions (these are handled by dice roll automatically)
+            if (isDiceBasedAction(cardAction)) {
+                return false;
+            }
+            
             // Smart filtering for OWNER-FUND-INITIATION space
             if (currentPlayer && currentPlayer.position === 'OWNER-FUND-INITIATION') {
                 const scopeCost = currentPlayer.scopeTotalCost || 0;
