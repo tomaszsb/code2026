@@ -185,7 +185,17 @@ gameState.players?.find()  // Defensive
 
 ## Recent Improvements
 
-### ✅ **Phase 24: Complete Negotiate Button Implementation (Latest)**
+### ✅ **Phase 25: Fix End Turn Player Movement System (Latest)**
+- **Core Movement Fix**: End turn button now properly advances players to next space (OWNER-SCOPE-INITIATION → OWNER-FUND-INITIATION)
+- **CSV Field Mapping Fix**: Corrected critical field name mismatch in MovementEngine (space_1/space_2 → destination_1/destination_2)
+- **Event Loop Resolution**: Fixed infinite spaceReentry event loop that prevented turn completion and reset actions continuously
+- **Smart Movement UX**: Auto-select single move destinations, only show selection UI for multiple choices
+- **Event Chain Cleanup**: Removed duplicate playerMoved event emission causing race conditions in turn flow
+- **Negotiation Context**: Added fromNegotiation flag to prevent unnecessary spaceReentry triggers during normal gameplay
+- **Debug Infrastructure**: Comprehensive movement debugging to trace CSV data access and field mapping issues
+- **Data Source Priority**: Fixed MovementEngine to prioritize MOVEMENT.csv over SPACE_CONTENT.csv for connection data
+
+### ✅ **Phase 24: Complete Negotiate Button Implementation**
 - **Full Negotiate Functionality**: Negotiate button now works correctly with proper time penalty accumulation
 - **State Restoration Logic**: Fixed time penalty to accumulate (current + penalty) instead of resetting to snapshot time
 - **Enhanced Dice Detection**: Updated ComponentUtils.requiresDiceRoll to detect both movement dice and effect-based dice (use_dice=true)
