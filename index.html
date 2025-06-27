@@ -122,8 +122,7 @@
         const logLevel = urlParams.get('logLevel') || 'info';
         
         if (debugMode) {
-            CSVDatabase.debug = true;
-            GameStateManager.setDebug(true);
+            window.CSVDatabase.debug = true;
             console.log('Debug mode enabled');
         }
 

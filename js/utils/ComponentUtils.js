@@ -214,8 +214,21 @@ const ComponentUtils = {
     // Check if space requires dice roll
     requiresDiceRoll: (spaceName, visitType = 'First') => {
         if (!window.CSVDatabase?.loaded) return false;
+        
+        // Check for movement-based dice (DICE_OUTCOMES.csv)
         const diceOutcome = window.CSVDatabase.diceOutcomes.find(spaceName, visitType);
-        return diceOutcome !== null;
+        if (diceOutcome) {
+            return true;
+        }
+        
+        // Check for effect-based dice (SPACE_EFFECTS.csv with use_dice=true)
+        const diceEffects = window.CSVDatabase.spaceEffects.query({
+            space_name: spaceName,
+            visit_type: visitType,
+            use_dice: 'true'
+        });
+        
+        return diceEffects && diceEffects.length > 0;
     },
     
     // Get card types that space affects

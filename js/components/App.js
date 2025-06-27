@@ -113,7 +113,7 @@ function App({ debugMode = false, logLevel = 'info' }) {
             showPlayerSetup
                 ? React.createElement(EnhancedPlayerSetup)
                 : (window.GamePanelLayout ? 
-                    React.createElement(GamePanelLayout) :
+                    React.createElement(GamePanelLayout, { debugMode }) :
                     React.createElement(GameBoard)
                   ),
             

@@ -185,7 +185,17 @@ gameState.players?.find()  // Defensive
 
 ## Recent Improvements
 
-### ✅ **Phase 23: Unified Dice System and UI Cleanup (Latest)**
+### ✅ **Phase 24: Complete Negotiate Button Implementation (Latest)**
+- **Full Negotiate Functionality**: Negotiate button now works correctly with proper time penalty accumulation
+- **State Restoration Logic**: Fixed time penalty to accumulate (current + penalty) instead of resetting to snapshot time
+- **Enhanced Dice Detection**: Updated ComponentUtils.requiresDiceRoll to detect both movement dice and effect-based dice (use_dice=true)
+- **Action Rediscovery System**: Added spaceReentry event system to rediscover actions after negotiation
+- **Event Flow Integration**: Fixed showDiceRoll event handling in ActionPanel to restore dice button after negotiation
+- **Debug Information**: Added comprehensive negotiate status debugging and space data visualization in debug mode
+- **UI Display Fix**: Corrected PlayerResources to show player.timeSpent instead of player.time
+- **Complete Turn Cycle**: Negotiate now properly restores state, applies penalty, ends turn, and rediscovers actions
+
+### ✅ **Phase 23: Unified Dice System and UI Cleanup**
 - **Single Button Interface**: Combined dice rolling and card effects into one "Roll Dice & Apply Effects" button
 - **Smart Action Filtering**: CardActionsSection now automatically hides dice-based card actions to prevent duplication
 - **Enhanced User Experience**: Players see dice preview ("Work: Draw 1-3") before rolling, then automatic effect application

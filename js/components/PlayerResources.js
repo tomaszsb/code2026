@@ -56,7 +56,7 @@ function PlayerResources({ player }) {
                 React.createElement('span', {
                     key: 'time-value',
                     className: 'resource-value'
-                }, `${player.time || 0} units`)
+                }, `${player.timeSpent || 0} days`)
             ]),
             
             React.createElement('div', {

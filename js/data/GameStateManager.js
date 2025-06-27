@@ -429,8 +429,8 @@ class GameStateManager {
         player.scopeItems = snapshot.scopeItems ? JSON.parse(JSON.stringify(snapshot.scopeItems)) : [];
         player.scopeTotalCost = snapshot.scopeTotalCost || 0;
         
-        // Apply time penalty for negotiation (same as space would cost)
-        player.timeSpent = snapshot.timeSpent + actualTimePenalty;
+        // Apply time penalty for negotiation (add to current time, don't reset to snapshot time)
+        player.timeSpent = player.timeSpent + actualTimePenalty;
         
         this.setState({ players });
         

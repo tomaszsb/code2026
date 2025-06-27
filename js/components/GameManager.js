@@ -107,6 +107,48 @@ function GameManager() {
         }
     });
     
+    // Handle time changes (for negotiation penalties, etc.)
+    useEventListener('timeChanged', ({ playerId, amount, source }) => {
+        try {
+            console.log(`GameManager: *** RECEIVED timeChanged EVENT *** - player ${playerId}, amount ${amount}, source: ${source}`);
+            const playerBefore = gameState.players.find(p => p.id === playerId);
+            console.log(`GameManager: Player ${playerId} time BEFORE: ${playerBefore?.timeSpent || 'unknown'}`);
+            
+            updatePlayerTime(playerId, amount);
+            
+            const playerAfter = gameState.players.find(p => p.id === playerId);
+            console.log(`GameManager: Player ${playerId} time AFTER: ${playerAfter?.timeSpent || 'unknown'}`);
+        } catch (error) {
+            console.error('GameManager: Error in timeChanged handler:', error);
+            gameStateManager.handleError(error, 'Time Change');
+        }
+    });
+    
+    // Handle space re-entry (for rediscovering actions after negotiation)
+    useEventListener('spaceReentry', ({ playerId, spaceName, visitType }) => {
+        try {
+            console.log(`GameManager: *** RECEIVED spaceReentry EVENT *** - player ${playerId}, space: ${spaceName}, visitType: ${visitType}`);
+            
+            // Check if CSVDatabase is loaded before accessing it
+            if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+                console.error('GameManager: CSVDatabase not loaded for space re-entry');
+                return;
+            }
+            
+            // Get space data and re-trigger space effects processing
+            const spaceData = window.CSVDatabase.spaceContent.find(spaceName, visitType);
+            if (spaceData) {
+                console.log(`GameManager: Re-processing space effects for ${spaceName}`);
+                processSpaceEffects(playerId, spaceData);
+            } else {
+                console.error(`GameManager: Space data not found for ${spaceName}/${visitType}`);
+            }
+        } catch (error) {
+            console.error('GameManager: Error in spaceReentry handler:', error);
+            gameStateManager.handleError(error, 'Space Re-entry');
+        }
+    });
+    
     /**
      * Process space effects when player lands on space
      */
@@ -447,22 +489,32 @@ function GameManager() {
      * Update player time spent
      */
     function updatePlayerTime(playerId, timeAmount) {
+        console.log(`GameManager: *** updatePlayerTime CALLED *** - playerId: ${playerId}, timeAmount: ${timeAmount}`);
+        
         const players = [...gameState.players];
         const player = players.find(p => p.id === playerId);
         
-        if (!player) return;
+        if (!player) {
+            console.error(`GameManager: Player ${playerId} not found in updatePlayerTime`);
+            return;
+        }
         
         const previousTime = player.timeSpent;
         player.timeSpent += timeAmount;
         
+        console.log(`GameManager: Updating player ${playerId} time: ${previousTime} + ${timeAmount} = ${player.timeSpent}`);
+        
         gameStateManager.setState({ players });
         
+        console.log(`GameManager: *** EMITTING playerTimeChanged EVENT ***`);
         gameStateManager.emit('playerTimeChanged', {
             player,
             previousTime,
             newTime: player.timeSpent,
             change: timeAmount
         });
+        
+        console.log(`GameManager: updatePlayerTime completed for player ${playerId}`);
     }
     
     

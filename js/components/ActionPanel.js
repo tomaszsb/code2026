@@ -127,6 +127,18 @@ function ActionPanel() {
         }));
     });
 
+    // Listen for dice roll requirements
+    useEventListener('showDiceRoll', ({ playerId, spaceName, visitType }) => {
+        if (playerId === currentPlayer?.id) {
+            setActionState(prev => ({
+                ...prev,
+                diceRequired: true,
+                showDiceRoll: true,
+                pendingAction: spaceName
+            }));
+        }
+    });
+
 
     // Listen for turn state changes
     useEventListener('turnStarted', ({ player, turnNumber }) => {

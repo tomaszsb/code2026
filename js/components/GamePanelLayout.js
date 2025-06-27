@@ -3,7 +3,7 @@
  * Brings back the three-panel functionality with modern UX
  */
 
-function GamePanelLayout() {
+function GamePanelLayout({ debugMode = false }) {
     const { useState, useEffect } = React;
     const [gameState, gameStateManager] = useGameState();
     const [layoutState, setLayoutState] = useState({
@@ -110,7 +110,8 @@ function GamePanelLayout() {
             }, [
                 layoutState.activeTab === 'status' && (window.PlayerStatusPanel ? 
                     React.createElement(PlayerStatusPanel, {
-                        key: 'status-panel'
+                        key: 'status-panel',
+                        debugMode: debugMode
                     }) : React.createElement('div', {key: 'status-loading'}, 'Loading status...')
                 ),
                 layoutState.activeTab === 'actions' && (window.ActionPanel ?
@@ -140,7 +141,8 @@ function GamePanelLayout() {
                 
                 layoutState.leftPanelExpanded && (window.PlayerStatusPanel ?
                     React.createElement(PlayerStatusPanel, {
-                        key: 'status-panel'
+                        key: 'status-panel',
+                        debugMode: debugMode
                     }) : React.createElement('div', {key: 'status-loading'}, 'Loading status...')
                 )
             ]),

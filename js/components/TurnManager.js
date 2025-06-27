@@ -30,6 +30,21 @@ function TurnManager() {
             actionsCompleted: [],
             turnStartTime: Date.now()
         });
+        
+        // Re-trigger space effects for the current space to rediscover actions
+        // This is needed when player stays on same space after negotiation
+        setTimeout(() => {
+            if (player && player.position) {
+                console.log(`TurnManager: Re-triggering space effects for ${player.position} on new turn`);
+                
+                // Emit a space re-entry event to trigger action discovery
+                gameStateManager.emit('spaceReentry', {
+                    playerId: player.id,
+                    spaceName: player.position,
+                    visitType: player.visitType || 'First'
+                });
+            }
+        }, 100);
     });
 
     // Handle player movement completion

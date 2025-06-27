@@ -3,7 +3,7 @@
  * Shows current player info, space details, and cards in hand
  */
 
-function PlayerStatusPanel() {
+function PlayerStatusPanel({ debugMode = false }) {
     const { useState, useEffect } = React;
     const [gameState, gameStateManager] = useGameState();
     const [panelState, setPanelState] = useState({
@@ -74,7 +74,8 @@ function PlayerStatusPanel() {
         // Current Space Info
         ...(window.CurrentSpaceInfo ? [React.createElement(CurrentSpaceInfo, {
             key: 'space-info',
-            player: currentPlayer
+            player: currentPlayer,
+            debugMode: debugMode
         })] : []),
 
         // Player Resources

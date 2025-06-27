@@ -87,49 +87,112 @@ function TurnControls({
         console.log(`TurnControls: Actions ${completedActionsCount}/${requiredActionsCount}, canEndTurn: ${canEnd}`);
     };
 
-    // Check if negotiate button should be enabled
-    const checkNegotiateEnabled = () => {
-        if (!currentPlayer || !window.CSVDatabase || !window.CSVDatabase.loaded) return false;
+    // Check if negotiate button should be enabled and get reason if disabled
+    const getNegotiateStatus = () => {
+        if (!currentPlayer) return { enabled: false, reason: 'No current player' };
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return { enabled: false, reason: 'Database not loaded' };
 
+        // Check space content for negotiation permission
         const currentSpaceData = window.CSVDatabase.spaceContent.find(
             currentPlayer.position, 
             currentPlayer.visitType || 'First'
         );
 
-        if (!currentSpaceData) return false;
+        if (!currentSpaceData) return { enabled: false, reason: `Space data not found for ${currentPlayer.position}` };
 
-        // Negotiate is enabled if space has immediate time data
-        // It's disabled if time is determined by choice, roll, or drawing cards
-        const hasImmediateTime = currentSpaceData.Time && 
-                                currentSpaceData.Time !== '' && 
-                                !currentSpaceData.Time.includes('roll') &&
-                                !currentSpaceData.Time.includes('choice') &&
-                                !currentSpaceData.Time.includes('draw');
+        // Check if space allows negotiation
+        if (currentSpaceData.can_negotiate === 'No') {
+            return { enabled: false, reason: 'Space does not allow negotiation' };
+        }
 
-        return hasImmediateTime;
+        // Get time effects from SPACE_EFFECTS.csv
+        const timeEffects = window.CSVDatabase.spaceEffects.query({
+            space_name: currentPlayer.position,
+            visit_type: currentPlayer.visitType || 'First',
+            effect_type: 'time'
+        });
+
+        if (!timeEffects || timeEffects.length === 0) {
+            return { enabled: false, reason: 'No time effects found' };
+        }
+
+        const timeEffect = timeEffects[0];
+        const timeValue = timeEffect.effect_value;
+        const useDice = timeEffect.use_dice === 'true';
+
+        // If time is fixed (not dice-based), always enable
+        if (!useDice && timeValue && timeValue !== 'dice') {
+            return { enabled: true, reason: `Fixed time: ${timeValue} days` };
+        }
+
+        // If time depends on dice roll, enable after dice rolled
+        if (useDice || timeValue === 'dice') {
+            if (hasRolled) {
+                return { enabled: true, reason: `Dice rolled, time determined` };
+            } else {
+                return { enabled: false, reason: `Waiting for dice roll to determine time` };
+            }
+        }
+
+        return { enabled: false, reason: `Unknown time format: ${timeValue}` };
+    };
+
+    // Legacy function for compatibility
+    const checkNegotiateEnabled = () => {
+        return getNegotiateStatus().enabled;
     };
 
     // Handle negotiate action
     const handleNegotiate = () => {
-        if (!currentPlayer) return;
+        console.log('TurnControls: Negotiate button clicked');
+        
+        if (!currentPlayer) {
+            console.error('TurnControls: No current player found for negotiation');
+            return;
+        }
 
-        console.log('TurnControls: Negotiating - applying time penalty and clearing state');
+        console.log('TurnControls: Applying negotiation - restoring state and time penalty');
 
-        // Apply -1 day time penalty for negotiating
-        gameStateManager.emit('timeChanged', {
-            playerId: currentPlayer.id,
-            amount: -1,
-            source: 'negotiation'
+        // Restore player state to space entry snapshot and apply time penalty
+        if (currentPlayer.spaceEntrySnapshot) {
+            // Has snapshot - restore state with penalty
+            gameStateManager.restorePlayerSnapshot(currentPlayer.id);
+        } else {
+            // No snapshot (first space) - just apply time penalty
+            console.log('TurnControls: No snapshot found, applying direct time penalty for first space');
+            
+            // Get time penalty from space effects
+            const timeEffects = window.CSVDatabase.spaceEffects.query({
+                space_name: currentPlayer.position,
+                visit_type: currentPlayer.visitType || 'First',
+                effect_type: 'time'
+            });
+            
+            const timePenalty = timeEffects.length > 0 ? parseInt(timeEffects[0].effect_value) || 1 : 1;
+            
+            console.log(`TurnControls: Applying ${timePenalty} day time penalty for negotiation`);
+            
+            gameStateManager.emit('timeChanged', {
+                playerId: currentPlayer.id,
+                amount: timePenalty,
+                source: 'negotiation_penalty'
+            });
+            
+            console.log(`TurnControls: Applied ${timePenalty} time penalty for negotiation on first space`);
+        }
+        
+        console.log('TurnControls: Current player after negotiation:', {
+            timeSpent: currentPlayer.timeSpent
         });
 
         // Show message about negotiation
         gameStateManager.emit('showMessage', {
             type: 'info',
             message: 'Negotiation Used',
-            description: 'Time penalty applied (-1 day). All selections cleared.'
+            description: 'Player state restored to space entry. Time penalty applied.'
         });
 
-        console.log('TurnControls: Restored player state with time penalty');
+        console.log('TurnControls: Player state restored with time penalty');
 
         // Reset all turn state
         if (onTurnControlsStateChange) {
@@ -158,13 +221,13 @@ function TurnControls({
 
         console.log('TurnControls: Reset turn state, ending turn');
 
-        // End the turn after negotiating
+        // End the turn after negotiating (player stays on same space)
         setTimeout(() => {
             gameStateManager.emit('turnEnded', {
                 playerId: currentPlayer.id,
                 source: 'negotiation'
             });
-            console.log('TurnControls: Turn ended after negotiation');
+            console.log('TurnControls: Turn ended after negotiation - player remains on current space');
         }, 500); // Small delay to ensure state is cleared first
     };
 
@@ -279,10 +342,18 @@ function TurnControls({
                 className: `btn btn--warning btn--full negotiate-button ${!checkNegotiateEnabled() ? 'is-disabled' : ''}`,
                 onClick: checkNegotiateEnabled() ? handleNegotiate : undefined,
                 disabled: !checkNegotiateEnabled(),
-                title: checkNegotiateEnabled() ? 
-                    'Clear all selections and end turn (applies -1 day penalty)' : 
-                    'Negotiate unavailable - time determined by roll/choice/cards'
-            }, 'Negotiate'),
+                title: (() => {
+                    const status = getNegotiateStatus();
+                    return status.enabled ? 
+                        'Clear all selections and end turn (applies -1 day penalty)' : 
+                        `Negotiate unavailable: ${status.reason}`;
+                })()
+            }, debugMode ? 
+                (() => {
+                    const status = getNegotiateStatus();
+                    return status.enabled ? 'Negotiate' : `Negotiate (${status.reason})`;
+                })() : 
+                'Negotiate'),
 
             React.createElement('button', {
                 key: 'view-rules',
