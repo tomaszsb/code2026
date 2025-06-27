@@ -65,18 +65,19 @@ js/components/CurrentSpaceInfo.js   # Space details/requirements (84 lines)
 js/components/PlayerResources.js    # Money/time management (119 lines)
 js/components/CardsInHand.js        # Card grid display (140 lines)
 
-# Data Files - Clean CSV Architecture
+# Data Files - Clean CSV Architecture with Dice Integration
 data/cards.csv                      # Card properties and effects (unchanged)
 data/MOVEMENT.csv                   # Space-to-space connections
 data/DICE_OUTCOMES.csv              # Dice roll destinations  
-data/SPACE_EFFECTS.csv              # Card/time/money effects with conditions
+data/SPACE_EFFECTS.csv              # Card/time/money effects with conditions + dice references
+data/DICE_EFFECTS.csv               # Dice-based card drawing amounts (1-6 outcomes)
 data/SPACE_CONTENT.csv              # UI display text and story content
 data/GAME_CONFIG.csv                # Metadata & configuration
 ```
 
 ## Development Rules
 
-### CSV Data Standards - Clean Architecture
+### CSV Data Standards - Clean Architecture with Dice Integration
 ```javascript
 // ✅ Query clean CSV data with unified API (with safety checks)
 if (!window.CSVDatabase || !window.CSVDatabase.loaded) return null;
@@ -87,7 +88,12 @@ const movement = window.CSVDatabase.movement.find(spaceName, visitType);
 const spaceEffects = window.CSVDatabase.spaceEffects.query({space: spaceName, visitType});
 const spaceContent = window.CSVDatabase.spaceContent.find(spaceName, visitType);
 const diceOutcomes = window.CSVDatabase.diceOutcomes.find(spaceName, visitType);
+const diceEffects = window.CSVDatabase.diceEffects.find(spaceName, visitType);
 const gameConfig = window.CSVDatabase.gameConfig.find(spaceName);
+
+// ✅ Dice-based card effects (new hybrid system)
+// SPACE_EFFECTS.csv: effect_type=e_cards, effect_value=dice, use_dice=true
+// DICE_EFFECTS.csv: roll_1=Draw 1, roll_2=Draw 1, roll_3=Draw 2, etc.
 
 // ❌ No direct array manipulation
 spaces.find(s => s.space_name === name);  // Forbidden
@@ -179,7 +185,15 @@ gameState.players?.find()  // Defensive
 
 ## Recent Improvements
 
-### ✅ **Phase 21: Critical Bug Fixes & React Optimization (Latest)**
+### ✅ **Phase 22: Dice-Based Card Effects Integration (Latest)**
+- **Hybrid CSV Architecture**: Enhanced SPACE_EFFECTS.csv with `use_dice` column for dice-based randomization
+- **EffectsEngine Enhanced**: Added dice lookup system that references DICE_EFFECTS.csv for variable card amounts
+- **Original Game Logic Restored**: Card types and dice-based amounts now match original Spaces.csv design
+- **Card Type Corrections**: Fixed OWNER-SCOPE-INITIATION (expeditor cards), LEND-SCOPE-CHECK (life+expeditor), based on original data
+- **Dice Integration**: Players now get 1-3 cards based on dice rolls instead of fixed amounts, preserving excitement
+- **Clean Architecture Maintained**: System uses existing CSV structure while adding dynamic dice effects
+
+### ✅ **Phase 21: Critical Bug Fixes & React Optimization**
 - **Legacy API Violations Fixed**: Corrected 18+ critical violations where components used removed `spaces` API
 - **Database Initialization Fixed**: Added missing `cleanArchitecture = true` flag that broke movement API completely  
 - **Dice Functionality Restored**: Fixed dice rolls to trigger card drawing, money/time effects, and player movement
@@ -314,5 +328,6 @@ For detailed information see:
 - 🛡️ **Defensive Programming**: All APIs handle null/undefined gracefully
 - ✨ **Single Data Path**: Only one way to access data - no legacy confusion
 - 📊 **Structured Data**: No more complex parsing like `"Draw 1 if scope ≤ $ 4 M"`
+- 🎲 **Dice Integration**: Hybrid system combines clean CSV structure with dice-based randomization
 - 🐛 **Easy Debugging**: Issues isolated to specific data types and engines
 - 🚀 **Performance**: Specialized engines with caching and optimized queries

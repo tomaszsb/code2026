@@ -35,7 +35,8 @@
       "Bash(rg -A5 -B5 \"spaceName.*visitType|visitType.*spaceName\" /mnt/d/unravel/current_game/code2026/js/)",
       "Bash(rg -A10 -B5 \"cacheKey.*/\" /mnt/d/unravel/current_game/code2026/js/)",
       "Bash(grep -n \"getSpaceData\\|getCurrentSpaceData\" /mnt/d/unravel/current_game/code2026/js/utils/MovementEngine.js)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(cat:*)"
     ],
     "deny": []
   }

@@ -106,6 +106,12 @@ class EffectsEngine {
                     return this.applyCardEffect(player, effect, gameState);
                 case 'money':
                     return this.applyMoneyEffect(player, effect, gameState);
+                case 'w_cards':
+                case 'b_cards':
+                case 'i_cards':
+                case 'l_cards':
+                case 'e_cards':
+                    return this.applySpecificCardEffect(player, effect, gameState);
                 default:
                     this.log(`Unknown effect type: ${effect.effect_type}`);
                     return { success: false, reason: 'Unknown effect type' };
@@ -219,6 +225,121 @@ class EffectsEngine {
                 this.log(`Unknown card action: ${action}`);
                 return { success: false, reason: 'Unknown card action' };
         }
+    }
+
+    /**
+     * Apply specific card type effects (w_cards, b_cards, etc.)
+     */
+    applySpecificCardEffect(player, effect, gameState) {
+        // Extract card type from effect_type (e.g., 'w_cards' -> 'W')
+        const cardType = effect.effect_type.replace('_cards', '').toUpperCase();
+        
+        let value, note;
+        
+        // Check if this effect uses dice
+        if (effect.use_dice === 'true' && effect.effect_value === 'dice') {
+            // Look up dice effect from DICE_EFFECTS.csv
+            const diceResult = this.getDiceCardEffect(effect.space_name, effect.visit_type, cardType, gameState.lastDiceRoll);
+            if (diceResult) {
+                value = diceResult.amount;
+                note = `Dice roll ${gameState.lastDiceRoll}: ${diceResult.action}`;
+                this.log(`Dice-based card effect: ${note}`);
+            } else {
+                this.log(`No dice effect found for ${effect.space_name}/${effect.visit_type}/${cardType}`);
+                return { success: false, reason: 'No dice effect found' };
+            }
+        } else {
+            // Use fixed value
+            value = parseInt(effect.effect_value) || 0;
+            note = `Drew ${value} ${cardType} cards`;
+        }
+        
+        this.log(`Drawing ${value} ${cardType} cards for player`);
+        
+        // Emit event for GameStateManager to handle card drawing
+        if (window.GameStateManager && value > 0) {
+            window.GameStateManager.emit('drawCards', {
+                playerId: player.id,
+                cardType: cardType,
+                amount: value,
+                source: 'space_effect'
+            });
+        }
+        
+        return { 
+            success: true, 
+            action: 'specific_card_draw', 
+            cardType: cardType, 
+            value: value,
+            note: note
+        };
+    }
+
+    /**
+     * Get dice-based card effect from DICE_EFFECTS.csv
+     */
+    getDiceCardEffect(spaceName, visitType, cardType, diceRoll) {
+        if (!this.database || !this.database.loaded || !this.database.diceEffects) {
+            this.log('DICE_EFFECTS database not available');
+            return null;
+        }
+
+        // Find matching dice effect entry
+        const diceEffects = this.database.diceEffects.data || [];
+        const matchingEffect = diceEffects.find(row => 
+            row.space_name === spaceName && 
+            row.visit_type === visitType && 
+            row.card_type === cardType.toUpperCase()
+        );
+
+        if (!matchingEffect) {
+            this.log(`No dice effect found for ${spaceName}/${visitType}/${cardType}`);
+            return null;
+        }
+
+        // Get the dice roll column (roll_1, roll_2, etc.)
+        const rollColumn = `roll_${diceRoll}`;
+        const rollValue = matchingEffect[rollColumn];
+
+        if (!rollValue) {
+            this.log(`No dice value found for ${rollColumn} in ${spaceName}/${visitType}/${cardType}`);
+            return null;
+        }
+
+        // Parse the roll value (e.g., "Draw 2", "Remove 1", "No change")
+        return this.parseDiceCardAction(rollValue);
+    }
+
+    /**
+     * Parse dice card action text (e.g., "Draw 2", "Remove 1", "No change")
+     */
+    parseDiceCardAction(actionText) {
+        if (!actionText || actionText === 'No change') {
+            return { action: 'No change', amount: 0 };
+        }
+
+        const text = actionText.trim();
+        
+        // Match patterns like "Draw 1", "Draw 2", "Remove 1", "Replace 1"
+        const drawMatch = text.match(/Draw (\d+)/i);
+        if (drawMatch) {
+            return { action: text, amount: parseInt(drawMatch[1]) };
+        }
+
+        const removeMatch = text.match(/Remove (\d+)/i);
+        if (removeMatch) {
+            return { action: text, amount: -parseInt(removeMatch[1]) };
+        }
+
+        const replaceMatch = text.match(/Replace (\d+)/i);
+        if (replaceMatch) {
+            // Replace means remove then draw, so net effect is 0, but we'll treat as draw for now
+            return { action: text, amount: parseInt(replaceMatch[1]) };
+        }
+
+        // Default to no change if we can't parse
+        this.log(`Could not parse dice action: ${text}`);
+        return { action: text, amount: 0 };
     }
 
     /**

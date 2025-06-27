@@ -41,6 +41,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
     const cardColors = getCardTypeColor(selectedCard.card_type);
 
     return React.createElement('div', {
+        key: 'card-modal-overlay',
         className: 'card-modal-overlay',
         onClick: onClose,
         style: {
@@ -57,6 +58,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
         }
     }, [
         React.createElement('div', {
+            key: 'modal-content',
             className: 'card-modal-content',
             onClick: handleModalClick,
             style: {

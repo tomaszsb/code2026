@@ -1,6 +1,6 @@
 space_name,visit_type,effect_type,card_type,roll_1,roll_2,roll_3,roll_4,roll_5,roll_6
-OWNER-SCOPE-INITIATION,First,cards,W,Draw 1,Draw 1,Draw 2,Draw 2,Draw 3,Draw 3
-OWNER-SCOPE-INITIATION,Subsequent,cards,W,Draw 1,Draw 1,Draw 2,Draw 2,Draw 3,Draw 3
+OWNER-SCOPE-INITIATION,First,cards,E,Draw 1,Draw 1,Draw 2,Draw 2,Draw 3,Draw 3
+OWNER-SCOPE-INITIATION,Subsequent,cards,E,Draw 1,Draw 1,Draw 2,Draw 2,Draw 3,Draw 3
 ARCH-FEE-REVIEW,First,money,fee,8%,8%,10%,10%,12%,12%
 ARCH-FEE-REVIEW,Subsequent,money,fee,0%,0%,1%,1%,2%,2%
 ARCH-SCOPE-CHECK,First,cards,W,Remove 1,Draw 1,Replace 1,No change,No change,No change
@@ -23,8 +23,10 @@ INVESTOR-FUND-REVIEW,First,cards,I,Draw 1,Draw 1,Draw 1,Draw 2,Draw 2,Draw 2
 INVESTOR-FUND-REVIEW,Subsequent,cards,I,Draw 1,Draw 1,Draw 1,Draw 2,Draw 2,Draw 2
 INVESTOR-FUND-REVIEW,First,time,days,30,30,30,50,50,70
 INVESTOR-FUND-REVIEW,Subsequent,time,days,30,30,50,50,70,70
-LEND-SCOPE-CHECK,First,cards,W,Remove 1,Draw 1,Draw 1,Replace 1,Replace 1,No change
-LEND-SCOPE-CHECK,Subsequent,cards,W,Remove 1,Draw 1,Replace 1,No change,No change,No change
+LEND-SCOPE-CHECK,First,cards,L,No change,No change,Draw 1,No change,No change,No change
+LEND-SCOPE-CHECK,Subsequent,cards,L,No change,No change,No change,Draw 1,No change,No change
+LEND-SCOPE-CHECK,First,cards,E,Draw 1,Draw 1,Draw 1,Draw 1,Draw 1,Draw 1
+LEND-SCOPE-CHECK,Subsequent,cards,E,Remove 1,Remove 1,Remove 1,Remove 1,Remove 1,Remove 1
 OWNER-DECISION-REVIEW,First,cards,W,Remove 1,Draw 1,Draw 1,Replace 1,Replace 1,No change
 OWNER-DECISION-REVIEW,Subsequent,cards,W,Remove 1,Draw 1,Replace 1,No change,No change,No change
 OWNER-DECISION-REVIEW,First,cards,E,Remove 1,Draw 1,Draw 1,Replace 1,Replace 1,No change
