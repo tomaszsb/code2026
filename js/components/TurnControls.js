@@ -259,23 +259,17 @@ function TurnControls({
         // Execute selected move if one is selected
         if (selectedMove) {
             console.log(`TurnControls: Executing selected move to ${selectedMove}`);
+            console.log('TurnControls: Current player:', currentPlayer);
             
             // Determine correct visit type using MovementEngine
             const visitType = movementEngine.getVisitType(currentPlayer, selectedMove);
             console.log(`TurnControls: Visit type for ${selectedMove}: ${visitType}`);
             
-            // Execute the move
+            // Execute the move (GameManager will handle position update and emit playerMoved)
             gameStateManager.emit('movePlayerRequest', {
                 playerId: currentPlayer.id,
                 spaceName: selectedMove,
                 visitType: visitType
-            });
-
-            // Emit player moved event for turn tracking
-            gameStateManager.emit('playerMoved', {
-                playerId: currentPlayer.id,
-                fromSpace: currentPlayer.position,
-                toSpace: selectedMove
             });
         }
         

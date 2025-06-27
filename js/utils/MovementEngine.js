@@ -48,6 +48,8 @@ class MovementEngine {
             return [];
         }
         
+        this.log(`DEBUG: Getting moves for ${player.name} at ${player.position}, visitType: ${player.visitType}`);
+        
         if (!player || !player.position) {
             this.log('Invalid player or position provided');
             return [];
@@ -58,6 +60,8 @@ class MovementEngine {
             this.log(`No space data found for ${player.position}`);
             return [];
         }
+        
+        this.log(`DEBUG: Found space data for ${player.position}:`, currentSpace);
 
         const spaceType = this.getSpaceType(currentSpace);
         const visitType = this.getVisitType(player, player.position);
@@ -194,6 +198,7 @@ class MovementEngine {
      */
     getMainPathMoves(spaceData, player, visitType) {
         const moves = [];
+        this.log(`DEBUG: getMainPathMoves called for space ${spaceData.space_name}, visitType: ${visitType}`);
         
         // For dice roll spaces, check if we have dice roll results available
         if (spaceData.requires_dice_roll === 'Yes') {
@@ -215,17 +220,20 @@ class MovementEngine {
             }
         }
 
-        // Always include direct destinations from space_1, space_2, etc.
+        // Always include direct destinations from destination_1, destination_2, etc.
         for (let i = 1; i <= 5; i++) {
-            const spaceKey = `space_${i}`;
+            const spaceKey = `destination_${i}`;
+            this.log(`DEBUG: Checking ${spaceKey} = ${spaceData[spaceKey]}`);
             if (spaceData[spaceKey] && spaceData[spaceKey].trim()) {
                 const destination = spaceData[spaceKey].trim();
+                this.log(`DEBUG: Found destination: ${destination}`);
                 if (!moves.includes(destination)) {
                     moves.push(destination);
                 }
             }
         }
 
+        this.log(`DEBUG: getMainPathMoves returning moves:`, moves);
         return moves;
     }
 
@@ -236,13 +244,13 @@ class MovementEngine {
         const moves = [];
 
         // Side quests typically return to main path
-        if (spaceData.space_1 && spaceData.space_1.trim()) {
-            moves.push(spaceData.space_1);
+        if (spaceData.destination_1 && spaceData.destination_1.trim()) {
+            moves.push(spaceData.destination_1);
         }
 
         // Check for additional side quest connections
         for (let i = 2; i <= 5; i++) {
-            const spaceKey = `space_${i}`;
+            const spaceKey = `destination_${i}`;
             if (spaceData[spaceKey] && spaceData[spaceKey].trim()) {
                 moves.push(spaceData[spaceKey]);
             }
@@ -259,7 +267,7 @@ class MovementEngine {
 
         // Special spaces like PM-DECISION-CHECK offer multiple paths
         for (let i = 1; i <= 5; i++) {
-            const spaceKey = `space_${i}`;
+            const spaceKey = `destination_${i}`;
             if (spaceData[spaceKey] && spaceData[spaceKey].trim()) {
                 moves.push(spaceData[spaceKey]);
             }
@@ -284,7 +292,7 @@ class MovementEngine {
         const moves = [];
 
         for (let i = 1; i <= 5; i++) {
-            const spaceKey = `space_${i}`;
+            const spaceKey = `destination_${i}`;
             if (spaceData[spaceKey] && spaceData[spaceKey].trim()) {
                 moves.push(spaceData[spaceKey]);
             }
@@ -511,9 +519,8 @@ class MovementEngine {
      */
     getSpaceData(spaceName, visitType = 'First') {
         if (!this.validateDatabaseAccess()) return null;
-        // Use spaceContent for movement data - it contains space connection info
-        return window.CSVDatabase.spaceContent.find(spaceName, visitType) || 
-               window.CSVDatabase.movement.find(spaceName, visitType);
+        // Use movement data for space connections - it contains destination_1, destination_2, etc.
+        return window.CSVDatabase.movement.find(spaceName, visitType);
     }
 
     /**

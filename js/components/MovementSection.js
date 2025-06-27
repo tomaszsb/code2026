@@ -29,10 +29,24 @@ function MovementSection({
     useEffect(() => {
         if (currentPlayer && window.MovementEngine) {
             const advancedMoves = movementEngine.getAvailableMoves(currentPlayer);
+            console.log('MovementSection: Available moves for', currentPlayer.name, ':', advancedMoves);
+            
             if (onMovementStateChange && advancedMoves.length > 0) {
-                onMovementStateChange({
-                    availableMoves: advancedMoves
-                });
+                // Auto-select if there's only one move (no choice needed)
+                if (advancedMoves.length === 1) {
+                    console.log('MovementSection: Auto-selecting single move:', advancedMoves[0]);
+                    onMovementStateChange({
+                        availableMoves: advancedMoves,
+                        selectedMove: advancedMoves[0],
+                        showMoveSelection: false  // Don't show UI for single moves
+                    });
+                } else {
+                    // Multiple moves - show selection UI
+                    onMovementStateChange({
+                        availableMoves: advancedMoves,
+                        showMoveSelection: true
+                    });
+                }
             }
         }
     }, [currentPlayer?.position, currentPlayer?.id]);
@@ -140,6 +154,21 @@ function MovementSection({
     // Don't render if no moves available
     if (!effectiveAvailableMoves || effectiveAvailableMoves.length === 0) {
         return null;
+    }
+
+    // Don't render UI if there's only one move (auto-selected)
+    if (effectiveAvailableMoves.length === 1) {
+        return React.createElement('div', { key: 'movement-section' }, [
+            React.createElement('div', {
+                key: 'auto-move-info',
+                className: 'auto-move-info'
+            }, [
+                React.createElement('p', {
+                    key: 'auto-move-text',
+                    className: 'auto-move-text'
+                }, `Next destination: ${effectiveAvailableMoves[0]} (auto-selected)`)
+            ])
+        ]);
     }
 
     return React.createElement('div', { key: 'movement-section' }, [

@@ -24,27 +24,26 @@ function TurnManager() {
     }, [gameState.players, gameState.gamePhase, turnState.phase]);
 
     // Handle turn started (from GameStateManager)
-    useEventListener('turnStarted', ({ player, turnCount }) => {
+    useEventListener('turnStarted', ({ player, turnCount, fromNegotiation }) => {
         setTurnState({
             phase: 'MOVING',
             actionsCompleted: [],
             turnStartTime: Date.now()
         });
         
-        // Re-trigger space effects for the current space to rediscover actions
-        // This is needed when player stays on same space after negotiation
-        setTimeout(() => {
-            if (player && player.position) {
-                console.log(`TurnManager: Re-triggering space effects for ${player.position} on new turn`);
-                
+        // Only re-trigger space effects after negotiation, not normal turn progression
+        if (fromNegotiation && player && player.position) {
+            console.log(`TurnManager: Re-triggering space effects for ${player.position} after negotiation`);
+            
+            setTimeout(() => {
                 // Emit a space re-entry event to trigger action discovery
                 gameStateManager.emit('spaceReentry', {
                     playerId: player.id,
                     spaceName: player.position,
                     visitType: player.visitType || 'First'
                 });
-            }
-        }, 100);
+            }, 100);
+        }
     });
 
     // Handle player movement completion
@@ -75,8 +74,9 @@ function TurnManager() {
     });
 
     // Handle manual turn end (from negotiate or end turn button)
-    useEventListener('turnEnded', ({ playerId, reason }) => {
-        endCurrentTurn();
+    useEventListener('turnEnded', ({ playerId, reason, source }) => {
+        const isFromNegotiation = source === 'negotiation';
+        endCurrentTurn(isFromNegotiation);
     });
 
 
@@ -125,7 +125,7 @@ function TurnManager() {
     };
 
     // End current player's turn
-    const endCurrentTurn = () => {
+    const endCurrentTurn = (fromNegotiation = false) => {
         const currentPlayer = getCurrentPlayer();
         
         if (!currentPlayer) {
@@ -134,11 +134,11 @@ function TurnManager() {
 
         // Don't emit turnEnded here - we're responding TO a turnEnded event
         // Just advance to next player
-        advanceToNextPlayer();
+        advanceToNextPlayer(fromNegotiation);
     };
 
     // Advance to next player's turn
-    const advanceToNextPlayer = () => {
+    const advanceToNextPlayer = (fromNegotiation = false) => {
         // Get fresh state directly from GameStateManager to avoid stale state
         const freshState = gameStateManager.getState();
         
@@ -151,7 +151,7 @@ function TurnManager() {
 
         // Use GameStateManager's startTurn method which properly handles state updates
         setTimeout(() => {
-            gameStateManager.startTurn(nextPlayerIndex);
+            gameStateManager.startTurn(nextPlayerIndex, fromNegotiation);
         }, 500);
     };
 

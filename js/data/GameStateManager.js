@@ -209,7 +209,7 @@ class GameStateManager {
     /**
      * Start player turn
      */
-    startTurn(playerId) {
+    startTurn(playerId, fromNegotiation = false) {
         const player = this.state.players[playerId];
         if (!player) {
             throw new Error(`Player ${playerId} not found`);
@@ -221,7 +221,7 @@ class GameStateManager {
             lastAction: null
         });
 
-        this.emit('turnStarted', { player, turnCount: this.state.turnCount });
+        this.emit('turnStarted', { player, turnCount: this.state.turnCount, fromNegotiation });
     }
 
     /**

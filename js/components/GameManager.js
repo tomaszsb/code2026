@@ -16,6 +16,7 @@ function GameManager() {
     
     // Handle player movement
     useEventListener('movePlayerRequest', ({ playerId, spaceName, visitType }) => {
+        console.log('GameManager: Received movePlayerRequest', { playerId, spaceName, visitType });
         try {
             // Check if CSVDatabase is loaded before accessing it
             if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
@@ -29,7 +30,9 @@ function GameManager() {
             }
             
             // Move player
+            console.log('GameManager: About to call movePlayer with', { playerId, spaceName, visitType });
             gameStateManager.movePlayer(playerId, spaceName, visitType);
+            console.log('GameManager: movePlayer completed');
             
             // Save snapshot AFTER movement but BEFORE space effects
             // This captures clean state when entering the space
