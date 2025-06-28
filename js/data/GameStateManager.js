@@ -158,6 +158,17 @@ class GameStateManager {
         return result;
     }
 
+    getStartingSpace() {
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+            return 'START-QUICK-PLAY-GUIDE'; // fallback
+        }
+        
+        const startingSpace = window.CSVDatabase.gameConfig.query()
+            .find(config => config.is_starting_space === 'Yes');
+        
+        return startingSpace ? startingSpace.space_name : 'START-QUICK-PLAY-GUIDE';
+    }
+
     /**
      * GAME STATE ACTIONS
      */
@@ -172,7 +183,7 @@ class GameStateManager {
                 id: index,
                 name: typeof playerData === 'string' ? playerData : playerData.name,
                 color: typeof playerData === 'string' ? '#007bff' : playerData.color,
-                position: 'OWNER-SCOPE-INITIATION',
+                position: this.getStartingSpace(),
                 visitType: 'First',
                 money: 0,
                 timeSpent: 0,

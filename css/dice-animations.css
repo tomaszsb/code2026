@@ -105,33 +105,9 @@
   margin-top: 20px;
 }
 
+/* Button styles inherited from unified-design.css */
 .dice-actions .btn {
   width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.dice-actions .btn-primary {
-  background: #007bff;
-  color: white;
-}
-
-.dice-actions .btn-primary:hover {
-  background: #0056b3;
-}
-
-.dice-actions .btn-success {
-  background: #28a745;
-  color: white;
-}
-
-.dice-actions .btn-success:hover {
-  background: #1e7e34;
 }
 
 .rolling-message {
@@ -141,8 +117,6 @@
   background: #f8f9fa;
   border-radius: 6px;
 }
-}
-
 .dice-roll-container .dice-roll-header h3 {
   margin: 0;
   color: #4285f4;
@@ -584,4 +558,4 @@
   100% { transform: rotateX(720deg) rotateY(360deg) rotateZ(200deg); }
 }
 
-console.log('dice-animations.css code execution finished');
+/* dice-animations.css loaded */

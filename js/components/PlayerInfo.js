@@ -381,14 +381,8 @@ function PlayerInfo({ player, isCurrentPlayer = false, compact = false }) {
                         flexWrap: 'wrap'
                     }
                 }, Object.entries(cardDistribution).map(([type, count]) => {
-                    const typeNames = {
-                        'W': { name: 'Work', icon: '🔧', color: '#3b82f6' },
-                        'B': { name: 'Bank', icon: '💼', color: '#10b981' },
-                        'I': { name: 'Investment', icon: '🔍', color: '#f59e0b' },
-                        'L': { name: 'Life', icon: '⚖️', color: '#ef4444' },
-                        'E': { name: 'Expeditor', icon: '⚠️', color: '#f59e0b' }
-                    };
-                    const typeInfo = typeNames[type] || typeNames['W'];
+                    // Use CardUtils for card type configurations
+                    const typeInfo = window.CardUtils?.getCardTypeConfig(type) || { name: type, icon: '📄', color: '#666' };
                     
                     return React.createElement('div', {
                         key: type,
