@@ -2225,6 +2225,186 @@ body {
   gap: var(--space-1);
 }
 
+/* Modal System */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: var(--space-10);
+  border-radius: var(--radius-lg);
+  max-width: 800px;
+  max-height: 80vh;
+  overflow: auto;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  border: 3px solid var(--primary-blue);
+}
+
+.modal-close-button {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-5);
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: var(--neutral-600);
+  font-weight: var(--font-weight-bold);
+  transition: color var(--transition-fast);
+}
+
+.modal-close-button:hover {
+  color: var(--neutral-800);
+}
+
+.modal-title {
+  color: var(--primary-blue);
+  text-align: center;
+  margin-bottom: var(--space-8);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Rules Modal Specific Styles */
+.rules-section {
+  margin-bottom: var(--space-8);
+  padding: var(--space-5);
+  background-color: var(--surface-secondary);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border-color);
+}
+
+.rules-section-title {
+  color: var(--primary-blue);
+  margin-bottom: var(--space-5);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+.rules-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.rules-grid--2-col {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.rules-grid--single {
+  grid-template-columns: 1fr;
+}
+
+.rules-card {
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 2px solid;
+}
+
+.rules-card--work {
+  background-color: #e3f2fd;
+  border-color: var(--card-work);
+}
+
+.rules-card--bank {
+  background-color: #e8f5e8;
+  border-color: var(--card-bank);
+}
+
+.rules-card--investor {
+  background-color: #fff3e0;
+  border-color: var(--card-investor);
+}
+
+.rules-card--life {
+  background-color: #ffebee;
+  border-color: var(--card-life);
+}
+
+.rules-card--expeditor {
+  background-color: #f3e5f5;
+  border-color: var(--card-expeditor);
+}
+
+.rules-card--time {
+  background-color: #e8f5e8;
+  border-color: var(--secondary-green);
+}
+
+.rules-card--fee {
+  background-color: #fff3e0;
+  border-color: var(--accent-orange);
+}
+
+.rules-card--movement {
+  background-color: #e3f2fd;
+  border-color: var(--primary-blue);
+}
+
+.rules-card--negotiation {
+  background-color: #ffebee;
+  border-color: var(--error-red);
+}
+
+.rules-card-title {
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+}
+
+.rules-card--work .rules-card-title {
+  color: var(--card-work);
+}
+
+.rules-card--bank .rules-card-title {
+  color: var(--card-bank);
+}
+
+.rules-card--investor .rules-card-title {
+  color: var(--card-investor);
+}
+
+.rules-card--life .rules-card-title {
+  color: var(--card-life);
+}
+
+.rules-card--expeditor .rules-card-title {
+  color: var(--card-expeditor);
+}
+
+.rules-card--time .rules-card-title {
+  color: var(--secondary-green);
+}
+
+.rules-card--fee .rules-card-title {
+  color: var(--accent-orange);
+}
+
+.rules-card--movement .rules-card-title {
+  color: var(--primary-blue);
+}
+
+.rules-card--negotiation .rules-card-title {
+  color: var(--error-red);
+}
+
+.rules-card-content {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  margin: 0;
+  color: var(--neutral-700);
+}
+
 /* Responsive adjustments for card replacement modal */
 @media (max-width: 768px) {
   .card-replacement-modal .modal-content {
@@ -2238,5 +2418,15 @@ body {
   
   .card-replacement-item {
     padding: var(--space-3);
+  }
+
+  .modal-content {
+    max-width: 95vw;
+    margin: var(--space-2);
+    padding: var(--space-6);
+  }
+
+  .rules-grid--2-col {
+    grid-template-columns: 1fr;
   }
 }

@@ -37,7 +37,10 @@
       "Bash(grep -n \"getSpaceData\\|getCurrentSpaceData\" /mnt/d/unravel/current_game/code2026/js/utils/MovementEngine.js)",
       "Bash(mv:*)",
       "Bash(cat:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(kill:*)",
+      "Bash(npm install:*)",
+      "Bash(npx playwright:*)"
     ],
     "deny": []
   }

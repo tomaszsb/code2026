@@ -1,6 +1,4 @@
 space_name,visit_type,title,story,action_description,outcome_description,can_negotiate
-START-QUICK-PLAY-GUIDE,First,Getting Started,Congratulations! You are hired as the project manager.,Learn the game rules and mechanics,Understand how to play the game,No
-START-QUICK-PLAY-GUIDE,Subsequent,Strategy Guide,Now that you know the rules - here is your strategy guide,Plan your optimal path to victory,Choose the best strategy for success,No
 OWNER-SCOPE-INITIATION,First,Project Scope,The owner dreams up an idea of project scope.,Review and accept or negotiate scope,Determine initial project scope,Yes
 OWNER-SCOPE-INITIATION,Subsequent,Scope Changes,You changed the owner's mind.,Roll to determine your path,Path determined by dice roll,No
 OWNER-FUND-INITIATION,First,Initial Funding,Owner does some number crunching and comes up with their share of money.,Accept funding or negotiate for more,Take Owner's Money,Yes

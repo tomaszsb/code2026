@@ -7,70 +7,25 @@
 function GameManager() {
     const [gameState, gameStateManager] = useGameState();
     
-    // Get singleton MovementEngine instance
-    const [movementEngine] = React.useState(() => {
-        const engine = window.MovementEngine.getInstance();
-        engine.initialize(gameStateManager);
-        return engine;
-    });
-    
-    // Handle player movement
-    useEventListener('movePlayerRequest', ({ playerId, spaceName, visitType }) => {
-        console.log('GameManager: Received movePlayerRequest', { playerId, spaceName, visitType });
+    // Handle fallback space effects processing (when MovementEngine not available)
+    useEventListener('processSpaceEffectsFallback', ({ playerId, spaceData }) => {
         try {
-            // Check if CSVDatabase is loaded before accessing it
-            if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
-                throw new Error('CSVDatabase not loaded yet');
-            }
-            
-            // Validate the space exists
-            const spaceData = window.CSVDatabase.spaceContent.find(spaceName, visitType);
-            if (!spaceData) {
-                throw new Error(`Space ${spaceName}/${visitType} not found in CSV data`);
-            }
-            
-            // Move player
-            console.log('GameManager: About to call movePlayer with', { playerId, spaceName, visitType });
-            gameStateManager.movePlayer(playerId, spaceName, visitType);
-            console.log('GameManager: movePlayer completed');
-            
-            // Save snapshot AFTER movement but BEFORE space effects
-            // This captures clean state when entering the space
-            gameStateManager.savePlayerSnapshot(playerId);
-            
-            // Get player object for MovementEngine
-            const player = gameState.players.find(p => p.id === playerId);
-            if (player && movementEngine) {
-                // Use MovementEngine for advanced space effect processing
-                const currentSpaceData = movementEngine.getSpaceData(spaceName, visitType || 'First');
-                if (currentSpaceData) {
-                    movementEngine.applySpaceEffects(player, currentSpaceData, visitType || 'First');
-                }
-            } else {
-                // Fallback to legacy space effects processing
-                processSpaceEffects(playerId, spaceData);
-            }
-            
+            processSpaceEffects(playerId, spaceData);
         } catch (error) {
-            gameStateManager.handleError(error, 'Player Movement');
+            gameStateManager.handleError(error, 'Space Effects Fallback');
         }
     });
     
-    // Handle dice roll outcomes
-    useEventListener('diceRollComplete', ({ playerId, spaceName, visitType, rollValue }) => {
+    // Handle movement to space requests
+    useEventListener('movePlayerToSpace', ({ playerId, destination, visitType }) => {
         try {
-            const diceConfig = window.CSVDatabase.diceOutcomes.find(spaceName, visitType);
-            if (diceConfig) {
-                // Get the destination space for the specific dice roll
-                const destination = diceConfig[`roll_${rollValue}`];
-                if (destination) {
-                    console.log(`GameManager: Dice roll ${rollValue} moving player ${playerId} from ${spaceName} to ${destination}`);
-                    // Move player to the destination space
-                    movePlayerToSpace(playerId, destination, 'First');
-                }
-            }
+            gameStateManager.emit('movePlayerRequest', {
+                playerId,
+                spaceName: destination,
+                visitType: visitType || 'First'
+            });
         } catch (error) {
-            gameStateManager.handleError(error, 'Dice Roll');
+            gameStateManager.handleError(error, 'Move Player To Space');
         }
     });
     
@@ -137,30 +92,6 @@ function GameManager() {
         }
     });
     
-    // Handle space re-entry (for rediscovering actions after negotiation)
-    useEventListener('spaceReentry', ({ playerId, spaceName, visitType }) => {
-        try {
-            console.log(`GameManager: *** RECEIVED spaceReentry EVENT *** - player ${playerId}, space: ${spaceName}, visitType: ${visitType}`);
-            
-            // Check if CSVDatabase is loaded before accessing it
-            if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
-                console.error('GameManager: CSVDatabase not loaded for space re-entry');
-                return;
-            }
-            
-            // Get space data and re-trigger space effects processing
-            const spaceData = window.CSVDatabase.spaceContent.find(spaceName, visitType);
-            if (spaceData) {
-                console.log(`GameManager: Re-processing space effects for ${spaceName}`);
-                processSpaceEffects(playerId, spaceData);
-            } else {
-                console.error(`GameManager: Space data not found for ${spaceName}/${visitType}`);
-            }
-        } catch (error) {
-            console.error('GameManager: Error in spaceReentry handler:', error);
-            gameStateManager.handleError(error, 'Space Re-entry');
-        }
-    });
     
     /**
      * Process space effects when player lands on space
@@ -482,19 +413,24 @@ function GameManager() {
      * Show movement options from space data
      */
     function showMovementOptions(playerId, spaceData) {
-        const nextSpaces = ComponentUtils.getNextSpaces(spaceData.space_name, spaceData.visit_type || 'First');
-        
-        if (nextSpaces.length === 0) {
-            // No movement options - end turn
-            gameStateManager.emit('noMovementOptions', { playerId, spaceData });
+        // Delegate to GameInitializer if available, otherwise use local logic
+        if (window.GameInitializer && window.GameInitializer.showMovementOptions) {
+            window.GameInitializer.showMovementOptions(playerId, spaceData);
         } else {
-            // Let player choose their next move regardless of number of options
-            // This prevents auto-movement and gives player control
-            gameStateManager.emit('availableMovesUpdated', {
-                playerId,
-                availableMoves: nextSpaces,
-                spaceData
-            });
+            const nextSpaces = ComponentUtils.getNextSpaces(spaceData.space_name, spaceData.visit_type || 'First');
+            
+            if (nextSpaces.length === 0) {
+                // No movement options - end turn
+                gameStateManager.emit('noMovementOptions', { playerId, spaceData });
+            } else {
+                // Let player choose their next move regardless of number of options
+                // This prevents auto-movement and gives player control
+                gameStateManager.emit('availableMovesUpdated', {
+                    playerId,
+                    availableMoves: nextSpaces,
+                    spaceData
+                });
+            }
         }
     }
     

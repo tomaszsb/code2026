@@ -14,13 +14,23 @@ function SpaceChoice() {
 
     // Handle space choice request
     useEventListener('showSpaceChoice', ({ playerId, spaceOptions, source }) => {
-        setState(prevState => ({
-            ...prevState,
-            playerId,
-            spaceOptions,
-            source,
-            selectedSpace: null
-        }));
+        try {
+            // Validate input parameters
+            if (!playerId || !Array.isArray(spaceOptions)) {
+                console.error('SpaceChoice: Invalid parameters', { playerId, spaceOptions, source });
+                return;
+            }
+            
+            setState(prevState => ({
+                ...prevState,
+                playerId,
+                spaceOptions,
+                source,
+                selectedSpace: null
+            }));
+        } catch (error) {
+            console.error('SpaceChoice: Error handling showSpaceChoice event:', error);
+        }
     });
 
     // Select a space option
@@ -33,23 +43,30 @@ function SpaceChoice() {
 
     // Confirm space selection
     const confirmSelection = () => {
-        if (!state.selectedSpace) return;
-        
-        // Move player to selected space
-        gameStateManager.emit('movePlayerRequest', {
-            playerId: state.playerId,
-            spaceName: state.selectedSpace,
-            visitType: 'First'
-        });
-        
-        // Clear space choice
-        setState(prevState => ({
-            ...prevState,
-            playerId: null,
-            spaceOptions: [],
-            source: null,
-            selectedSpace: null
-        }));
+        try {
+            if (!state.selectedSpace || !state.playerId) {
+                console.warn('SpaceChoice: Cannot confirm selection - missing required data');
+                return;
+            }
+            
+            // Move player to selected space
+            gameStateManager.emit('movePlayerRequest', {
+                playerId: state.playerId,
+                spaceName: state.selectedSpace,
+                visitType: 'First'
+            });
+            
+            // Clear space choice
+            setState(prevState => ({
+                ...prevState,
+                playerId: null,
+                spaceOptions: [],
+                source: null,
+                selectedSpace: null
+            }));
+        } catch (error) {
+            console.error('SpaceChoice: Error confirming selection:', error);
+        }
     };
 
     // Auto-select if only one option
@@ -73,8 +90,11 @@ function SpaceChoice() {
         return null;
     }
 
-    const currentPlayer = gameState.players[state.playerId];
-    if (!currentPlayer) return null;
+    const currentPlayer = gameState.players?.[state.playerId];
+    if (!currentPlayer) {
+        console.warn('SpaceChoice: Current player not found', { playerId: state.playerId });
+        return null;
+    }
 
     return React.createElement('div', { className: 'space-choice-container' },
         React.createElement('div', { className: 'space-choice-header' },

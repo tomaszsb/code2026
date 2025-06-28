@@ -104,7 +104,7 @@ function EnhancedPlayerSetup() {
                 name: player.name.trim(),
                 color: player.color,
                 avatar: player.avatar,
-                position: 'START-QUICK-PLAY-GUIDE',
+                position: 'OWNER-SCOPE-INITIATION',
                 visitType: 'First',
                 money: 10000, // Starting money
                 timeSpent: 0,

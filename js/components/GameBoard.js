@@ -1,6 +1,7 @@
 /**
- * GameBoard - Main game interface
- * Shows current game state and handles player interactions
+ * GameBoard - Main game interface controller
+ * Refactored to use BoardRenderer components for better maintainability
+ * Focuses on game logic and state management, visual rendering delegated to BoardRenderer
  */
 
 function GameBoard() {
@@ -118,85 +119,45 @@ function GameBoard() {
         // Mark space as visited
         setBoardState(prev => ({
             ...prev,
-            visitedSpaces: [...new Set([...prev.visitedSpaces, spaceData.space_name])]
+            visitedSpaces: [...prev.visitedSpaces, spaceData.space_name]
         }));
     };
     
-    // Process card effects from CSV
-    const processCardEffect = (cardEffect, cardType, player) => {
-        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
-        
-        if (cardEffect.includes('Draw')) {
-            const drawCount = parseInt(cardEffect.match(/\d+/)?.[0]) || 1;
-            const cards = window.CSVDatabase.cards.query({ card_type: cardType });
-            const drawnCards = cards.slice(0, drawCount);
-            
-            gameStateManager.addCardsToPlayer(player.id, cardType, drawnCards);
-        } else if (cardEffect.includes('Return')) {
-            const returnCount = parseInt(cardEffect.match(/\d+/)?.[0]) || 1;
-            gameStateManager.emit('returnCardsRequest', {
-                playerId: player.id,
-                cardType,
-                count: returnCount
-            });
-        } else if (cardEffect.includes('Replace')) {
-            const replaceCount = parseInt(cardEffect.match(/\d+/)?.[0]) || 1;
-            gameStateManager.emit('replaceCardsRequest', {
-                playerId: player.id,
-                cardType,
-                count: replaceCount
-            });
-        }
-    };
-    
-    // End current turn
-    const endTurn = () => {
-        const nextPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
-        gameStateManager.startTurn(nextPlayer);
-    };
-    
-    // Take action on current space (dice or direct action)
-    const takeAction = () => {
-        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
-        
-        const spaceData = window.CSVDatabase.spaceContent.find(
-            currentPlayer.position, 
-            currentPlayer.visitType || 'First'
-        );
-        
-        if (ComponentUtils.requiresDiceRoll(currentPlayer.position, currentPlayer.visitType || 'First')) {
-            // Show dice roll
-            gameStateManager.emit('showDiceRoll', {
-                playerId: gameState.currentPlayer,
-                spaceName: currentPlayer.position,
-                visitType: currentPlayer.visitType || 'First'
-            });
-        } else {
-            // Process space effects directly
-            gameStateManager.emit('movePlayerRequest', {
-                playerId: gameState.currentPlayer,
-                spaceName: currentPlayer.position,
-                visitType: currentPlayer.visitType || 'First'
-            });
-        }
-    };
-    
-    // If panel layout is active, only render the visual board
-    if (isPanelLayoutActive) {
-        return React.createElement(VisualBoard, {
-            gameState,
-            onSpaceClick: handleSpaceClick,
-            availableMoves,
-            boardState,
-            currentPlayer
+    // Process individual card effect
+    const processCardEffect = (effectText, cardType, player) => {
+        gameStateManager.emit('cardEffectTriggered', {
+            effect: effectText,
+            cardType: cardType,
+            player: player,
+            source: 'space'
         });
+    };
+    
+    // For panel layout, defer to GamePanelLayout
+    if (isPanelLayoutActive) {
+        return React.createElement(GamePanelLayout);
     }
-
-    // Full GameBoard UI for fallback/original mode
+    
+    // Legacy layout for when panel system not active
+    if (!gameState.players || gameState.players.length === 0) {
+        return React.createElement('div', 
+            { className: 'game-board-wrapper' },
+            React.createElement('div', 
+                { className: 'card' },
+                React.createElement('h2', { className: 'heading-2' }, 'No Game Active'),
+                React.createElement('p', { className: 'text-body' }, 'Please start a new game or load a saved game.')
+            )
+        );
+    }
+    
     return React.createElement('div', 
-        { className: 'layout-grid layout-grid--main' },
+        { 
+            className: 'game-board-wrapper layout-grid layout-grid--main',
+            style: { minHeight: '100vh', background: '#f0f0f0', padding: '20px' }
+        },
         
-        // Header (spans full width)
+        
+        // Header
         React.createElement('div', 
             { 
                 className: 'card section__header',
@@ -241,7 +202,7 @@ function GameBoard() {
                 )
             ),
             
-            // Game board section
+            // Game board section - now uses BoardRenderer
             React.createElement('section', 
                 { className: 'section' },
                 React.createElement('div', 
@@ -260,7 +221,7 @@ function GameBoard() {
                 )
             ),
             
-            // Current space section
+            // Current space section - now uses BoardRenderer
             currentPlayer && React.createElement('section', 
                 { className: 'section' },
                 React.createElement('div', 
@@ -275,8 +236,7 @@ function GameBoard() {
                         onMoveRequest: null
                     })
                 )
-            ),
-            
+            )
         ),
         
         // Right sidebar - Space Explorer and Actions
@@ -298,289 +258,15 @@ function GameBoard() {
                 ),
                 React.createElement('div', 
                     { className: 'section__content' },
-                    React.createElement('button', 
-                        { 
-                            className: 'btn btn--primary btn--full mb-4',
-                            onClick: takeAction 
-                        },
-                        'Take Action'
-                    ),
-                    React.createElement('button', 
-                        { 
-                            className: 'btn btn--danger btn--full',
-                            onClick: endTurn 
-                        },
-                        'End Turn'
+                    React.createElement('div', 
+                        { className: 'card' },
+                        React.createElement('p', { className: 'text-body' }, 'Use Action Panel for game controls')
                     )
                 )
-            ),
-            
-            // Error display
-            gameState.error && React.createElement('div', 
-                { className: 'card' },
-                React.createElement('div', 
-                    { className: 'section__header' },
-                    React.createElement('h3', { className: 'section__title' }, 'Error')
-                ),
-                React.createElement('p', { className: 'text-body mb-4' }, gameState.error),
-                React.createElement('button', 
-                    { 
-                        className: 'btn btn--secondary btn--full',
-                        onClick: () => gameStateManager.clearError() 
-                    },
-                    'Clear'
-                )
-            )
-        ),
-        
-        // Space detail modal
-        selectedSpace && React.createElement(SpaceModal, {
-            space: selectedSpace,
-            onClose: () => setSelectedSpace(null),
-            onMove: handleMovePlayer
-        })
-    );
-}
-
-/**
- * SpaceDisplay - Shows current space information
- */
-function SpaceDisplay({ spaceName, visitType, onMoveRequest }) {
-    if (!window.CSVDatabase || !window.CSVDatabase.loaded) return null;
-    
-    const spaceData = window.CSVDatabase.spaceContent.find(spaceName, visitType);
-    
-    if (!spaceData) {
-        return React.createElement('div', 
-            { className: 'text-center' },
-            React.createElement('p', { className: 'text-body' }, `Space ${spaceName}/${visitType} not found`)
-        );
-    }
-    
-    const nextSpaces = ComponentUtils.getNextSpaces(spaceName, visitType || 'First');
-    const cardTypes = ComponentUtils.getCardTypes(spaceName, visitType || 'First');
-    
-    return React.createElement('div', 
-        { className: 'flex flex-col gap-4' },
-        React.createElement('div',
-            { className: 'flex items-center gap-2' },
-            React.createElement('h3', { className: 'heading-3' }, spaceData.space_name),
-            React.createElement('span', { className: 'badge badge--primary' }, spaceData.phase)
-        ),
-        
-        spaceData.Event && React.createElement('div', 
-            { className: 'card card--compact' },
-            React.createElement('h4', { className: 'heading-5 mb-2' }, 'Event'),
-            React.createElement('p', { className: 'text-body mb-0' }, spaceData.Event)
-        ),
-        
-        spaceData.Action && React.createElement('div', 
-            { className: 'card card--compact' },
-            React.createElement('h4', { className: 'heading-5 mb-2' }, 'Action'),
-            React.createElement('p', { className: 'text-body mb-0' }, spaceData.Action)
-        ),
-        
-        cardTypes.length > 0 && React.createElement('div', 
-            { className: 'card card--compact' },
-            React.createElement('h4', { className: 'heading-5 mb-2' }, 'Card Effects'),
-            cardTypes.map(({ type, action }) => 
-                React.createElement('div', 
-                    { key: type, className: 'flex justify-between mb-2' },
-                    React.createElement('span', { className: 'text-small' }, `${type}:`),
-                    React.createElement('span', { className: 'text-small font-weight-medium' }, action)
-                )
-            )
-        ),
-        
-        (spaceData.Time || spaceData.Fee) && React.createElement('div', 
-            { className: 'card card--compact' },
-            React.createElement('h4', { className: 'heading-5 mb-2' }, 'Costs'),
-            spaceData.Time && React.createElement('div', 
-                { className: 'flex justify-between mb-2' },
-                React.createElement('span', { className: 'text-small' }, 'Time:'),
-                React.createElement('span', { className: 'text-small font-weight-medium' }, spaceData.Time)
-            ),
-            spaceData.Fee && React.createElement('div', 
-                { className: 'flex justify-between' },
-                React.createElement('span', { className: 'text-small' }, 'Fee:'),
-                React.createElement('span', { className: 'text-small font-weight-medium' }, spaceData.Fee)
-            )
-        ),
-        
-        nextSpaces.length > 0 && React.createElement('div', 
-            { className: 'card card--compact' },
-            React.createElement('h4', { className: 'heading-5 mb-2' }, 'Move Options'),
-            React.createElement('div',
-                { className: 'text-body' },
-                React.createElement('p', { className: 'text-small mb-2' }, 'Available moves from this space:'),
-                React.createElement('div',
-                    { className: 'flex flex-col gap-1' },
-                    nextSpaces.map(spaceName => 
-                        React.createElement('div', 
-                            { 
-                                key: spaceName,
-                                className: 'text-small'
-                            },
-                            `• ${spaceName}`
-                        )
-                    )
-                ),
-                React.createElement('p', { 
-                    className: 'text-small mt-2', 
-                    style: { fontStyle: 'italic', color: '#666' } 
-                }, 'Use the Action Panel to select and confirm moves')
             )
         )
     );
 }
 
-/**
- * VisualBoard - Visual representation of the game board
- */
-function VisualBoard({ gameState, onSpaceClick, availableMoves, boardState, currentPlayer }) {
-    const [allSpaces, setAllSpaces] = useState([]);
-    const [loading, setLoading] = useState(true);
-    
-    useEffect(() => {
-        // Load all unique spaces for the board
-        if (window.CSVDatabase && window.CSVDatabase.loaded) {
-            const spaces = window.CSVDatabase.spaceContent.query();
-            const gameConfig = window.CSVDatabase.gameConfig.query();
-            
-            // Get unique spaces by name and merge with config data for phase info
-            const uniqueSpaces = spaces.reduce((acc, space) => {
-                if (!acc.find(s => s.space_name === space.space_name)) {
-                    const configData = gameConfig.find(config => config.space_name === space.space_name);
-                    acc.push({
-                        ...space,
-                        phase: configData?.phase || 'MISC'
-                    });
-                }
-                return acc;
-            }, []);
-            
-            setAllSpaces(uniqueSpaces);
-            setLoading(false);
-        }
-    }, []);
-    
-    if (loading) {
-        return React.createElement('div', { className: 'board-loading' }, 'Loading board...');
-    }
-    
-    // Define all spaces in snake flow order for wrapping layout
-    const snakeFlow = [
-        'START-QUICK-PLAY-GUIDE', 'OWNER-SCOPE-INITIATION', 'OWNER-FUND-INITIATION', 'PM-DECISION-CHECK',
-        'OWNER-DECISION-REVIEW', 'LEND-SCOPE-CHECK', 'BANK-FUND-REVIEW', 'INVESTOR-FUND-REVIEW',
-        'ARCH-INITIATION', 'ARCH-FEE-REVIEW', 'ARCH-SCOPE-CHECK', 'ENG-INITIATION',
-        'ENG-FEE-REVIEW', 'ENG-SCOPE-CHECK', 'REG-DOB-FEE-REVIEW', 'REG-DOB-TYPE-SELECT',
-        'REG-DOB-PLAN-EXAM', 'REG-DOB-PROF-CERT', 'REG-FDNY-FEE-REVIEW', 'REG-FDNY-PLAN-EXAM',
-        'REG-DOB-AUDIT', 'REG-DOB-FINAL-REVIEW', 'CON-INITIATION', 'CON-ISSUES',
-        'CON-INSPECT', 'FINISH', 'CHEAT-BYPASS'
-    ];
-    
-    // Create space lookup for quick access
-    const spaceMap = allSpaces.reduce((acc, space) => {
-        acc[space.space_name] = space;
-        return acc;
-    }, {});
-    
-    return React.createElement('div', 
-        { className: 'visual-board snake-layout' },
-        React.createElement('div', { className: 'board-title' }, 'Project Management Board'),
-        React.createElement('div', 
-            { className: 'snake-grid' },
-            snakeFlow.map((spaceName, index) => {
-                const space = spaceMap[spaceName];
-                if (!space) return null;
-                
-                return React.createElement(BoardSpace, {
-                    key: space.space_name,
-                    space,
-                    players: gameState.players.filter(p => p.position === space.space_name),
-                    onClick: () => onSpaceClick(space.space_name),
-                    isAvailableMove: availableMoves.includes(space.space_name),
-                    isCurrentPosition: currentPlayer && currentPlayer.position === space.space_name,
-                    isVisited: boardState.visitedSpaces.includes(space.space_name),
-                    'data-order': index + 1
-                });
-            })
-        )
-    );
-}
-
-/**
- * BoardSpace - Individual space on the board
- */
-function BoardSpace({ space, players, onClick, isAvailableMove, isCurrentPosition, isVisited }) {
-    const hasPlayers = players.length > 0;
-    
-    // Build CSS classes based on state
-    const spaceClasses = [
-        'board-space',
-        hasPlayers ? 'has-players' : '',
-        isAvailableMove ? 'available-move' : '',
-        isCurrentPosition ? 'current-position' : '',
-        isVisited ? 'visited' : '',
-        isAvailableMove ? 'clickable' : ''
-    ].filter(Boolean).join(' ');
-    
-    return React.createElement('div', 
-        { 
-            className: spaceClasses,
-            onClick,
-            title: `${space.space_name}${isAvailableMove ? ' (Click to move)' : ''}${isCurrentPosition ? ' (Current position)' : ''}`
-        },
-        React.createElement('div', { className: 'space-name' }, space.space_name),
-        React.createElement('div', { className: 'space-phase' }, space.phase),
-        hasPlayers && React.createElement('div', 
-            { className: 'players-on-space' },
-            players.map(player => 
-                React.createElement('div', 
-                    { 
-                        key: player.id,
-                        className: 'player-piece',
-                        style: { backgroundColor: player.color || '#333' },
-                        title: player.name
-                    },
-                    player.name.charAt(0).toUpperCase()
-                )
-            )
-        ),
-        isAvailableMove && React.createElement('div', 
-            { className: 'move-indicator' },
-            '→'
-        )
-    );
-}
-
-/**
- * SpaceModal - Detailed space information modal
- */
-function SpaceModal({ space, onClose, onMove }) {
-    return React.createElement('div', 
-        { className: 'modal-overlay', onClick: onClose },
-        React.createElement('div', 
-            { 
-                className: 'modal-content',
-                onClick: (e) => e.stopPropagation()
-            },
-            React.createElement('h2', null, space.name),
-            React.createElement('button', 
-                { className: 'close-button', onClick: onClose },
-                '×'
-            ),
-            React.createElement(SpaceDisplay, {
-                spaceName: space.name,
-                visitType: 'First',
-                onMoveRequest: null
-            })
-        )
-    );
-}
-
-// Export components
+// Export component  
 window.GameBoard = GameBoard;
-window.SpaceDisplay = SpaceDisplay;
-window.VisualBoard = VisualBoard;
-window.BoardSpace = BoardSpace;

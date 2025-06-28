@@ -31,55 +31,88 @@ function DiceRoll() {
 
     // Roll dice function
     const rollDice = async () => {
-        setState(prevState => ({ ...prevState, rolling: true }));
-        
-        // Simulate dice roll animation delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Generate random roll (1-6)
-        const rollValue = Math.floor(Math.random() * 6) + 1;
-        
-        // Get outcome from CSV
-        const diceData = window.CSVDatabase.diceOutcomes.find(
-            state.spaceName, 
-            state.visitType
-        );
-        const outcome = diceData ? diceData[rollValue.toString()] : null;
-        
-        setState(prevState => ({
-            ...prevState,
-            rolling: false,
-            rolled: true,
-            rollValue,
-            outcome
-        }));
-        
-        // Emit roll complete event
-        gameStateManager.emit('diceRollComplete', {
-            playerId: state.playerId,
-            spaceName: state.spaceName,
-            visitType: state.visitType,
-            rollValue,
-            outcome
-        });
+        try {
+            // Check if CSVDatabase is loaded
+            if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+                console.error('DiceRoll: CSVDatabase not loaded');
+                return;
+            }
+            
+            setState(prevState => ({ ...prevState, rolling: true }));
+            
+            // Simulate dice roll animation delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Generate random roll (1-6)
+            const rollValue = Math.floor(Math.random() * 6) + 1;
+            
+            // Get outcome from CSV with safety checks
+            let outcome = null;
+            try {
+                const diceData = window.CSVDatabase.diceOutcomes.find(
+                    state.spaceName, 
+                    state.visitType || 'First'
+                );
+                outcome = diceData ? diceData[`roll_${rollValue}`] : null;
+                
+                if (!outcome) {
+                    console.warn(`DiceRoll: No outcome found for ${state.spaceName}/${state.visitType}/roll_${rollValue}`);
+                }
+            } catch (csvError) {
+                console.error('DiceRoll: Error accessing CSV data:', csvError);
+            }
+            
+            setState(prevState => ({
+                ...prevState,
+                rolling: false,
+                rolled: true,
+                rollValue,
+                outcome
+            }));
+            
+            // Emit roll complete event
+            gameStateManager.emit('diceRollComplete', {
+                playerId: state.playerId,
+                spaceName: state.spaceName,
+                visitType: state.visitType,
+                rollValue,
+                outcome
+            });
+        } catch (error) {
+            console.error('DiceRoll: Error during dice roll:', error);
+            setState(prevState => ({
+                ...prevState,
+                rolling: false,
+                outcome: 'Error: Unable to complete dice roll'
+            }));
+        }
     };
 
     // Apply dice outcome
     const applyOutcome = () => {
-        gameStateManager.emit('processDiceOutcome', {
-            playerId: state.playerId,
-            outcome: state.outcome,
-            spaceName: state.spaceName,
-            visitType: state.visitType
-        });
-        
-        // Hide dice roll
-        setState(prevState => ({
-            ...prevState,
-            spaceName: null,
-            visitType: null,
-            playerId: null
-        }));
+        try {
+            if (!state.playerId || !state.outcome) {
+                console.warn('DiceRoll: Cannot apply outcome - missing required data');
+                return;
+            }
+            
+            gameStateManager.emit('processDiceOutcome', {
+                playerId: state.playerId,
+                outcome: state.outcome,
+                spaceName: state.spaceName,
+                visitType: state.visitType
+            });
+            
+            // Hide dice roll
+            setState(prevState => ({
+                ...prevState,
+                spaceName: null,
+                visitType: null,
+                playerId: null
+            }));
+        } catch (error) {
+            console.error('DiceRoll: Error applying outcome:', error);
+        }
     };
 
     // Don't render if no dice roll requested

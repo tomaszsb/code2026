@@ -1,6 +1,4 @@
 space_name,visit_type,movement_type,destination_1,destination_2,destination_3,destination_4,destination_5
-START-QUICK-PLAY-GUIDE,First,fixed,OWNER-SCOPE-INITIATION,,,,
-START-QUICK-PLAY-GUIDE,Subsequent,fixed,OWNER-SCOPE-INITIATION,,,,
 OWNER-SCOPE-INITIATION,First,fixed,OWNER-FUND-INITIATION,,,,
 OWNER-SCOPE-INITIATION,Subsequent,fixed,OWNER-FUND-INITIATION,,,,
 OWNER-FUND-INITIATION,First,fixed,PM-DECISION-CHECK,,,,

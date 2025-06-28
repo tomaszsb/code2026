@@ -7,35 +7,51 @@
 const { useState, useEffect, useCallback, useRef } = React;
 
 /**
- * Custom hook for GameStateManager integration
+ * Custom hook for GameStateManager integration - DEBOUNCED TO STOP LOOPS
  */
 function useGameState() {
-    const [state, setState] = useState(() => {
-        // Ensure GameStateManager is available
-        if (typeof window.GameStateManager === 'undefined') {
-            console.error('GameStateManager not available');
-            return { players: [], gamePhase: 'SETUP', currentPlayer: 0, turnCount: 0, ui: {}, error: null };
-        }
-        return window.GameStateManager.getState();
-    });
-    
+    const [, forceUpdate] = useState(0);
     const gameStateManager = useRef(window.GameStateManager);
+    const updateTimeoutRef = useRef(null);
     
     useEffect(() => {
-        // Ensure GameStateManager is available
         if (!gameStateManager.current) {
             console.error('GameStateManager not available for event listener');
             return;
         }
         
-        const unsubscribe = gameStateManager.current.on('stateChanged', (data) => {
-            setState(data.current);
-        });
+        const handleStateChange = () => {
+            // Clear any pending update
+            clearTimeout(updateTimeoutRef.current);
+            
+            // Debounce updates to prevent rapid loops
+            updateTimeoutRef.current = setTimeout(() => {
+                console.log('useGameState: Debounced state update');
+                forceUpdate(prev => prev + 1);
+            }, 50); // 50ms debounce
+        };
         
-        return unsubscribe;
+        const unsubscribe1 = gameStateManager.current.on('stateChanged', handleStateChange);
+        const unsubscribe2 = gameStateManager.current.on('gameInitialized', handleStateChange);
+        
+        return () => {
+            clearTimeout(updateTimeoutRef.current);
+            unsubscribe1?.();
+            unsubscribe2?.();
+        };
     }, []);
     
-    return [state, gameStateManager.current];
+    // Get state once per render
+    const currentState = gameStateManager.current ? gameStateManager.current.getState() : {
+        players: [],
+        gamePhase: 'SETUP',
+        currentPlayer: 0,
+        turnCount: 0,
+        ui: {},
+        error: null
+    };
+    
+    return [currentState, gameStateManager.current];
 }
 
 /**
@@ -351,3 +367,19 @@ window.useEventListener = useEventListener;
 window.ErrorBoundary = ErrorBoundary;
 window.LoadingWrapper = LoadingWrapper;
 window.DebugInfo = DebugInfo;
+
+// Make window components available globally for React.createElement
+// This allows components to be referenced directly without window. prefix in App.js
+setTimeout(() => {
+    if (window.GameInitializer) globalThis.GameInitializer = window.GameInitializer;
+    if (window.GameManager) globalThis.GameManager = window.GameManager;
+    if (window.DiceRoll) globalThis.DiceRoll = window.DiceRoll;
+    if (window.SpaceChoice) globalThis.SpaceChoice = window.SpaceChoice;
+    if (window.TurnManager) globalThis.TurnManager = window.TurnManager;
+    if (window.WinConditionManager) globalThis.WinConditionManager = window.WinConditionManager;
+    if (window.GameEndScreen) globalThis.GameEndScreen = window.GameEndScreen;
+    if (window.GameTimer) globalThis.GameTimer = window.GameTimer;
+    if (window.GameSaveManager) globalThis.GameSaveManager = window.GameSaveManager;
+    if (window.LoadingAndErrorHandler) globalThis.LoadingAndErrorHandler = window.LoadingAndErrorHandler;
+    // Note: Only assign if component exists to avoid overwriting with undefined
+}, 100);

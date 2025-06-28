@@ -62,38 +62,24 @@ html {
     animation: fadeIn var(--transition-slow) var(--smooth);
 }
 
-/* Board space animations */
+/* Board space animations - extends unified-design.css .board-space */
 .board-space {
     transition: all var(--transition-normal) var(--smooth);
     will-change: transform, box-shadow, background-color;
 }
 
-.board-space:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    transition: all var(--transition-fast) var(--smooth);
-}
-
-.board-space:active {
-    transform: translateY(0) scale(0.98);
-    transition: all 0.1s var(--smooth);
-}
-
-/* Available move animations */
+/* Special animation states for board spaces */
 .board-space.available-move {
     animation: glow 2s infinite ease-in-out;
-    transform: translateY(-1px);
 }
 
 .board-space.available-move:hover {
     animation-play-state: paused;
-    transform: translateY(-4px) scale(1.02);
 }
 
-/* Current position animation */
+/* Current position animation enhancement */
 .board-space.current-position {
     animation: bounce 2s infinite;
-    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.4);
 }
 
 /* Player movement animation */
@@ -234,7 +220,7 @@ html {
     animation: slideInFromBottom var(--transition-normal) var(--bounce);
 }
 
-/* Button animations */
+/* Button animations - extends unified-design.css .btn */
 .btn {
     transition: all var(--transition-fast) var(--smooth);
     position: relative;

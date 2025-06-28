@@ -160,13 +160,13 @@ class GameStateManager {
 
     getStartingSpace() {
         if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
-            return 'START-QUICK-PLAY-GUIDE'; // fallback
+            return 'OWNER-SCOPE-INITIATION'; // fallback
         }
         
         const startingSpace = window.CSVDatabase.gameConfig.query()
             .find(config => config.is_starting_space === 'Yes');
         
-        return startingSpace ? startingSpace.space_name : 'START-QUICK-PLAY-GUIDE';
+        return startingSpace ? startingSpace.space_name : 'OWNER-SCOPE-INITIATION';
     }
 
     /**
@@ -179,14 +179,16 @@ class GameStateManager {
     initializeGame(players, settings = {}) {
         const newGameState = {
             ...this.getInitialState(),
+            gamePhase: 'PLAYING', // Transition from SETUP to PLAYING
             players: players.map((playerData, index) => ({
-                id: index,
+                id: playerData.id || index,
                 name: typeof playerData === 'string' ? playerData : playerData.name,
                 color: typeof playerData === 'string' ? '#007bff' : playerData.color,
-                position: this.getStartingSpace(),
-                visitType: 'First',
-                money: 0,
-                timeSpent: 0,
+                avatar: playerData.avatar || '👤',
+                position: playerData.position || 'OWNER-SCOPE-INITIATION',
+                visitType: playerData.visitType || 'First',
+                money: playerData.money || 10000,
+                timeSpent: playerData.timeSpent || 0,
                 cards: {
                     W: [],
                     B: [],
@@ -196,25 +198,26 @@ class GameStateManager {
                 },
                 loans: [],
                 completedSpaces: [],
+                visitedSpaces: playerData.visitedSpaces || [],
                 isActive: index === 0
             })),
             gameSettings: { ...this.state.gameSettings, ...settings }
         };
         
-        // Use setState to ensure proper event emission
-        this.state = newGameState;
+        // Use setState to ensure proper event emission and state change event
+        this.setState(newGameState);
         
         // Save initial snapshots for all players at their starting positions
         this.state.players.forEach((player, index) => {
             this.savePlayerSnapshot(index);
         });
         
-        this.emit('stateChanged', {
-            previous: this.getInitialState(),
-            current: this.getState(),
-            updates: newGameState
-        });
-        this.emit('gameInitialized', this.getState());
+        // Emit game initialized event (stateChanged already emitted by setState)
+        // Add small delay to ensure React can process the state change
+        setTimeout(() => {
+            this.emit('gameInitialized', this.getState());
+            console.log('GameStateManager: Game initialized with state:', this.getState());
+        }, 0);
     }
 
     /**

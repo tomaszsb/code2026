@@ -16,7 +16,7 @@ Single-page web app using vanilla HTML/CSS/JavaScript with React (via CDN). Play
 python -m http.server 8000
 
 # Testing URLs
-http://localhost:8000/                              # Main game
+http://localhost:8000/                              # Main game (FixedApp)
 http://localhost:8000/?debug=true&logLevel=debug     # Debug mode
 
 # Git operations
@@ -25,7 +25,7 @@ git commit -m "Description of changes"             # Commit changes
 git push origin main                                # Push to GitHub
 git pull origin main                                # Pull latest changes
 ```
-**No build required** - Browser-based Babel compilation.
+**No build required** - Browser-based Babel compilation with clean React architecture.
 
 ## Core Architecture
 
@@ -39,11 +39,16 @@ git pull origin main                                # Pull latest changes
 ```
 # Core Systems
 js/data/CSVDatabase.js              # Unified CSV query system
-js/data/GameStateManager.js         # Central state + events
+js/data/GameStateManager.js         # Central state + events (legacy - not used in FixedApp)
 js/utils/CardUtils.js               # Centralized card configurations & utilities
 
-# Main Interface
-js/components/App.js                # Root component
+# Main Interface (New Architecture)
+js/components/FixedApp.js           # Production React app with native state management
+js/components/GameInterface.js      # Clean 3-panel game layout (inside FixedApp.js)
+js/components/FixedPlayerSetup.js   # Professional player setup (inside FixedApp.js)
+
+# Legacy Interface (Original - Complex State Management)
+js/components/App.js                # Original root component (uses problematic useGameState)
 js/components/GamePanelLayout.js    # Responsive panel layout container
 js/components/PlayerStatusPanel.js  # Left panel coordinator (117 lines)
 js/components/ActionPanel.js        # Bottom panel coordinator (318 lines)
@@ -185,7 +190,19 @@ gameState.players?.find()  // Defensive
 
 ## Recent Improvements
 
-### ✅ **Phase 27: Snake Layout Board Design (Latest)**
+### ✅ **Phase 28: Critical React Rendering Issue (Latest - RESOLVED)**
+- **Root Cause Identified**: The `useGameState` hook was fundamentally incompatible with React's rendering model
+- **Issue Details**: Hook created infinite render loops by calling `getCurrentState()` on every render, triggering events that caused re-renders
+- **Symptoms**: State updated correctly in GameStateManager but React components never re-rendered to reflect changes
+- **Debugging Process**: Extensive testing revealed React state updates worked but DOM didn't re-render - discovered infinite loop patterns
+- **Solution Implemented**: Complete architectural shift from custom event-driven state to React's native `useState` patterns
+- **New Architecture**: `FixedApp` component with clean React state management, separated GameInterface component, professional 3-panel layout
+- **Key Components**: FixedPlayerSetup for game initialization, GameInterface for main gameplay, all using standard React patterns
+- **Technical Cleanup**: Removed all test components, infinite loop debugging code, and temporary files
+- **Result**: ✅ React rendering works perfectly, ✅ State transitions work flawlessly, ✅ Professional game interface, ✅ No infinite loops
+- **Status**: **COMPLETELY RESOLVED** - Game now has production-ready React foundation with clean architecture
+
+### ✅ **Phase 27: Snake Layout Board Design**
 - **Complete Board Redesign**: Replaced phase-grouped layout with flowing snake pattern showing all 27 spaces
 - **Responsive Wrapping**: Snake layout automatically adjusts to screen width using flex-wrap
 - **Visual Hierarchy**: Current player space 2x bigger (240×160px), destination spaces 1.5x bigger (180×120px)

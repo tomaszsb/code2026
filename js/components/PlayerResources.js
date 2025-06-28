@@ -4,22 +4,29 @@
  */
 
 function PlayerResources({ player }) {
-    if (!player) {
-        return React.createElement('div', {
-            className: 'player-resources'
-        }, [
-            React.createElement('h4', {
-                key: 'resources-title',
-                className: 'section-title'
-            }, '💰 Resources'),
-            React.createElement('p', {
-                key: 'no-player',
-                className: 'no-player-message'
-            }, 'No active player')
-        ]);
-    }
+    try {
+        if (!player) {
+            return React.createElement('div', {
+                className: 'player-resources'
+            }, [
+                React.createElement('h4', {
+                    key: 'resources-title',
+                    className: 'section-title'
+                }, '💰 Resources'),
+                React.createElement('p', {
+                    key: 'no-player',
+                    className: 'no-player-message'
+                }, 'No active player')
+            ]);
+        }
 
-    return React.createElement('div', {
+        // Defensive property access with fallbacks
+        const money = typeof player.money === 'number' ? player.money : 0;
+        const timeSpent = typeof player.timeSpent === 'number' ? player.timeSpent : 0;
+        const scopeItems = Array.isArray(player.scopeItems) ? player.scopeItems : [];
+        const scopeTotalCost = typeof player.scopeTotalCost === 'number' ? player.scopeTotalCost : 0;
+
+        return React.createElement('div', {
         className: 'player-resources'
     }, [
         React.createElement('h4', {
@@ -42,7 +49,7 @@ function PlayerResources({ player }) {
                 React.createElement('span', {
                     key: 'money-value',
                     className: 'resource-value'
-                }, `$${(player.money || 0).toLocaleString()}`)
+                }, `$${money.toLocaleString()}`)
             ]),
             
             React.createElement('div', {
@@ -56,7 +63,7 @@ function PlayerResources({ player }) {
                 React.createElement('span', {
                     key: 'time-value',
                     className: 'resource-value'
-                }, `${player.timeSpent || 0} days`)
+                }, `${timeSpent} days`)
             ]),
             
             React.createElement('div', {
@@ -74,10 +81,10 @@ function PlayerResources({ player }) {
                     React.createElement('span', {
                         key: 'scope-count',
                         className: 'resource-value'
-                    }, `${(player.scopeItems?.length || 0)} work types`)
+                    }, `${scopeItems.length} work types`)
                 ]),
                 // Detailed scope breakdown
-                player.scopeItems && player.scopeItems.length > 0 && 
+                scopeItems.length > 0 && 
                 React.createElement('div', {
                     key: 'scope-details',
                     className: 'scope-details'
@@ -89,7 +96,7 @@ function PlayerResources({ player }) {
                         React.createElement('span', {key: 'work-type-header'}, 'Work Type'),
                         React.createElement('span', {key: 'cost-header'}, 'Est. Cost')
                     ]),
-                    ...player.scopeItems.map((item, index) => 
+                    ...scopeItems.map((item, index) => 
                         React.createElement('div', {
                             key: `scope-item-${index}`,
                             className: 'scope-item'
@@ -97,24 +104,39 @@ function PlayerResources({ player }) {
                             React.createElement('span', {
                                 key: 'work-type',
                                 className: 'work-type'
-                            }, item.count > 1 ? `${item.workType} (${item.count})` : item.workType),
+                            }, (item.count && item.count > 1) ? `${item.workType || 'Unknown'} (${item.count})` : (item.workType || 'Unknown')),
                             React.createElement('span', {
                                 key: 'cost',
                                 className: 'cost'
-                            }, `$${item.cost.toLocaleString()}`)
+                            }, `$${(item.cost || 0).toLocaleString()}`)
                         ])
                     ),
-                    player.scopeTotalCost > 0 && React.createElement('div', {
+                    scopeTotalCost > 0 && React.createElement('div', {
                         key: 'scope-total',
                         className: 'scope-total'
                     }, [
                         React.createElement('span', {key: 'total-label'}, 'Total:'),
-                        React.createElement('span', {key: 'total-cost'}, `$${player.scopeTotalCost.toLocaleString()}`)
+                        React.createElement('span', {key: 'total-cost'}, `$${scopeTotalCost.toLocaleString()}`)
                     ])
                 ])
             ])
         ])
     ]);
+    } catch (error) {
+        console.error('PlayerResources: Error rendering component:', error);
+        return React.createElement('div', {
+            className: 'player-resources error'
+        }, [
+            React.createElement('h4', {
+                key: 'resources-title',
+                className: 'section-title'
+            }, '💰 Resources'),
+            React.createElement('p', {
+                key: 'error',
+                className: 'error-message'
+            }, 'Error loading player resources')
+        ]);
+    }
 }
 
 window.PlayerResources = PlayerResources;

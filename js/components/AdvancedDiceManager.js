@@ -522,58 +522,20 @@ function AdvancedDiceManager() {
         };
     }, [diceState]);
 
-    // Render dice display (if needed for visual feedback)
-    if (diceState.rolling || diceState.rollValue) {
-        return React.createElement('div', {
-            className: 'advanced-dice-display',
-            style: {
-                position: 'fixed',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                zIndex: 1001,
-                background: 'white',
-                padding: '20px',
-                borderRadius: '15px',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
-                textAlign: 'center',
-                minWidth: '200px'
-            }
-        }, [
-            React.createElement('div', {
-                key: 'dice',
-                style: {
-                    fontSize: '48px',
-                    marginBottom: '16px',
-                    animation: diceState.rolling ? 'roll 0.2s infinite' : 'none'
-                }
-            }, `🎲 ${diceState.rollValue || '?'}`),
-            
-            diceState.rolling && React.createElement('div', {
-                key: 'rolling',
-                style: { color: '#6b7280' }
-            }, 'Rolling...'),
-            
-            !diceState.rolling && diceState.outcomes.length > 0 && 
-            React.createElement('div', {
-                key: 'outcomes',
-                style: { fontSize: '14px', color: '#374151' }
-            }, diceState.outcomes.map(outcome => outcome.description).join(' • ')),
+    // Handle close dice display
+    const handleCloseDice = () => {
+        setDiceState(prev => ({
+            ...prev,
+            rollValue: null,
+            outcomes: []
+        }));
+    };
 
-            React.createElement('style', {
-                key: 'styles'
-            }, `
-                @keyframes roll {
-                    0%, 100% { transform: rotate(0deg); }
-                    25% { transform: rotate(90deg); }
-                    50% { transform: rotate(180deg); }
-                    75% { transform: rotate(270deg); }
-                }
-            `)
-        ]);
-    }
-
-    return null;
+    // Render dice display using DiceRenderer component
+    return React.createElement(window.DiceRenderer, {
+        diceState,
+        onClose: handleCloseDice
+    });
 }
 
 // Export for module loading

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple React State Test</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        function TestApp() {
+            const [gamePhase, setGamePhase] = React.useState('SETUP');
+            const [counter, setCounter] = React.useState(0);
+            
+            console.log('TestApp render - gamePhase:', gamePhase, 'counter:', counter);
+            
+            return (
+                <div style={{padding: '20px', fontFamily: 'Arial'}}>
+                    <h1>React State Test</h1>
+                    <p>Current game phase: <strong>{gamePhase}</strong></p>
+                    <p>Counter: <strong>{counter}</strong></p>
+                    
+                    <button 
+                        onClick={() => setCounter(c => c + 1)}
+                        style={{margin: '10px', padding: '10px'}}
+                    >
+                        Increment Counter: {counter}
+                    </button>
+                    
+                    <button 
+                        onClick={() => {
+                            console.log('Button clicked - changing phase from', gamePhase, 'to PLAYING');
+                            setGamePhase('PLAYING');
+                        }}
+                        style={{margin: '10px', padding: '10px', background: 'green', color: 'white'}}
+                    >
+                        Start Game (Change Phase)
+                    </button>
+                    
+                    <div style={{border: '2px solid red', padding: '10px', margin: '10px'}}>
+                        <h2>Conditional Rendering Test:</h2>
+                        {gamePhase === 'SETUP' ? (
+                            <div style={{background: 'lightblue', padding: '10px'}}>
+                                <h3>🔵 SETUP SCREEN</h3>
+                                <p>Phase is: {gamePhase}</p>
+                            </div>
+                        ) : (
+                            <div style={{background: 'lightgreen', padding: '10px'}}>
+                                <h3>🟢 PLAYING SCREEN</h3>
+                                <p>Phase is: {gamePhase}</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+        
+        ReactDOM.render(<TestApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
