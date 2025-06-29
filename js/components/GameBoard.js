@@ -157,30 +157,64 @@ function GameBoard() {
             className: 'game-board-content',
             style: { 
                 height: '100%', 
-                padding: '20px',
+                padding: '10px',
+                margin: '0',
                 width: '100%',
-                minWidth: '600px', // Ensure enough width for snake wrapping
-                overflow: 'auto'   // Allow scrolling if needed
+                minWidth: '600px',
+                overflow: 'auto'
             }
         },
-        // Just render the visual board - panels handle player info, space details, and actions
-        React.createElement('div', 
-            { className: 'section' },
-            React.createElement('div', 
-                { className: 'section__header' },
-                React.createElement('h2', { className: 'section__title' }, 'Game Board')
-            ),
-            React.createElement('div', 
-                { className: 'section__content' },
-                React.createElement(window.VisualBoard, {
-                    gameState,
-                    onSpaceClick: handleSpaceClick,
-                    availableMoves,
-                    boardState,
-                    currentPlayer
-                })
-            )
-        )
+        // Game Board with seamlessly integrated Future Log
+        React.createElement('div', {
+            style: {
+                margin: '0',
+                padding: '10px',
+                height: 'fit-content',
+                maxHeight: '100%',
+                border: '1px solid #dee2e6',
+                borderRadius: '8px',
+                background: '#fff'
+            }
+        }, [
+            React.createElement('h2', { 
+                key: 'board-title',
+                style: { 
+                    margin: '0 0 10px 0', 
+                    padding: '0',
+                    fontSize: '18px',
+                    color: '#4285f4'
+                } 
+            }, 'Game Board'),
+            React.createElement(window.VisualBoard, {
+                key: 'visual-board',
+                gameState,
+                onSpaceClick: handleSpaceClick,
+                availableMoves,
+                boardState,
+                currentPlayer
+            }),
+            
+            // Future Log Area - Seamlessly integrated with same background
+            React.createElement('div', {
+                key: 'seamless-future-log',
+                style: {
+                    background: '#fff',
+                    padding: '15px 0 0 0',
+                    textAlign: 'center',
+                    color: '#6c757d',
+                    height: '80px'
+                }
+            }, [
+                React.createElement('h4', {
+                    key: 'future-log-title',
+                    style: { margin: '10px 0', color: '#495057' }
+                }, '📝 Future Log Area'),
+                React.createElement('p', {
+                    key: 'future-log-text',
+                    style: { margin: 0, fontStyle: 'italic' }
+                }, 'This area is reserved for future logging functionality')
+            ])
+        ])
     );
 }
 

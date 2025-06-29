@@ -152,18 +152,9 @@ function MovementSection({
     }
 
     // Don't render UI if there's only one move (auto-selected)
+    // Single destinations are shown in the Current Space panel to avoid duplication
     if (effectiveAvailableMoves.length === 1) {
-        return React.createElement('div', { key: 'movement-section' }, [
-            React.createElement('div', {
-                key: 'auto-move-info',
-                className: 'auto-move-info'
-            }, [
-                React.createElement('p', {
-                    key: 'auto-move-text',
-                    className: 'auto-move-text'
-                }, `Next destination: ${effectiveAvailableMoves[0]} (auto-selected)`)
-            ])
-        ]);
+        return null;
     }
 
     return React.createElement('div', { key: 'movement-section' }, [

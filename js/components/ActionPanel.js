@@ -3,7 +3,7 @@
  * Handles move selection, dice rolling, and game actions
  */
 
-function ActionPanel() {
+function ActionPanel({ isInUnifiedContainer = false }) {
     const { useState, useEffect } = React;
     const [gameState, gameStateManager] = useGameState();
     
@@ -214,7 +214,14 @@ function ActionPanel() {
 
     if (!currentPlayer) {
         return React.createElement('div', {
-            className: 'action-panel'
+            className: isInUnifiedContainer ? 'action-panel-minimal' : 'action-panel',
+            style: isInUnifiedContainer ? {
+                background: 'transparent',
+                border: 'none',
+                padding: '0',
+                margin: '0',
+                height: 'auto'
+            } : {}
         }, [
             React.createElement('p', {
                 key: 'no-player',
@@ -224,7 +231,14 @@ function ActionPanel() {
     }
 
     return React.createElement('div', {
-        className: 'action-panel'
+        className: isInUnifiedContainer ? 'action-panel-minimal' : 'action-panel',
+        style: isInUnifiedContainer ? {
+            background: 'transparent',
+            border: 'none',
+            padding: '0',
+            margin: '0',
+            height: 'auto'
+        } : {}
     }, [
         // Action Header
         React.createElement('div', {
@@ -319,24 +333,7 @@ function ActionPanel() {
 
         // Old negotiation section removed - using negotiate button in turn controls instead
 
-        // Turn Controls Section
-        React.createElement(window.TurnControls, {
-            key: 'turn-controls',
-            currentPlayer: currentPlayer,
-            gameStateManager: gameStateManager,
-            canEndTurn: actionState.canEndTurn,
-            completedActions: actionState.completedActions,
-            requiredActions: actionState.requiredActions,
-            diceRequired: actionState.diceRequired,
-            hasRolled: actionState.hasRolled,
-            selectedMove: actionState.selectedMove,
-            availableCardActions: actionState.availableCardActions,
-            originalCardActionCount: actionState.originalCardActionCount,
-            availableMoves: actionState.availableMoves,
-            onTurnControlsStateChange: handleTurnControlsStateChange,
-            onShowRulesModal: showRulesModal,
-            debugMode: window.location.search.includes('debug=true')
-        }),
+        // Turn Controls moved to bottom panel in FixedApp
 
         // Rules Modal
         React.createElement(window.RulesModal, {

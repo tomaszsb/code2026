@@ -147,11 +147,21 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
     }
 
     return React.createElement('div', {
-        className: 'cards-section'
+        className: 'cards-section space-info-container',
+        style: {
+            backgroundColor: '#f8f9fa',
+            border: '1px solid #e9ecef',
+            borderLeft: '4px solid #17a2b8',
+            borderRadius: '4px',
+            padding: '12px',
+            margin: '8px 0'
+        }
     }, [
+        React.createElement('span', {key: 'icon'}, '🃏 '),
         React.createElement('div', {
             key: 'cards-header',
-            className: 'cards-header'
+            className: 'cards-header',
+            style: { marginTop: '0' }
         }, [
             React.createElement('h4', {
                 key: 'cards-title',

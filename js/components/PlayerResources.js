@@ -3,7 +3,17 @@
  * Shows money, time, scope summary with costs and detailed breakdown
  */
 
-function PlayerResources({ player }) {
+function PlayerResources({ player, onCardSelect, cardsExpanded, onToggleExpanded }) {
+    // Helper function to convert hex to RGB
+    const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
+    };
+    
     try {
         if (!player) {
             return React.createElement('div', {
@@ -26,9 +36,22 @@ function PlayerResources({ player }) {
         const scopeItems = Array.isArray(player.scopeItems) ? player.scopeItems : [];
         const scopeTotalCost = typeof player.scopeTotalCost === 'number' ? player.scopeTotalCost : 0;
 
+        // Get player color for background hue
+        const playerColor = player.color || '#4285f4'; // Default to blue if no color
+        const playerColorRgb = hexToRgb(playerColor);
+        const playerBgColor = playerColorRgb ? 
+            `rgba(${playerColorRgb.r}, ${playerColorRgb.g}, ${playerColorRgb.b}, 0.1)` : 
+            'rgba(66, 133, 244, 0.1)';
+        
         return React.createElement('div', {
-        className: 'player-resources'
-    }, [
+            className: 'player-resources',
+            style: {
+                backgroundColor: playerBgColor,
+                border: `1px solid ${playerColor}30`,
+                borderRadius: '8px',
+                padding: '12px'
+            }
+        }, [
         React.createElement('h4', {
             key: 'resources-title',
             className: 'section-title'
@@ -54,8 +77,17 @@ function PlayerResources({ player }) {
             
             React.createElement('div', {
                 key: 'time',
-                className: 'resource-item'
+                className: 'resource-item space-info-container',
+                style: {
+                    backgroundColor: '#f8f9fa',
+                    border: '1px solid #e9ecef',
+                    borderLeft: '4px solid #dc3545',
+                    borderRadius: '4px',
+                    padding: '8px',
+                    margin: '4px 0'
+                }
             }, [
+                React.createElement('span', {key: 'icon'}, '⏰ '),
                 React.createElement('span', {
                     key: 'time-label',
                     className: 'resource-label'
@@ -68,16 +100,25 @@ function PlayerResources({ player }) {
             
             React.createElement('div', {
                 key: 'scope',
-                className: 'resource-item scope-section'
+                className: 'resource-item scope-section space-info-container',
+                style: {
+                    backgroundColor: '#f8f9fa',
+                    border: '1px solid #e9ecef',
+                    borderLeft: '4px solid #007bff',
+                    borderRadius: '4px',
+                    padding: '8px',
+                    margin: '4px 0'
+                }
             }, [
                 React.createElement('span', {
                     key: 'scope-header',
                     className: 'scope-main-header'
                 }, [
+                    React.createElement('span', {key: 'icon'}, '📋 '),
                     React.createElement('span', {
                         key: 'scope-label',
                         className: 'resource-label'
-                    }, 'Project Scope'),
+                    }, 'Project Scope:'),
                     React.createElement('span', {
                         key: 'scope-count',
                         className: 'resource-value'
@@ -119,7 +160,16 @@ function PlayerResources({ player }) {
                         React.createElement('span', {key: 'total-cost'}, `$${scopeTotalCost.toLocaleString()}`)
                     ])
                 ])
-            ])
+            ]),
+            
+            // Cards in Hand section inside resources
+            window.CardsInHand ? React.createElement(window.CardsInHand, {
+                key: 'cards-in-hand',
+                player: player,
+                onCardSelect: onCardSelect,
+                cardsExpanded: cardsExpanded,
+                onToggleExpanded: onToggleExpanded
+            }) : null
         ])
     ]);
     } catch (error) {

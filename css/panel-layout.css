@@ -202,13 +202,24 @@
 
 /* Panel Components */
 .player-status-panel,
-.action-panel,
 .results-panel {
     height: 100%;
     overflow-y: auto;
     padding: 20px;
     color: var(--text-primary);
     background: white;
+}
+
+.action-panel {
+    height: fit-content;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 20px;
+    color: var(--text-primary);
+    background: #e8f5e8;
+    background-image: linear-gradient(135deg, #e8f5e8 0%, #d4edd5 100%);
+    border: 1px solid #c8e6c8;
+    border-radius: 12px;
 }
 
 /* Section Titles */
@@ -272,6 +283,11 @@
 
 /* Space Info */
 .current-space-info {
+    background-color: #e8f5e8;
+    background-image: linear-gradient(135deg, #e8f5e8 0%, #d4edd5 100%);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #c8e6c8;
     margin-bottom: 12px;
     padding-bottom: 8px;
 }

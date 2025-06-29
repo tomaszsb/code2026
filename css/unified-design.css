@@ -2430,3 +2430,29 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Panel Background Styling - Light Green Tint */
+.current-space-info {
+  background-color: #f8fffe;
+  background-image: linear-gradient(135deg, #f8fffe 0%, #f1f9f6 100%);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  border: 1px solid #e8f5e8;
+}
+
+.action-panel {
+  background-color: #f8fffe;
+  background-image: linear-gradient(135deg, #f8fffe 0%, #f1f9f6 100%);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  border: 1px solid #e8f5e8;
+}
+
+/* Enhanced container styling for CSV data in action panel */
+.action-panel .space-info-container {
+  backgroundColor: '#f8f9fa';
+  border: '1px solid #e9ecef';
+  borderRadius: '4px';
+  padding: '12px';
+  marginBottom: '8px';
+}

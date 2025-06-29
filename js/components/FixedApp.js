@@ -520,12 +520,14 @@ function GameInterface({ gameState, updateGameState }) {
     return React.createElement('div', { 
         className: 'game-interface',
         style: { 
-            display: 'grid', 
-            gridTemplateColumns: '300px 1fr 300px',
-            gap: '20px',
+            display: 'grid',
+            gridTemplateColumns: '50% 50%',
+            gridTemplateRows: '1fr auto',
+            columnGap: '20px',
+            rowGap: '20px',
             height: '100vh',
             padding: '20px',
-            minWidth: '1200px' // Ensure enough width for board wrapping
+            minWidth: '1200px'
         }
     },
         // Hidden GameManager component to handle game logic events
@@ -546,20 +548,48 @@ function GameInterface({ gameState, updateGameState }) {
             gameStateManager: window.GameStateManager,
             onGameStateUpdate: updateGameState
         }) : null,
-        // Left Panel - Uses useGameState() hook to get data from GameStateManager
-        window.PlayerStatusPanel ? 
-            React.createElement(window.PlayerStatusPanel) :
-            React.createElement('div', { className: 'panel-placeholder' }, 'Player Status Loading...'),
+        // Left Panel - Complete Player Container
+        React.createElement('div', {
+            style: { gridColumn: '1', gridRow: '1' }
+        }, [
+            window.PlayerStatusPanel ? 
+                React.createElement(window.PlayerStatusPanel) :
+                React.createElement('div', { className: 'panel-placeholder' }, 'Player Status Loading...')
+        ]),
         
-        // Center Panel - Game Board   
-        window.GameBoard ? 
-            React.createElement(window.GameBoard) :
-            React.createElement('div', { className: 'panel-placeholder' }, 'Game Board Loading...'),
-            
-        // Right Panel - Action Panel with full game logic
-        window.ActionPanel ? 
-            React.createElement(window.ActionPanel) :
-            React.createElement('div', { className: 'panel-placeholder' }, 'Actions Loading...'),
+        // Right Panel - Game Board (now includes Future Log internally)
+        React.createElement('div', {
+            style: { 
+                gridColumn: '2',
+                gridRow: '1'
+            }
+        }, [
+            window.GameBoard ? 
+                React.createElement(window.GameBoard) :
+                React.createElement('div', { className: 'panel-placeholder' }, 'Game Board Loading...')
+        ]),
+        
+        // Turn Controls - Bottom row spanning full width
+        React.createElement('div', {
+            style: { 
+                gridColumn: '1 / -1',
+                gridRow: '2',
+                background: '#f8f9fa',
+                border: '1px solid #dee2e6',
+                borderRadius: '8px',
+                padding: '15px',
+                minHeight: '80px'
+            }
+        }, [
+            window.TurnControls ? 
+                React.createElement(window.TurnControls, {
+                    key: 'turn-controls-bottom',
+                    currentPlayer: currentPlayer,
+                    gameStateManager: window.GameStateManager,
+                    debugMode: debugMode
+                }) :
+                React.createElement('div', { className: 'panel-placeholder' }, 'Turn Controls Loading...')
+        ]),
             
         // Space Explorer Modal
         gameUIState.showSpaceExplorer && gameUIState.selectedSpaceData && window.SpaceExplorer ? 

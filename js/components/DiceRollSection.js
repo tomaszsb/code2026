@@ -229,8 +229,17 @@ function DiceRollSection({
         
         effectsPreview && React.createElement('div', {
             key: 'effects-preview',
-            className: 'dice-effects-preview'
+            className: 'dice-effects-preview space-info-container',
+            style: {
+                backgroundColor: '#f8f9fa',
+                border: '1px solid #e9ecef',
+                borderLeft: '4px solid #ffc107',
+                borderRadius: '4px',
+                padding: '12px',
+                marginBottom: '8px'
+            }
         }, [
+            React.createElement('span', {key: 'icon'}, '🎲 '),
             React.createElement('small', {
                 key: 'preview-label',
                 className: 'preview-label'
@@ -238,25 +247,25 @@ function DiceRollSection({
             React.createElement('span', {
                 key: 'preview-text',
                 className: 'preview-text'
-            }, effectsPreview)
+            }, effectsPreview),
+            React.createElement('div', {
+                key: 'dice-button-container',
+                style: { marginTop: '10px' }
+            }, [
+                React.createElement('button', {
+                    key: 'dice-button',
+                    className: `btn ${hasRolled ? 'btn--success' : 'btn--primary'} btn--full ${rolling ? 'is-loading' : ''} dice-roll-button`,
+                    onClick: handleDiceRoll,
+                    disabled: rolling || hasRolled,
+                    title: hasRolled ? 'Dice rolled' : 'Roll dice and apply all dice-based effects'
+                }, rolling ? 'Rolling...' : hasRolled ? 'Rolled' : 'Roll Dice & Apply Effects')
+            ])
         ]),
         
-        React.createElement('div', { 
-            key: 'dice-controls',
-            className: 'dice-controls'
+        hasRolled && diceRollValue && React.createElement('div', {
+            key: 'dice-result',
+            className: 'dice-result'
         }, [
-            React.createElement('button', {
-                key: 'dice-button',
-                className: `btn ${hasRolled ? 'btn--success' : 'btn--primary'} btn--full ${rolling ? 'is-loading' : ''} dice-roll-button`,
-                onClick: handleDiceRoll,
-                disabled: rolling || hasRolled,
-                title: hasRolled ? 'Dice rolled' : 'Roll dice and apply all dice-based effects'
-            }, rolling ? 'Rolling...' : hasRolled ? 'Rolled' : 'Roll Dice & Apply Effects'),
-            
-            hasRolled && diceRollValue && React.createElement('div', {
-                key: 'dice-result',
-                className: 'dice-result'
-            }, [
                 React.createElement('div', {
                     key: 'dice-value',
                     className: 'dice-value'
@@ -287,7 +296,6 @@ function DiceRollSection({
                     }, diceOutcome.special_note)
                 ])
             ])
-        ])
     ]);
 }
 

@@ -307,17 +307,23 @@ function TurnControls({
             React.createElement('div', {
                 key: 'progress-text',
                 className: 'progress-text'
-            }, `Actions: ${completedActions}/${requiredActions}`)
+            }, `Actions: ${completedActions || 0}/${requiredActions || 0}`)
         ]),
 
         // Control Buttons
         React.createElement('div', {
             key: 'control-buttons',
-            className: 'control-buttons'
+            className: 'control-buttons',
+            style: {
+                display: 'flex',
+                gap: '10px',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }
         }, [
             React.createElement('button', {
                 key: 'end-turn',
-                className: `btn ${canEndTurn ? 'btn--success' : 'btn--secondary is-disabled'} btn--full end-turn-button`,
+                className: `btn ${canEndTurn ? 'btn--success' : 'btn--secondary is-disabled'} end-turn-button`,
                 onClick: handleEndTurn,
                 disabled: !canEndTurn,
                 title: canEndTurn ? 'End your turn' : `Complete ${requiredActions - completedActions} more action(s) to end turn`
@@ -325,7 +331,7 @@ function TurnControls({
 
             React.createElement('button', {
                 key: 'negotiate',
-                className: `btn btn--warning btn--full negotiate-button ${!checkNegotiateEnabled() ? 'is-disabled' : ''}`,
+                className: `btn btn--warning negotiate-button ${!checkNegotiateEnabled() ? 'is-disabled' : ''}`,
                 onClick: checkNegotiateEnabled() ? handleNegotiate : undefined,
                 disabled: !checkNegotiateEnabled(),
                 title: (() => {
@@ -343,7 +349,7 @@ function TurnControls({
 
             React.createElement('button', {
                 key: 'view-rules',
-                className: 'btn btn--ghost btn--full view-rules-button',
+                className: 'btn btn--ghost view-rules-button',
                 onClick: onShowRulesModal,
                 title: 'View game rules and help'
             }, 'View Rules')

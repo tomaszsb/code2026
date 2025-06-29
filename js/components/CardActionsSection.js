@@ -134,11 +134,26 @@ function CardActionsSection({
             className: 'section-title'
         }, '🎴 Available Card Actions'),
         
-        React.createElement('div', {
-            key: 'card-actions-grid',
-            className: 'card-actions-grid'
-        }, 
-            filteredActions.map((cardAction, index) => {
+        filteredActions.length > 0 && React.createElement('div', {
+            key: 'available-cards-container',
+            className: 'space-info-container',
+            style: {
+                backgroundColor: '#f8f9fa',
+                border: '1px solid #e9ecef',
+                borderLeft: '4px solid #17a2b8',
+                borderRadius: '4px',
+                padding: '12px',
+                marginBottom: '8px'
+            }
+        }, [
+            React.createElement('span', {key: 'icon'}, '🎴 '),
+            React.createElement('strong', {key: 'label'}, 'Available Cards: '),
+            React.createElement('div', {
+                key: 'card-actions-grid',
+                className: 'card-actions-grid',
+                style: { marginTop: '8px' }
+            }, 
+                filteredActions.map((cardAction, index) => {
                 if (!window.CardUtils) {
                     console.warn('CardUtils not available for card action display');
                     return null;
@@ -153,7 +168,8 @@ function CardActionsSection({
                     title: `${cardTypeName}: ${cardAction.action}`
                 }, `${cardTypeName} - ${cardAction.action}`);
             })
-        ),
+            )
+        ]),
 
         // Show filtering information for OWNER-FUND-INITIATION
         currentPlayer && currentPlayer.position === 'OWNER-FUND-INITIATION' && React.createElement('div', {

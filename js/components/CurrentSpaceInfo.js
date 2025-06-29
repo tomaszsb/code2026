@@ -4,7 +4,7 @@
  * Restored in Phase 32: Enhanced space information panel
  */
 
-function CurrentSpaceInfo({ player, debugMode = false }) {
+function CurrentSpaceInfo({ player, debugMode = false, isInUnifiedContainer = false }) {
     // Get comprehensive current space information
     const getCurrentSpaceInfo = () => {
         if (!player || !window.CSVDatabase || !window.CSVDatabase.loaded) return null;
@@ -112,7 +112,13 @@ function CurrentSpaceInfo({ player, debugMode = false }) {
     }
 
     return React.createElement('div', {
-        className: 'current-space-info enhanced'
+        className: isInUnifiedContainer ? 'current-space-info-minimal' : 'current-space-info enhanced',
+        style: isInUnifiedContainer ? {
+            background: 'transparent',
+            border: 'none',
+            padding: '0',
+            margin: '0'
+        } : {}
     }, [
         React.createElement('h4', {
             key: 'space-title',

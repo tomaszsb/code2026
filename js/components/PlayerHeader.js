@@ -43,7 +43,7 @@ function PlayerHeader({ player, currentPlayerIndex = 0, totalPlayers = 1 }) {
                     key: 'turn-info',
                     className: 'turn-info'
                 }, `Turn ${safeCurrentIndex + 1} of ${safeTotalPlayers}`)
-            ])
+])
         ]);
     } catch (error) {
         console.error('PlayerHeader: Error rendering component:', error);
