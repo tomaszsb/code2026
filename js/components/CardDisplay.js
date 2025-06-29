@@ -16,12 +16,12 @@ class CardDisplay extends React.Component {
         return window.CardUtils.formatCardValue(card);
     }
 
-    renderCard(card, isSelected = false, isHovered = false) {
+    renderCard(card, isSelected = false, isHovered = false, index = 0) {
         const config = this.getCardTypeConfig(card.card_type);
         const value = this.formatCardValue(card);
         
         return React.createElement('div', {
-            key: card.card_id,
+            key: `${card.card_id}-${index}`,
             className: `game-card ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''}`,
             style: {
                 backgroundColor: config.bgColor,
@@ -93,10 +93,11 @@ class CardDisplay extends React.Component {
             React.createElement('div', {
                 key: 'cards',
                 className: 'cards-container'
-            }, displayCards.map(card => this.renderCard(
+            }, displayCards.map((card, index) => this.renderCard(
                 card,
                 selectedCard && selectedCard.card_id === card.card_id,
-                hoverCard && hoverCard.card_id === card.card_id
+                hoverCard && hoverCard.card_id === card.card_id,
+                index
             ))),
             
             (selectedCard || hoverCard) && React.createElement('div', {

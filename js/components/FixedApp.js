@@ -114,22 +114,15 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
         
         // Listen to critical game events that need React state updates
         const handleCardsDrawn = ({ playerId, cardType, cards }) => {
+            // Cards are already added to GameStateManager by GameManager.drawCardsForPlayer()
+            // This event is just for UI feedback - sync GameStateManager state to React
             setGameState(prevState => {
-                const newPlayers = [...prevState.players];
-                const playerIndex = newPlayers.findIndex(p => p.id === playerId);
-                if (playerIndex !== -1) {
-                    if (!newPlayers[playerIndex].cards[cardType]) {
-                        newPlayers[playerIndex].cards[cardType] = [];
-                    }
-                    newPlayers[playerIndex].cards[cardType].push(...cards);
-                    
-                    // Also update GameStateManager to keep both in sync
-                    if (window.GameStateManager) {
-                        window.GameStateManager.setState({ ...prevState, players: newPlayers });
-                        window.GameStateManager.emit('stateChanged');
-                    }
+                // Get the current state from GameStateManager instead of adding cards again
+                const currentGameState = window.GameStateManager?.getState();
+                if (currentGameState && currentGameState.players) {
+                    return { ...prevState, players: currentGameState.players };
                 }
-                return { ...prevState, players: newPlayers };
+                return prevState;
             });
         };
         
@@ -398,7 +391,7 @@ function GameInterface({ gameState, updateGameState }) {
                     React.createElement('div', { key: 'cards-header', style: { marginTop: '15px', fontWeight: 'bold' } }, '🃏 Cards'),
                     ...Object.entries(gameState.players[0].cards || {}).map(([cardType, cards]) => 
                         React.createElement('div', { 
-                            key: cardType,
+                            key: `card-type-${cardType}`,
                             style: { fontSize: '14px', margin: '2px 0' }
                         }, `${cardType}: ${cards.length}`)
                     )
@@ -521,13 +514,13 @@ function GameInterface({ gameState, updateGameState }) {
         className: 'game-interface',
         style: { 
             display: 'grid',
-            gridTemplateColumns: '50% 50%',
+            gridTemplateColumns: '60% 40%',
             gridTemplateRows: '1fr auto',
             columnGap: '20px',
             rowGap: '20px',
             height: '100vh',
             padding: '20px',
-            minWidth: '1200px'
+            minWidth: '1400px'
         }
     },
         // Hidden GameManager component to handle game logic events
@@ -550,27 +543,30 @@ function GameInterface({ gameState, updateGameState }) {
         }) : null,
         // Left Panel - Complete Player Container
         React.createElement('div', {
+            key: 'left-panel',
             style: { gridColumn: '1', gridRow: '1' }
-        }, [
+        }, 
             window.PlayerStatusPanel ? 
-                React.createElement(window.PlayerStatusPanel) :
-                React.createElement('div', { className: 'panel-placeholder' }, 'Player Status Loading...')
-        ]),
+                React.createElement(window.PlayerStatusPanel, { key: 'player-status' }) :
+                React.createElement('div', { key: 'player-loading', className: 'panel-placeholder' }, 'Player Status Loading...')
+        ),
         
         // Right Panel - Game Board (now includes Future Log internally)
         React.createElement('div', {
+            key: 'right-panel',
             style: { 
                 gridColumn: '2',
                 gridRow: '1'
             }
-        }, [
+        }, 
             window.GameBoard ? 
-                React.createElement(window.GameBoard) :
-                React.createElement('div', { className: 'panel-placeholder' }, 'Game Board Loading...')
-        ]),
+                React.createElement(window.GameBoard, { key: 'game-board' }) :
+                React.createElement('div', { key: 'board-loading', className: 'panel-placeholder' }, 'Game Board Loading...')
+        ),
         
         // Turn Controls - Bottom row spanning full width
         React.createElement('div', {
+            key: 'bottom-panel',
             style: { 
                 gridColumn: '1 / -1',
                 gridRow: '2',
@@ -580,7 +576,7 @@ function GameInterface({ gameState, updateGameState }) {
                 padding: '15px',
                 minHeight: '80px'
             }
-        }, [
+        }, 
             window.TurnControls ? 
                 React.createElement(window.TurnControls, {
                     key: 'turn-controls-bottom',
@@ -588,8 +584,8 @@ function GameInterface({ gameState, updateGameState }) {
                     gameStateManager: window.GameStateManager,
                     debugMode: debugMode
                 }) :
-                React.createElement('div', { className: 'panel-placeholder' }, 'Turn Controls Loading...')
-        ]),
+                React.createElement('div', { key: 'controls-loading', className: 'panel-placeholder' }, 'Turn Controls Loading...')
+        ),
             
         // Space Explorer Modal
         gameUIState.showSpaceExplorer && gameUIState.selectedSpaceData && window.SpaceExplorer ? 

@@ -209,7 +209,25 @@ gameState.players?.find()  // Defensive
 - **Result**: ✅ All sophisticated game logic restored ✅ Cards draw and appear in hand ✅ Dice rolling works ✅ Movement system functional ✅ Time/money effects active ✅ Clean 3-panel interface ✅ All 27 spaces visible
 - **Status**: **COMPLETELY RESOLVED** - Full game functionality with clean React architecture
 
-### ✅ **Phase 31: Layout Optimization & Future Log Integration (Latest - RESOLVED)**
+### ✅ **Phase 32: Duplicate Card Drawing Fixes & Cards in Hand Modal (Latest - RESOLVED)**
+- **Issues Identified**: Cards being drawn twice on dice rolls and manual draw buttons, plus Cards in Hand display being illegible due to space constraints
+- **Root Causes Found**:
+  - Both DiceRoll.js and DiceRollSection.js components listening for same `showDiceRoll` events and processing dice outcomes twice
+  - FixedApp.js `handleCardsDrawn` function adding cards to React state that were already added by GameManager, creating duplicate additions
+  - Cards in Hand container too narrow (50% layout) with cramped text and scroll bars making cards unreadable
+  - Duplicate emoji in Cards in Hand header causing visual clutter
+- **Solutions Implemented**:
+  - **Dice Roll Fix**: Added condition in DiceRoll.js to not process `showDiceRoll` events when GamePanelLayout is active, ensuring only DiceRollSection handles dice in current interface
+  - **Manual Draw Fix**: Modified FixedApp.js `handleCardsDrawn` to sync GameStateManager state to React instead of adding cards again
+  - **Layout Expansion**: Changed main grid from 50%/50% to 60%/40% layout and increased minimum width to 1400px for more card space
+  - **Cards Modal System**: Replaced expandable cards container with professional modal system - compact summary in main interface, full spacious display in modal
+  - **Modal Features**: 90% viewport modal with responsive grid (300px minimum per card), keyboard support (Escape), click-outside-to-close, proper action buttons
+  - **Visual Cleanup**: Removed duplicate emoji, improved typography, added quick E card action buttons in summary
+- **Key Architecture**: Modal approach solves space constraints while maintaining clean main interface - summary shows card types and quick actions, modal provides unlimited space for detailed card management
+- **Result**: ✅ Single card draw on dice rolls ✅ Single card draw on manual buttons ✅ Readable card display in spacious modal ✅ Clean compact summary in main interface ✅ No scroll bars ✅ Professional modal UX ✅ Quick E card actions
+- **Status**: **COMPLETELY RESOLVED** - Card drawing works correctly with beautiful, readable card management interface
+
+### ✅ **Phase 31: Layout Optimization & Future Log Integration (RESOLVED)**
 - **Issues Identified**: User interface layout restructuring and gap elimination between Game Board and Future Log Area
 - **Root Causes Found**:
   - Turn control buttons stacked vertically instead of horizontally
@@ -387,16 +405,18 @@ gameState.players?.find()  // Defensive
 - **Immediate card effects**: Money and time effects apply when cards are drawn
 
 ### 🎮 **User Interface**
-- **Three-panel responsive layout**: Player status (left) + Action controls (bottom) + Results/Explorer (right)
+- **Optimized panel layout**: 60%/40% left/right layout (1400px minimum width) for better card space utilization
 - **Snake layout game board**: All 27 spaces in flowing pattern with responsive wrapping
 - **Interactive space exploration**: Click any space to open detailed SpaceExplorer modal with movement options, effects, and dice outcomes
+- **Cards in Hand modal system**: Compact summary in main interface with "View All" button opening spacious modal
+- **Professional card display**: 300px minimum card width in modal with full descriptions, responsive grid layout
+- **Quick card actions**: E card action buttons available both in summary and modal for immediate use
 - **Visual hierarchy**: Current player space 2x larger, destination spaces 1.5x larger
-- **Enhanced card system**: Phase-restricted E cards, immediate effects for W/B/I/L cards
+- **Enhanced card system**: Phase-restricted E cards, immediate effects for W/B/I/L cards, single card draws (no duplicates)
 - **Comprehensive rules modal**: CSV-driven content with proper field mapping
 - **Professional feedback system**: Toast notifications, loading states, progress indicators
 - **Unified dice system**: Single "Roll Dice & Apply Effects" button with smart action filtering
 - **Modal system**: Accessible modals with keyboard support (Escape key), backdrop clicks, and proper focus management
-- **Compact interface**: Reduced padding and spacing for better space utilization
 
 ### 🏗️ **Technical Architecture**
 - **Event-driven communication**: Components communicate via GameStateManager events

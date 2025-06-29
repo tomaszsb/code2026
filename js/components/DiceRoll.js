@@ -17,6 +17,11 @@ function DiceRoll() {
 
     // Handle show dice roll request
     useEventListener('showDiceRoll', ({ playerId, spaceName, visitType }) => {
+        // Don't process events when panel layout is active - let DiceRollSection handle it
+        if (window.GamePanelLayout && gameState.players && gameState.players.length > 0) {
+            return;
+        }
+        
         setState(prevState => ({
             ...prevState,
             rolling: false,
