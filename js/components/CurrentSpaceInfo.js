@@ -1,46 +1,41 @@
 /**
- * CurrentSpaceInfo - Current space information display component
- * Shows space details, requirements, and descriptions
+ * CurrentSpaceInfo - Enhanced current space information display component
+ * Shows comprehensive space details, effects, requirements, and actions
+ * Restored in Phase 32: Enhanced space information panel
  */
 
 function CurrentSpaceInfo({ player, debugMode = false }) {
-    // Get current space information
+    // Get comprehensive current space information
     const getCurrentSpaceInfo = () => {
         if (!player || !window.CSVDatabase || !window.CSVDatabase.loaded) return null;
         
-        const spaceData = window.CSVDatabase.spaceContent.find(
-            player.position, 
-            player.visitType || 'First'
-        );
+        const visitType = player.visitType || 'First';
+        const spaceName = player.position;
         
-        const configData = window.CSVDatabase.gameConfig.find(player.position);
+        // Get all relevant space data
+        const spaceContent = window.CSVDatabase.spaceContent.find(spaceName, visitType);
+        const configData = window.CSVDatabase.gameConfig.find(spaceName);
+        const spaceEffects = window.CSVDatabase.spaceEffects.query({
+            space_name: spaceName,
+            visit_type: visitType
+        });
+        const movement = window.CSVDatabase.movement.find(spaceName, visitType);
+        const diceOutcomes = window.CSVDatabase.diceOutcomes.find(spaceName, visitType);
         
-        // Always return an object with phase, even if spaceData is null
         return {
-            ...spaceData,
+            content: spaceContent,
+            config: configData,
+            effects: spaceEffects || [],
+            movement: movement,
+            diceOutcomes: diceOutcomes,
+            spaceName: spaceName,
+            visitType: visitType,
             phase: configData?.phase || 'N/A'
         };
     };
 
-    // Get all space data for debug mode
-    const getAllSpaceData = () => {
-        if (!player || !window.CSVDatabase || !window.CSVDatabase.loaded) return null;
-        
-        const visitType = player.visitType || 'First';
-        return {
-            content: window.CSVDatabase.spaceContent.find(player.position, visitType),
-            effects: window.CSVDatabase.spaceEffects.query({
-                space_name: player.position,
-                visit_type: visitType
-            }),
-            movement: window.CSVDatabase.movement.find(player.position, visitType),
-            diceOutcomes: window.CSVDatabase.diceOutcomes.find(player.position, visitType),
-            config: window.CSVDatabase.gameConfig.find(player.position)
-        };
-    };
-
-    const currentSpace = getCurrentSpaceInfo();
-    const allSpaceData = debugMode ? getAllSpaceData() : null;
+    const spaceInfo = getCurrentSpaceInfo();
+    const allSpaceData = debugMode ? spaceInfo : null;
 
     if (!player) {
         return React.createElement('div', {
@@ -57,8 +52,23 @@ function CurrentSpaceInfo({ player, debugMode = false }) {
         ]);
     }
 
+    if (!spaceInfo) {
+        return React.createElement('div', {
+            className: 'current-space-info'
+        }, [
+            React.createElement('h4', {
+                key: 'space-title',
+                className: 'section-title'
+            }, '📍 Current Space'),
+            React.createElement('p', {
+                key: 'loading',
+                className: 'loading-message'
+            }, 'Loading space information...')
+        ]);
+    }
+
     return React.createElement('div', {
-        className: 'current-space-info'
+        className: 'current-space-info enhanced'
     }, [
         React.createElement('h4', {
             key: 'space-title',
@@ -67,35 +77,41 @@ function CurrentSpaceInfo({ player, debugMode = false }) {
         
         React.createElement('div', {
             key: 'space-card',
-            className: 'space-card'
+            className: 'space-card enhanced'
         }, [
             // Phase • Space Name • Visit format
             React.createElement('div', {
                 key: 'phase-space-visit',
                 className: 'space-meta-line primary'
-            }, `${currentSpace?.phase || 'UNKNOWN'} • ${player.position || 'Unknown'} • ${player.visitType === 'Subsequent' ? 'SUBSEQUENT' : 'FIRST'}`),
+            }, `${spaceInfo.phase || 'UNKNOWN'} • ${spaceInfo.spaceName || 'Unknown'} • ${spaceInfo.visitType === 'Subsequent' ? 'SUBSEQUENT' : 'FIRST'} VISIT`),
             
-            React.createElement('div', {
-                key: 'space-details',
-                className: 'space-details compact'
+            // Space title and story
+            spaceInfo.content && React.createElement('div', {
+                key: 'space-story',
+                className: 'space-story'
             }, [
-                
-                // Event and Action on separate lines if they exist
-                currentSpace?.Event && React.createElement('div', {
-                    key: 'event',
-                    className: 'space-event compact'
+                spaceInfo.content.title && React.createElement('div', {
+                    key: 'title',
+                    className: 'space-title'
                 }, [
-                    React.createElement('strong', {key: 'label'}, 'Event: '),
-                    currentSpace.Event
+                    React.createElement('span', {key: 'icon'}, '📍 '),
+                    React.createElement('strong', {key: 'label'}, spaceInfo.content.title)
                 ]),
                 
-                currentSpace?.Action && React.createElement('div', {
-                    key: 'action',
-                    className: 'space-action compact'
-                }, [
-                    React.createElement('strong', {key: 'label'}, 'Action: '),
-                    currentSpace.Action
-                ])
+                spaceInfo.content.story && React.createElement('p', {
+                    key: 'story',
+                    className: 'space-narrative'
+                }, spaceInfo.content.story)
+            ]),
+            
+            // Expected outcome (context only, not interactive)
+            spaceInfo.content && spaceInfo.content.outcome_description && React.createElement('div', {
+                key: 'space-outcome',
+                className: 'space-outcome'
+            }, [
+                React.createElement('span', {key: 'icon'}, '📋 '),
+                React.createElement('strong', {key: 'label'}, 'Expected Outcome: '),
+                spaceInfo.content.outcome_description
             ])
         ]),
 
@@ -115,37 +131,12 @@ function CurrentSpaceInfo({ player, debugMode = false }) {
             React.createElement('h6', {
                 key: 'debug-title',
                 style: { margin: '0 0 10px 0', fontWeight: 'bold' }
-            }, '🐛 Debug: All Space Data'),
+            }, '🐛 Debug: Enhanced Space Data'),
             
-            React.createElement('div', {
-                key: 'content-data',
-                style: { marginBottom: '8px' }
-            }, [
-                React.createElement('strong', { key: 'label' }, 'Content: '),
-                React.createElement('code', { key: 'value' }, 
-                    allSpaceData.content ? JSON.stringify(allSpaceData.content, null, 2) : 'null'
-                )
-            ]),
-            
-            React.createElement('div', {
-                key: 'effects-data',
-                style: { marginBottom: '8px' }
-            }, [
-                React.createElement('strong', { key: 'label' }, 'Effects: '),
-                React.createElement('code', { key: 'value' }, 
-                    allSpaceData.effects ? JSON.stringify(allSpaceData.effects, null, 2) : 'null'
-                )
-            ]),
-            
-            React.createElement('div', {
-                key: 'movement-data',
-                style: { marginBottom: '8px' }
-            }, [
-                React.createElement('strong', { key: 'label' }, 'Movement: '),
-                React.createElement('code', { key: 'value' }, 
-                    allSpaceData.movement ? JSON.stringify(allSpaceData.movement, null, 2) : 'null'
-                )
-            ])
+            React.createElement('pre', {
+                key: 'debug-content',
+                style: { fontSize: '11px', overflow: 'auto', maxHeight: '200px' }
+            }, JSON.stringify(allSpaceData, null, 2))
         ])
     ]);
 }
