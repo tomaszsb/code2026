@@ -129,57 +129,89 @@ function CurrentSpaceInfo({ player, debugMode = false }) {
                 className: 'space-meta-line primary'
             }, `${spaceInfo.phase || 'UNKNOWN'} • ${spaceInfo.spaceName || 'Unknown'} • ${spaceInfo.visitType === 'Subsequent' ? 'SUBSEQUENT' : 'FIRST'} VISIT`),
             
-            // Space title and story
-            spaceInfo.content && React.createElement('div', {
-                key: 'space-story',
-                className: 'space-story'
+            // Space title and story with container styling
+            spaceInfo.content && spaceInfo.content.title && React.createElement('div', {
+                key: 'space-title-container',
+                className: 'space-info-container',
+                style: {
+                    backgroundColor: '#f8f9fa',
+                    border: '1px solid #e9ecef',
+                    borderLeft: '4px solid #007bff',
+                    borderRadius: '4px',
+                    padding: '12px',
+                    marginBottom: '8px'
+                }
             }, [
-                spaceInfo.content.title && React.createElement('div', {
-                    key: 'title',
-                    className: 'space-title'
-                }, [
-                    React.createElement('span', {key: 'icon'}, '📍 '),
-                    React.createElement('strong', {key: 'label'}, spaceInfo.content.title)
-                ]),
-                
-                spaceInfo.content.story && React.createElement('div', {
-                    key: 'story',
-                    className: 'space-narrative'
-                }, [
-                    React.createElement('span', {key: 'icon'}, '📖 '),
-                    spaceInfo.content.story
-                ])
+                React.createElement('span', {key: 'icon'}, '📍 '),
+                React.createElement('strong', {key: 'label'}, spaceInfo.content.title)
             ]),
             
-            // Expected outcome (context only, not interactive)
+            spaceInfo.content && spaceInfo.content.story && React.createElement('div', {
+                key: 'space-story-container',
+                className: 'space-info-container',
+                style: {
+                    backgroundColor: '#f8f9fa',
+                    border: '1px solid #e9ecef',
+                    borderLeft: '4px solid #28a745',
+                    borderRadius: '4px',
+                    padding: '12px',
+                    marginBottom: '8px'
+                }
+            }, [
+                React.createElement('span', {key: 'icon'}, '📖 '),
+                spaceInfo.content.story
+            ]),
+            
+            // Expected outcome with container styling
             spaceInfo.content && spaceInfo.content.outcome_description && React.createElement('div', {
-                key: 'space-outcome',
-                className: 'space-outcome'
+                key: 'space-outcome-container',
+                className: 'space-info-container',
+                style: {
+                    backgroundColor: '#f8f9fa',
+                    border: '1px solid #e9ecef',
+                    borderLeft: '4px solid #ffc107',
+                    borderRadius: '4px',
+                    padding: '12px',
+                    marginBottom: '8px'
+                }
             }, [
                 React.createElement('span', {key: 'icon'}, '📋 '),
                 React.createElement('strong', {key: 'label'}, 'Expected Outcome: '),
                 spaceInfo.content.outcome_description
             ]),
             
-            // Contextual effects (time only - other effects handled in ActionPanel)
-            contextualEffects.length > 0 && React.createElement('div', {
-                key: 'contextual-effects',
-                className: 'contextual-effects'
-            }, contextualEffects.map((effect, index) => 
+            // Contextual effects with container styling
+            contextualEffects.length > 0 && contextualEffects.map((effect, index) => 
                 React.createElement('div', {
-                    key: `context-effect-${index}`,
-                    className: 'context-effect-item'
+                    key: `context-effect-container-${index}`,
+                    className: 'space-info-container',
+                    style: {
+                        backgroundColor: '#f8f9fa',
+                        border: '1px solid #e9ecef',
+                        borderLeft: '4px solid #dc3545',
+                        borderRadius: '4px',
+                        padding: '12px',
+                        marginBottom: '8px'
+                    }
                 }, [
                     React.createElement('span', {key: 'icon'}, effect.icon + ' '),
                     React.createElement('strong', {key: 'label'}, effect.label + ': '),
                     effect.value
                 ])
-            )),
+            ),
             
-            // Single destination movement (contextual - choices handled in ActionPanel)
+            // Single destination movement with container styling
             movementContext && React.createElement('div', {
-                key: 'movement-context',
-                className: 'movement-context'
+                key: 'movement-context-container',
+                className: 'space-info-container',
+                style: {
+                    backgroundColor: '#f8f9fa',
+                    border: '1px solid #e9ecef',
+                    borderLeft: '4px solid #6f42c1',
+                    borderRadius: '4px',
+                    padding: '12px',
+                    marginBottom: '8px'
+                }
             }, [
                 React.createElement('span', {key: 'icon'}, '➡️ '),
                 React.createElement('strong', {key: 'label'}, 'Next: '),
