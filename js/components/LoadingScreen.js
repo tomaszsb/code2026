@@ -4,6 +4,7 @@
  */
 
 function LoadingScreen() {
+    const { useState, useEffect } = React;
     const [dots, setDots] = useState('');
     
     // Animate loading dots

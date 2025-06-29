@@ -93,18 +93,7 @@ function PlayerStatusPanel({ debugMode = false }) {
             onToggleExpanded: toggleCardsExpanded
         })] : []),
 
-        // Action Panel Section - Integrated into Player Status
-        React.createElement('div', {
-            key: 'action-section',
-            className: 'action-section'
-        }, [
-            window.ActionPanel ? React.createElement(ActionPanel, {
-                key: 'action-panel'
-            }) : React.createElement('div', {
-                key: 'action-loading',
-                className: 'action-loading'
-            }, 'Loading actions...')
-        ]),
+        // Action Panel removed - now handled by right panel in FixedApp
 
         // Card Details Modal
         ...(window.CardModal ? [React.createElement(CardModal, {

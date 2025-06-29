@@ -44,11 +44,19 @@
     <script src="js/data/CSVDatabase.js"></script>
     <script src="js/data/GameStateManager.js"></script>
     
-    <!-- Wait for core systems to load -->
+    <!-- Initialize core systems -->
     <script>
         // Ensure core systems are available
         if (typeof window.CSVDatabase === 'undefined' || typeof window.GameStateManager === 'undefined') {
             console.error('Core systems not loaded properly');
+        } else {
+            // Initialize CSV Database
+            console.log('Initializing CSV Database...');
+            window.CSVDatabase.loadAll().then(() => {
+                console.log('CSV Database loaded successfully');
+            }).catch(error => {
+                console.error('Failed to load CSV Database:', error);
+            });
         }
     </script>
     
@@ -105,8 +113,9 @@
     <!-- Removed unused components: CardDisplay, CardPlayInterface, HandManager, CardEffectAnimations,
          TurnManager, WinConditionManager, GameEndScreen, GameTimer, GameSaveManager, LoadingAndErrorHandler -->
     
-    <!-- Main App -->
+    <!-- Main App Components -->
     <script type="text/babel" src="js/components/FixedApp.js"></script>
+    <!-- Legacy App.js moved to App.js.legacy to prevent conflicts -->
 
     <script type="text/babel">
         // Initialize application

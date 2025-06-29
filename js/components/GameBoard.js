@@ -133,10 +133,11 @@ function GameBoard() {
         });
     };
     
-    // For panel layout, defer to GamePanelLayout
-    if (isPanelLayoutActive) {
-        return React.createElement(GamePanelLayout);
-    }
+    // Skip GamePanelLayout when used as a component within FixedApp
+    // (GamePanelLayout creates its own full 3-panel layout which causes nesting)
+    // if (isPanelLayoutActive) {
+    //     return React.createElement(GamePanelLayout);
+    // }
     
     // Legacy layout for when panel system not active
     if (!gameState.players || gameState.players.length === 0) {
@@ -150,119 +151,34 @@ function GameBoard() {
         );
     }
     
+    // When used within FixedApp, just render the board content (no full layout)
     return React.createElement('div', 
         { 
-            className: 'game-board-wrapper layout-grid layout-grid--main',
-            style: { minHeight: '100vh', background: '#f0f0f0', padding: '20px' }
+            className: 'game-board-content',
+            style: { 
+                height: '100%', 
+                padding: '20px',
+                width: '100%',
+                minWidth: '600px', // Ensure enough width for snake wrapping
+                overflow: 'auto'   // Allow scrolling if needed
+            }
         },
-        
-        
-        // Header
+        // Just render the visual board - panels handle player info, space details, and actions
         React.createElement('div', 
-            { 
-                className: 'card section__header',
-                style: { gridColumn: '1 / -1' }
-            },
-            React.createElement('h1', { className: 'heading-1' }, 'Project Management Board Game'),
+            { className: 'section' },
             React.createElement('div', 
-                { className: 'flex items-center gap-4' },
-                React.createElement('span', { className: 'badge badge--primary' }, 
-                    `Turn ${gameState.turnCount}`
-                ),
-                React.createElement('span', { className: 'text-body' }, 
-                    `${currentPlayer?.name || 'Unknown'}'s Turn`
-                )
-            )
-        ),
-        
-        // Main game area
-        React.createElement('div', 
-            { className: 'game-main', style: { gridColumn: '1 / 3' } },
-            
-            // Player info section
-            React.createElement('section', 
-                { className: 'section' },
-                React.createElement('div', 
-                    { className: 'section__header' },
-                    React.createElement('h2', { className: 'section__title' }, 'Players')
-                ),
-                React.createElement('div', 
-                    { className: 'flex gap-4' },
-                    gameState.players.map((player, index) => 
-                        React.createElement('div', 
-                            { 
-                                key: player.id,
-                                className: `card card--compact ${index === gameState.currentPlayer ? 'is-active' : ''}`
-                            },
-                            React.createElement('div', { className: 'heading-4 mb-2' }, player.name),
-                            React.createElement('div', { className: 'text-small mb-2' }, player.position),
-                            React.createElement('div', { className: 'text-small' }, ComponentUtils.formatMoney(player.money))
-                        )
-                    )
-                )
+                { className: 'section__header' },
+                React.createElement('h2', { className: 'section__title' }, 'Game Board')
             ),
-            
-            // Game board section - now uses BoardRenderer
-            React.createElement('section', 
-                { className: 'section' },
-                React.createElement('div', 
-                    { className: 'section__header' },
-                    React.createElement('h2', { className: 'section__title' }, 'Game Board')
-                ),
-                React.createElement('div', 
-                    { className: 'section__content' },
-                    React.createElement(VisualBoard, {
-                        gameState,
-                        onSpaceClick: handleSpaceClick,
-                        availableMoves,
-                        boardState,
-                        currentPlayer
-                    })
-                )
-            ),
-            
-            // Current space section - now uses BoardRenderer
-            currentPlayer && React.createElement('section', 
-                { className: 'section' },
-                React.createElement('div', 
-                    { className: 'section__header' },
-                    React.createElement('h2', { className: 'section__title' }, 'Current Space')
-                ),
-                React.createElement('div', 
-                    { className: 'card' },
-                    React.createElement(SpaceDisplay, {
-                        spaceName: currentPlayer.position,
-                        visitType: currentPlayer.visitType,
-                        onMoveRequest: null
-                    })
-                )
-            )
-        ),
-        
-        // Right sidebar - Space Explorer and Actions
-        React.createElement('div', 
-            { className: 'flex flex-col gap-4', style: { gridColumn: '3 / 4' } },
-            
-            // Space Explorer Panel
-            React.createElement('div',
-                { className: 'card' },
-                React.createElement(SpaceExplorer)
-            ),
-            
-            // Actions section
-            React.createElement('section', 
-                { className: 'section' },
-                React.createElement('div', 
-                    { className: 'section__header' },
-                    React.createElement('h2', { className: 'section__title' }, 'Actions')
-                ),
-                React.createElement('div', 
-                    { className: 'section__content' },
-                    React.createElement('div', 
-                        { className: 'card' },
-                        React.createElement('p', { className: 'text-body' }, 'Use Action Panel for game controls')
-                    )
-                )
+            React.createElement('div', 
+                { className: 'section__content' },
+                React.createElement(VisualBoard, {
+                    gameState,
+                    onSpaceClick: handleSpaceClick,
+                    availableMoves,
+                    boardState,
+                    currentPlayer
+                })
             )
         )
     );

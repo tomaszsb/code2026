@@ -224,7 +224,7 @@ class GameStateManager {
      * Start player turn
      */
     startTurn(playerId, fromNegotiation = false) {
-        const player = this.state.players[playerId];
+        const player = this.state.players.find(p => p.id === playerId);
         if (!player) {
             throw new Error(`Player ${playerId} not found`);
         }
@@ -243,7 +243,7 @@ class GameStateManager {
      */
     savePlayerSnapshot(playerId) {
         const players = [...this.state.players];
-        const player = players[playerId];
+        const player = players.find(p => p.id === playerId);
         
         if (!player) {
             console.error(`GameStateManager: Player ${playerId} not found for snapshot`);
@@ -270,7 +270,7 @@ class GameStateManager {
      */
     movePlayer(playerId, spaceName, visitType = 'First') {
         const players = [...this.state.players];
-        const player = players[playerId];
+        const player = players.find(p => p.id === playerId);
         
         if (!player) {
             throw new Error(`Player ${playerId} not found`);
@@ -295,7 +295,7 @@ class GameStateManager {
      */
     updatePlayerMoney(playerId, amount, reason = '') {
         const players = [...this.state.players];
-        const player = players[playerId];
+        const player = players.find(p => p.id === playerId);
         
         if (!player) {
             throw new Error(`Player ${playerId} not found`);
@@ -322,7 +322,7 @@ class GameStateManager {
         console.log(`GameStateManager: addCardsToPlayer called with playerId=${playerId}, cardType=${cardType}, cards=`, cards);
         
         const players = [...this.state.players];
-        const player = players[playerId];
+        const player = players.find(p => p.id === playerId);
         
         if (!player) {
             console.error(`GameStateManager: Player ${playerId} not found`);
@@ -409,7 +409,7 @@ class GameStateManager {
      */
     restorePlayerSnapshot(playerId, timePenalty = null) {
         const players = [...this.state.players];
-        const player = players[playerId];
+        const player = players.find(p => p.id === playerId);
         
         if (!player) {
             console.error(`GameStateManager: Player ${playerId} not found`);

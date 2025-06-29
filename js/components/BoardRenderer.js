@@ -13,24 +13,25 @@ function VisualBoard({ gameState, onSpaceClick, availableMoves, boardState, curr
     const [loading, setLoading] = useState(true);
     
     useEffect(() => {
-        // Load all unique spaces for the board
+        // Load all spaces from GAME_CONFIG.csv (complete list) and merge with SPACE_CONTENT.csv
         if (window.CSVDatabase && window.CSVDatabase.loaded) {
-            const spaces = window.CSVDatabase.spaceContent.query();
             const gameConfig = window.CSVDatabase.gameConfig.query();
+            const spaceContent = window.CSVDatabase.spaceContent.query();
             
-            // Get unique spaces by name and merge with config data for phase info
-            const uniqueSpaces = spaces.reduce((acc, space) => {
-                if (!acc.find(s => s.space_name === space.space_name)) {
-                    const configData = gameConfig.find(config => config.space_name === space.space_name);
-                    acc.push({
-                        ...space,
-                        phase: configData?.phase || 'MISC'
-                    });
-                }
-                return acc;
-            }, []);
+            // Use gameConfig as the complete space list, merge content where available
+            const allSpaces = gameConfig.map(config => {
+                const content = spaceContent.find(sc => sc.space_name === config.space_name);
+                return {
+                    space_name: config.space_name,
+                    phase: config.phase || 'MISC',
+                    title: content?.title || config.space_name.replace(/-/g, ' '),
+                    story: content?.story || 'No description available',
+                    // Add other fields from content if available
+                    ...content
+                };
+            });
             
-            setAllSpaces(uniqueSpaces);
+            setAllSpaces(allSpaces);
             setLoading(false);
         }
     }, []);

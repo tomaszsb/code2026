@@ -21,7 +21,7 @@ class MovementEngine {
         this.visitHistory = new Map(); // playerId -> Set of visited spaces
         this.singleChoiceDecisions = new Map(); // playerId -> Map of space -> decision
         this.auditStates = new Map(); // playerId -> audit status
-        this.debug = false;
+        this.debug = false; // Set to true only when debugging movement issues
         this.gameStateManager = null;
         this.databaseRetryCount = 0;
         this.maxRetries = 3;
@@ -570,9 +570,10 @@ class MovementEngine {
      * Debug logging
      */
     log(message) {
-        if (this.debug) {
-            console.log(`[MovementEngine] ${message}`);
-        }
+        // Disabled to reduce console spam - enable only when debugging movement
+        // if (this.debug) {
+        //     console.log(`[MovementEngine] ${message}`);
+        // }
     }
 
     /**

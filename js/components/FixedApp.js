@@ -36,6 +36,7 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
         const newGameState = {
             ...gameState,
             gamePhase: 'PLAYING',
+            currentPlayer: 0, // Explicitly set current player to first player
             players: players.map((playerData, index) => ({
                 id: playerData.id || index,
                 name: typeof playerData === 'string' ? playerData : playerData.name,
@@ -52,34 +53,108 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
                     L: [],
                     E: []
                 },
-                loans: [],
-                completedSpaces: [],
-                visitedSpaces: playerData.visitedSpaces || [],
-                isActive: index === 0
+                phase: playerData.phase || 'INITIATION'
             })),
             gameSettings: { ...gameState.gameSettings, ...settings }
         };
+        
+        // Update GameStateManager directly and immediately
+        if (window.GameStateManager) {
+            window.GameStateManager.setState(newGameState);
+            window.GameStateManager.emit('gameInitialized');
+            console.log('FixedApp: Updated GameStateManager immediately with new game state');
+        }
         
         setGameState(newGameState);
         console.log('FixedApp: Game initialized successfully');
     };
     
-    // Pass game state and functions to global scope for components that expect it
+    // Initialize systems and sync state only when needed
     useEffect(() => {
         window.FixedGameInitializer = { initializeGame };
         
-        // Mock the GameStateManager interface for components that depend on it
-        if (window.GameStateManager) {
-            // Override getState to return our React state
-            const originalGetState = window.GameStateManager.getState;
-            window.GameStateManager.getState = () => gameState;
-            
-            // Cleanup function to restore original
-            return () => {
-                window.GameStateManager.getState = originalGetState;
-            };
+        // Initialize MovementEngine once
+        if (window.GameStateManager && window.MovementEngine) {
+            try {
+                const movementEngine = window.movementEngine || (window.MovementEngine?.getInstance && window.MovementEngine.getInstance());
+                if (movementEngine && !movementEngine.gameStateManager) {
+                    movementEngine.initialize(window.GameStateManager);
+                    console.log('FixedApp: Initialized MovementEngine instance');
+                }
+            } catch (error) {
+                console.error('Error initializing MovementEngine:', error);
+            }
         }
-    }, [gameState]);
+    }, []); // Run only once
+    
+    // Sync React state to GameStateManager only when game phase changes
+    useEffect(() => {
+        if (window.GameStateManager && gameState.gamePhase === 'PLAYING') {
+            window.GameStateManager.setState(gameState);
+            console.log('FixedApp: Synced game state to GameStateManager (players:', gameState.players.length, ')');
+            
+            // Debug: Show current card counts
+            gameState.players.forEach((player, index) => {
+                const totalCards = Object.values(player.cards || {}).reduce((sum, cardArray) => sum + cardArray.length, 0);
+                console.log(`FixedApp: Player ${index + 1} has ${totalCards} total cards:`, player.cards);
+            });
+        }
+    }, [gameState.gamePhase, gameState.players.length, gameState.players[0]?.cards]); // Also watch for card changes
+    
+    // Listen for GameStateManager changes and sync back to React state (DISABLED TO PREVENT LOOPS)
+    // The sophisticated components use useGameState() hook which reads directly from GameStateManager
+    // No need for bidirectional sync - just push React state TO GameStateManager
+    useEffect(() => {
+        // Only listen for critical events that require React re-render
+        if (!window.GameStateManager) return;
+        
+        const handleCriticalStateChange = () => {
+            // Only sync back for game phase changes or similar critical updates
+            const newState = window.GameStateManager.getState();
+            if (newState.gamePhase !== gameState.gamePhase) {
+                console.log('FixedApp: Critical state change detected, syncing game phase');
+                setGameState(prevState => ({
+                    ...prevState,
+                    gamePhase: newState.gamePhase
+                }));
+            }
+        };
+        
+        // Listen to critical game events that need React state updates
+        const handleCardsDrawn = ({ playerId, cardType, cards }) => {
+            console.log('FixedApp: Cards drawn for player', playerId, ':', cards.length, cardType, 'cards');
+            setGameState(prevState => {
+                const newPlayers = [...prevState.players];
+                const playerIndex = newPlayers.findIndex(p => p.id === playerId);
+                if (playerIndex !== -1) {
+                    if (!newPlayers[playerIndex].cards[cardType]) {
+                        newPlayers[playerIndex].cards[cardType] = [];
+                    }
+                    newPlayers[playerIndex].cards[cardType].push(...cards);
+                    console.log('FixedApp: Updated player cards in React state - Player now has', newPlayers[playerIndex].cards[cardType].length, cardType, 'cards');
+                    
+                    // Also update GameStateManager to keep both in sync
+                    if (window.GameStateManager) {
+                        window.GameStateManager.setState({ ...prevState, players: newPlayers });
+                        window.GameStateManager.emit('stateChanged');
+                    }
+                }
+                return { ...prevState, players: newPlayers };
+            });
+        };
+        
+        const unsubscribe1 = window.GameStateManager.on('gamePhaseChanged', handleCriticalStateChange);
+        const unsubscribe2 = window.GameStateManager.on('cardsDrawnForPlayer', handleCardsDrawn);
+        const unsubscribe3 = window.GameStateManager.on('cardsDrawn', handleCardsDrawn); // Alternative event name
+        const unsubscribe4 = window.GameStateManager.on('playerCardsUpdated', handleCardsDrawn); // Another possible event name
+        
+        return () => {
+            unsubscribe1?.();
+            unsubscribe2?.();
+            unsubscribe3?.();
+            unsubscribe4?.();
+        };
+    }, []);
     
     // Handle errors
     if (error) {
@@ -87,20 +162,16 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
             { className: 'app-error' },
             React.createElement('h1', null, 'Failed to Load Game'),
             React.createElement('p', null, error),
-            React.createElement('button', 
-                { onClick: () => window.location.reload() },
-                'Retry'
-            )
+            React.createElement('button', { onClick: () => window.location.reload() }, 'Reload')
         );
     }
     
-    // Show loading screen while CSV data loads
+    // Handle loading
     if (!loaded) {
         return React.createElement(LoadingScreen);
     }
     
-    // Determine which screen to show
-    const showPlayerSetup = gameState.gamePhase === 'SETUP' || (!gameState.players || gameState.players.length === 0);
+    const showPlayerSetup = gameState.gamePhase === 'SETUP' || gameState.players.length === 0;
     
     console.log('FixedApp: showPlayerSetup =', showPlayerSetup);
     
@@ -109,156 +180,353 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
         React.createElement('div', { className: 'app' },
             showPlayerSetup 
                 ? React.createElement(FixedPlayerSetup, { onInitializeGame: initializeGame })
-                : React.createElement(GameInterface, { gameState: gameState })
+                : React.createElement(GameInterface, { 
+                    gameState: gameState,
+                    updateGameState: setGameState
+                })
         )
     );
 }
 
-// Game interface component
-function GameInterface({ gameState }) {
-    return React.createElement('div', {
+// Game interface component - Using actual game components
+function GameInterface({ gameState, updateGameState }) {
+    const { useState } = React;
+    const [gameUIState, setGameUIState] = useState({
+        showingDiceResult: false,
+        diceResult: null,
+        availableMoves: [],
+        showingMoves: false
+    });
+    
+    console.log('GameInterface: Rendering with gameState:', gameState);
+    console.log('GameInterface: Players:', gameState.players?.length, 'Current player index:', gameState.currentPlayer);
+    
+    // Get current player
+    const currentPlayer = gameState.players?.[gameState.currentPlayer];
+    console.log('GameInterface: Current player object:', currentPlayer);
+    
+    // Roll dice function
+    const rollDice = () => {
+        console.log('🎲 DICE BUTTON CLICKED!');
+        console.log('CSVDatabase loaded:', window.CSVDatabase?.loaded);
+        console.log('MovementEngine available:', !!window.MovementEngine);
+        console.log('Current player:', currentPlayer);
+        
+        if (!window.CSVDatabase?.loaded) {
+            alert('Game data not loaded yet');
+            return;
+        }
+        
+        const diceResult = Math.floor(Math.random() * 6) + 1;
+        console.log('Dice rolled:', diceResult);
+        
+        // Get available moves using MovementEngine instance
+        const movementEngine = window.movementEngine || (window.MovementEngine?.getInstance && window.MovementEngine.getInstance());
+        if (movementEngine && currentPlayer) {
+            console.log('Getting moves for player at:', currentPlayer.position);
+            try {
+                const moves = movementEngine.getAvailableMoves(currentPlayer);
+                console.log('Available moves returned:', moves);
+                console.log('Moves type:', typeof moves, 'Array?', Array.isArray(moves));
+                
+                setGameUIState({
+                    showingDiceResult: true,
+                    diceResult: diceResult,
+                    availableMoves: moves || [],
+                    showingMoves: (moves && moves.length > 0)
+                });
+                
+                console.log('UI state updated successfully');
+            } catch (error) {
+                console.error('Error getting moves:', error);
+                setGameUIState({
+                    showingDiceResult: true,
+                    diceResult: diceResult,
+                    availableMoves: ['OWNER-FUND-INITIATION'], // Hardcoded fallback
+                    showingMoves: true
+                });
+            }
+        } else {
+            console.log('No MovementEngine or currentPlayer, showing basic result');
+            setGameUIState({
+                showingDiceResult: true,
+                diceResult: diceResult,
+                availableMoves: ['OWNER-FUND-INITIATION'], // Hardcoded fallback
+                showingMoves: true
+            });
+        }
+    };
+    
+    // Move player function
+    const movePlayer = (destination) => {
+        if (!currentPlayer || !destination) {
+            alert('Invalid move');
+            return;
+        }
+        
+        console.log('Moving player to:', destination);
+        
+        // Apply space effects (draw cards, spend time/money)
+        let updatedPlayer = { ...currentPlayer };
+        let effectMessages = [];
+        
+        // Check for space effects
+        if (window.CSVDatabase?.loaded && window.EffectsEngine) {
+            try {
+                const spaceEffects = window.CSVDatabase.spaceEffects.query({
+                    space: destination,
+                    visitType: 'First'
+                });
+                
+                console.log('Space effects found:', spaceEffects);
+                
+                spaceEffects.forEach(effect => {
+                    if (effect.effect_type === 'e_cards') {
+                        const cardType = effect.card_type || 'W';
+                        const amount = parseInt(effect.effect_value) || 1;
+                        
+                        // Draw cards
+                        if (!updatedPlayer.cards[cardType]) {
+                            updatedPlayer.cards[cardType] = [];
+                        }
+                        
+                        for (let i = 0; i < amount; i++) {
+                            updatedPlayer.cards[cardType].push({
+                                id: Date.now() + i,
+                                type: cardType,
+                                drawnAt: destination
+                            });
+                        }
+                        
+                        effectMessages.push(`Drew ${amount} ${cardType} card(s)`);
+                    }
+                    
+                    if (effect.effect_type === 'e_time') {
+                        const timeSpent = parseInt(effect.effect_value) || 0;
+                        updatedPlayer.timeSpent += timeSpent;
+                        effectMessages.push(`Spent ${timeSpent} days`);
+                    }
+                    
+                    if (effect.effect_type === 'e_money') {
+                        const moneyChange = parseInt(effect.effect_value) || 0;
+                        updatedPlayer.money += moneyChange;
+                        effectMessages.push(moneyChange > 0 ? `Gained $${moneyChange}` : `Spent $${Math.abs(moneyChange)}`);
+                    }
+                });
+            } catch (error) {
+                console.error('Error applying space effects:', error);
+            }
+        }
+        
+        // Update player position
+        updatedPlayer.position = destination;
+        updatedPlayer.visitType = 'First'; // For now, always first visit
+        
+        const newPlayers = [...gameState.players];
+        newPlayers[gameState.currentPlayer] = updatedPlayer;
+        
+        const newGameState = {
+            ...gameState,
+            players: newPlayers,
+            turnCount: gameState.turnCount + 1
+        };
+        
+        updateGameState(newGameState);
+        
+        // Reset UI state
+        setGameUIState({
+            showingDiceResult: false,
+            diceResult: null,
+            availableMoves: [],
+            showingMoves: false
+        });
+        
+        // Show results
+        const message = `Moved to ${destination}!` + 
+            (effectMessages.length > 0 ? '\n\n' + effectMessages.join('\n') : '');
+        alert(message);
+    };
+    
+    // Test if sophisticated components work with fixed useGameState hook
+    const useSimplified = !window.PlayerStatusPanel || !window.ActionPanel || !window.ResultsPanel;
+    
+    if (useSimplified) {
+        console.log('Using simplified interface - gameState players:', gameState.players?.length);
+        return React.createElement('div', { 
+            style: { 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 2fr 1fr',
+                gap: '20px',
+                height: '100vh',
+                padding: '20px'
+            }
+        },
+            // Left Panel - Player Status
+            React.createElement('div', {
+                style: { 
+                    background: '#f5f5f5', 
+                    border: '2px solid #ddd', 
+                    borderRadius: '8px', 
+                    padding: '15px'
+                }
+            },
+                React.createElement('h3', null, '👤 Player Status'),
+                gameState.players?.[0] ? [
+                    React.createElement('div', { key: 'name' }, React.createElement('strong', null, gameState.players[0].name)),
+                    React.createElement('div', { key: 'money' }, `💰 Money: $${gameState.players[0].money?.toLocaleString() || 0}`),
+                    React.createElement('div', { key: 'time' }, `⏰ Time: ${gameState.players[0].timeSpent || 0} days`),
+                    React.createElement('div', { key: 'position' }, `📍 Position: ${gameState.players[0].position || 'Unknown'}`),
+                    React.createElement('div', { key: 'turn' }, `🔄 Turn: ${gameState.turnCount + 1}`),
+                    React.createElement('div', { key: 'cards-header', style: { marginTop: '15px', fontWeight: 'bold' } }, '🃏 Cards'),
+                    ...Object.entries(gameState.players[0].cards || {}).map(([cardType, cards]) => 
+                        React.createElement('div', { 
+                            key: cardType,
+                            style: { fontSize: '14px', margin: '2px 0' }
+                        }, `${cardType}: ${cards.length}`)
+                    )
+                ] : React.createElement('div', null, 'No player data')
+            ),
+            
+            // Center Panel - Game Board
+            React.createElement('div', {
+                style: { 
+                    background: '#fff', 
+                    border: '3px solid #4285f4', 
+                    borderRadius: '8px', 
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }
+            },
+                React.createElement('h2', { style: { color: '#4285f4' } }, '🎯 Game Board'),
+                React.createElement('div', { style: { padding: '20px', textAlign: 'center' } },
+                    React.createElement('div', { 
+                        style: { 
+                            background: '#e3f2fd', 
+                            border: '3px solid #2196f3',
+                            borderRadius: '12px',
+                            padding: '20px',
+                            marginBottom: '20px'
+                        }
+                    },
+                        React.createElement('h3', { style: { margin: '0 0 10px 0', color: '#1976d2' } }, 
+                            gameState.players?.[0]?.position || 'OWNER-SCOPE-INITIATION'
+                        ),
+                        React.createElement('p', { style: { margin: '0', color: '#666' } }, 
+                            `${gameState.players?.[0]?.visitType || 'First'} Visit`
+                        )
+                    ),
+                    // Dice result display
+                    gameUIState.showingDiceResult ? 
+                        React.createElement('div', { 
+                            style: { 
+                                background: '#fff3cd',
+                                border: '1px solid #ffeaa7',
+                                borderRadius: '8px',
+                                padding: '15px',
+                                marginBottom: '15px'
+                            }
+                        },
+                            React.createElement('h4', { style: { margin: '0 0 10px 0' } }, 
+                                `🎲 Rolled: ${gameUIState.diceResult}`
+                            ),
+                            gameUIState.showingMoves && gameUIState.availableMoves.length > 0 ? [
+                                React.createElement('p', { key: 'moves-text', style: { margin: '0 0 10px 0' } }, 
+                                    'Available moves:'
+                                ),
+                                ...gameUIState.availableMoves.map((move, index) => 
+                                    React.createElement('button', {
+                                        key: move.destination || index,
+                                        className: 'btn btn-success',
+                                        style: { margin: '5px', padding: '8px 15px' },
+                                        onClick: () => movePlayer(move.destination || move)
+                                    }, `➡️ ${move.destination || move}`)
+                                )
+                            ] : React.createElement('p', { style: { margin: 0 } }, 'No moves available')
+                        ) : null,
+                    
+                    // Action buttons
+                    React.createElement('div', { style: { display: 'flex', gap: '10px', justifyContent: 'center' } },
+                        React.createElement('button', { 
+                            className: 'btn btn-primary',
+                            style: { padding: '10px 20px' },
+                            onClick: rollDice,
+                            disabled: gameUIState.showingDiceResult
+                        }, '🎲 Roll Dice'),
+                        gameUIState.showingDiceResult ? 
+                            React.createElement('button', { 
+                                className: 'btn btn-secondary',
+                                style: { padding: '10px 20px' },
+                                onClick: () => setGameUIState({
+                                    showingDiceResult: false,
+                                    diceResult: null,
+                                    availableMoves: [],
+                                    showingMoves: false
+                                })
+                            }, '🔄 Reset') : null
+                    )
+                )
+            ),
+            
+            // Right Panel - Actions
+            React.createElement('div', {
+                style: { 
+                    background: '#fff4e6', 
+                    border: '2px solid #ff9800', 
+                    borderRadius: '8px', 
+                    padding: '15px'
+                }
+            },
+                React.createElement('h3', null, '🎮 Game Actions'),
+                React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '10px' } },
+                    React.createElement('button', { 
+                        className: 'btn btn-primary',
+                        style: { padding: '10px' }
+                    }, '🎲 Roll Dice'),
+                    React.createElement('button', { 
+                        className: 'btn btn-secondary',
+                        style: { padding: '10px' }
+                    }, '🃏 Use Card'),
+                    React.createElement('button', { 
+                        className: 'btn btn-success',
+                        style: { padding: '10px' }
+                    }, '➡️ End Turn')
+                )
+            )
+        );
+    }
+    
+    // Use sophisticated panel components - they get state from GameStateManager
+    console.log('Using sophisticated interface with full game logic');
+    return React.createElement('div', { 
+        className: 'game-interface',
         style: { 
             display: 'grid', 
             gridTemplateColumns: '300px 1fr 300px',
             gap: '20px',
             height: '100vh',
-            padding: '20px'
+            padding: '20px',
+            minWidth: '1200px' // Ensure enough width for board wrapping
         }
     },
-        // Left Panel - Player Status
-        React.createElement('div', {
-            style: { 
-                background: '#f5f5f5', 
-                border: '2px solid #ddd', 
-                borderRadius: '8px', 
-                padding: '15px'
-            }
-        },
-            React.createElement('h3', { style: { margin: '0 0 15px 0', color: '#333' } }, '👤 Player Status'),
-            React.createElement('div', { style: { marginBottom: '10px' } },
-                React.createElement('strong', null, gameState.players[0].name),
-                React.createElement('div', { style: { fontSize: '14px', color: '#666' } }, 
-                    `${gameState.players[0].avatar} | ${gameState.players[0].color}`
-                )
-            ),
-            React.createElement('div', { style: { marginBottom: '10px' } },
-                React.createElement('div', null, `💰 Money: $${gameState.players[0].money.toLocaleString()}`),
-                React.createElement('div', null, `⏰ Time: ${gameState.players[0].timeSpent} days`)
-            ),
-            React.createElement('div', { style: { marginBottom: '10px' } },
-                React.createElement('div', null, `📍 Position: ${gameState.players[0].position}`),
-                React.createElement('div', null, `🔄 Visit Type: ${gameState.players[0].visitType}`)
-            ),
-            React.createElement('h4', { style: { margin: '15px 0 10px 0' } }, '🃏 Cards'),
-            Object.keys(gameState.players[0].cards).map(cardType =>
-                React.createElement('div', { key: cardType, style: { fontSize: '14px' } },
-                    `${cardType}: ${gameState.players[0].cards[cardType].length} cards`
-                )
-            )
-        ),
+        // Hidden GameManager component to handle game logic events
+        window.GameManager ? React.createElement(window.GameManager, { key: 'game-manager' }) : null,
+        // Left Panel - Uses useGameState() hook to get data from GameStateManager
+        window.PlayerStatusPanel ? 
+            React.createElement(window.PlayerStatusPanel) :
+            React.createElement('div', { className: 'panel-placeholder' }, 'Player Status Loading...'),
         
-        // Center Panel - Game Board
-        React.createElement('div', {
-            style: { 
-                background: '#fff', 
-                border: '3px solid #4285f4', 
-                borderRadius: '8px', 
-                padding: '20px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center'
-            }
-        },
-            React.createElement('h2', { style: { color: '#4285f4', marginBottom: '20px' } }, '🎯 Project Management Game Board'),
-            React.createElement('div', {
-                style: {
-                    width: '100%',
-                    height: '400px',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    border: '2px solid #4285f4',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontSize: '18px',
-                    textAlign: 'center'
-                }
-            },
-                React.createElement('div', null,
-                    React.createElement('div', { style: { fontSize: '48px', marginBottom: '20px' } }, '🏗️'),
-                    React.createElement('div', null, 'Game Board Active'),
-                    React.createElement('div', { style: { fontSize: '14px', marginTop: '10px', opacity: 0.8 } }, 
-                        'Ready for gameplay!'
-                    )
-                )
-            ),
-            React.createElement('div', { style: { marginTop: '20px', textAlign: 'center' } },
-                React.createElement('button', {
-                    style: {
-                        background: '#4285f4',
-                        color: 'white',
-                        border: 'none',
-                        padding: '12px 24px',
-                        borderRadius: '6px',
-                        fontSize: '16px',
-                        cursor: 'pointer',
-                        margin: '0 10px'
-                    }
-                }, '🎲 Roll Dice'),
-                React.createElement('button', {
-                    style: {
-                        background: '#34a853',
-                        color: 'white',
-                        border: 'none',
-                        padding: '12px 24px',
-                        borderRadius: '6px',
-                        fontSize: '16px',
-                        cursor: 'pointer',
-                        margin: '0 10px'
-                    }
-                }, '📋 View Cards'),
-                React.createElement('button', {
-                    style: {
-                        background: '#ea4335',
-                        color: 'white',
-                        border: 'none',
-                        padding: '12px 24px',
-                        borderRadius: '6px',
-                        fontSize: '16px',
-                        cursor: 'pointer',
-                        margin: '0 10px'
-                    }
-                }, '⚙️ Actions')
-            )
-        ),
-        
-        // Right Panel - Game Info
-        React.createElement('div', {
-            style: { 
-                background: '#f5f5f5', 
-                border: '2px solid #ddd', 
-                borderRadius: '8px', 
-                padding: '15px'
-            }
-        },
-            React.createElement('h3', { style: { margin: '0 0 15px 0', color: '#333' } }, '🎮 Game Info'),
-            React.createElement('div', { style: { marginBottom: '10px' } },
-                React.createElement('div', null, `Phase: ${gameState.gamePhase}`),
-                React.createElement('div', null, `Turn: ${gameState.turnCount}`),
-                React.createElement('div', null, `Current Player: ${gameState.currentPlayer + 1}`)
-            ),
-            React.createElement('h4', { style: { margin: '15px 0 10px 0' } }, '📊 Progress'),
-            React.createElement('div', { style: { fontSize: '14px' } },
-                React.createElement('div', null, '✅ Game Successfully Started'),
-                React.createElement('div', null, '✅ React State Management Fixed'),
-                React.createElement('div', null, '✅ Game Interface Loaded'),
-                React.createElement('div', { style: { marginTop: '10px', padding: '10px', background: '#e8f5e8', borderRadius: '4px' } },
-                    '🎉 Phase 28: RESOLVED'
-                )
-            )
-        )
+        // Center Panel - Game Board   
+        window.GameBoard ? 
+            React.createElement(window.GameBoard) :
+            React.createElement('div', { className: 'panel-placeholder' }, 'Game Board Loading...'),
+            
+        // Right Panel - Action Panel with full game logic
+        window.ActionPanel ? 
+            React.createElement(window.ActionPanel) :
+            React.createElement('div', { className: 'panel-placeholder' }, 'Actions Loading...')
     );
 }
 
@@ -287,77 +555,154 @@ function FixedPlayerSetup({ onInitializeGame }) {
     
     return React.createElement('div', {
         className: 'enhanced-player-setup',
-        style: {
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '2rem'
+        style: { 
+            padding: '20px',
+            maxWidth: '600px',
+            margin: '0 auto',
+            background: '#f8f9fa',
+            borderRadius: '8px'
         }
     },
-        React.createElement('div', {
-            className: 'setup-card',
-            style: {
-                background: 'white',
-                borderRadius: '20px',
-                padding: '3rem',
-                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.2)',
-                maxWidth: '600px',
-                width: '100%'
-            }
-        },
-            React.createElement('div', {
-                style: { textAlign: 'center', marginBottom: '2rem' }
-            },
-                React.createElement('div', { style: { fontSize: '3rem', marginBottom: '1rem' } }, '🏗️'),
-                React.createElement('h1', {
-                    style: { color: '#2c5530', fontSize: '2rem', marginBottom: '0.5rem' }
-                }, 'Project Management Board Game'),
-                React.createElement('p', {
-                    style: { color: '#6c757d', fontSize: '1.1rem' }
-                }, 'Navigate from project initiation to completion!')
-            ),
-            React.createElement('h3', {
-                style: { color: '#2c5530', marginBottom: '1rem' }
-            }, '👥 Players'),
-            players.map(player =>
-                React.createElement('div', {
+        React.createElement('h2', { style: { textAlign: 'center', marginBottom: '30px' } }, 
+            '🎯 Project Management Game Setup'
+        ),
+        React.createElement('div', { className: 'players-section' },
+            React.createElement('h3', null, 'Players'),
+            ...players.map((player, index) =>
+                React.createElement('div', { 
                     key: player.id,
-                    style: { margin: '10px 0', padding: '15px', background: '#f8f9fa', border: '1px solid #ddd', borderRadius: '8px' }
+                    style: { 
+                        display: 'flex', 
+                        gap: '10px', 
+                        marginBottom: '15px',
+                        padding: '15px',
+                        background: '#fff',
+                        borderRadius: '8px',
+                        border: '1px solid #ddd'
+                    }
                 },
                     React.createElement('input', {
                         type: 'text',
+                        placeholder: `Player ${index + 1} Name`,
                         value: player.name,
-                        onChange: (e) => setPlayers(prev => 
-                            prev.map(p => p.id === player.id ? { ...p, name: e.target.value } : p)
-                        ),
-                        style: { margin: '0 10px', padding: '8px', fontSize: '16px', border: '1px solid #ccc', borderRadius: '4px', width: '200px' }
+                        onChange: (e) => {
+                            const newPlayers = [...players];
+                            newPlayers[index].name = e.target.value;
+                            setPlayers(newPlayers);
+                        },
+                        style: { 
+                            flex: 1, 
+                            padding: '8px',
+                            border: '1px solid #ccc',
+                            borderRadius: '4px'
+                        }
                     }),
-                    React.createElement('span', { style: { fontSize: '20px' } }, player.avatar)
+                    React.createElement('input', {
+                        type: 'color',
+                        value: player.color,
+                        onChange: (e) => {
+                            const newPlayers = [...players];
+                            newPlayers[index].color = e.target.value;
+                            setPlayers(newPlayers);
+                        },
+                        style: { width: '50px' }
+                    })
                 )
             ),
-            React.createElement('button', {
-                onClick: startGame,
-                style: { 
-                    background: 'linear-gradient(45deg, #2c5530, #4CAF50)',
-                    color: 'white', 
-                    padding: '1.5rem 3rem', 
-                    fontSize: '1.3rem',
-                    fontWeight: 'bold',
-                    marginTop: '2rem',
-                    border: 'none',
-                    borderRadius: '12px',
-                    width: '100%',
-                    cursor: 'pointer',
-                    boxShadow: '0 6px 20px rgba(44, 85, 48, 0.4)'
-                }
-            }, '🚀 Start Game')
+            React.createElement('div', { style: { textAlign: 'center', marginTop: '30px' } },
+                React.createElement('button', {
+                    onClick: startGame,
+                    className: 'btn btn-primary',
+                    style: { 
+                        padding: '12px 24px',
+                        fontSize: '16px',
+                        background: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                    }
+                }, '🚀 Start Game')
+            )
         )
     );
 }
 
+// Error boundary component
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null, errorInfo: null };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { hasError: true };
+    }
+
+    componentDidCatch(error, errorInfo) {
+        console.error('ErrorBoundary caught an error:', error);
+        console.error('Error info:', errorInfo);
+        this.setState({
+            error: error,
+            errorInfo: errorInfo
+        });
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return React.createElement('div', 
+                { style: { padding: '20px', background: '#ffe6e6', border: '1px solid #ff9999', borderRadius: '8px', margin: '20px' } },
+                React.createElement('h2', { style: { color: '#cc0000' } }, 'React Error Caught'),
+                React.createElement('p', null, 'Error: ' + (this.state.error?.message || 'Unknown error')),
+                React.createElement('pre', { style: { fontSize: '12px', background: '#f5f5f5', padding: '10px' } }, 
+                    this.state.error?.stack || 'No stack trace'
+                ),
+                React.createElement('button', { 
+                    onClick: () => {
+                        this.setState({ hasError: false, error: null, errorInfo: null });
+                    },
+                    style: { padding: '10px 20px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }
+                }, 'Try Again')
+            );
+        }
+
+        return this.props.children;
+    }
+}
+
+// CSV data loading hook
+function useCSVData() {
+    const { useState, useEffect } = React;
+    const [loaded, setLoaded] = useState(false);
+    const [error, setError] = useState(null);
+    
+    useEffect(() => {
+        if (window.CSVDatabase && window.CSVDatabase.loaded) {
+            setLoaded(true);
+        } else {
+            const checkLoading = setInterval(() => {
+                if (window.CSVDatabase && window.CSVDatabase.loaded) {
+                    setLoaded(true);
+                    clearInterval(checkLoading);
+                }
+            }, 100);
+            
+            // Timeout after 10 seconds
+            setTimeout(() => {
+                if (!loaded) {
+                    setError('Failed to load game data');
+                    clearInterval(checkLoading);
+                }
+            }, 10000);
+            
+            return () => clearInterval(checkLoading);
+        }
+    }, []);
+    
+    return { loaded, error };
+}
+
 // Export components
 window.FixedApp = FixedApp;
-window.GameInterface = GameInterface;
 window.FixedPlayerSetup = FixedPlayerSetup;
+window.GameInterface = GameInterface;

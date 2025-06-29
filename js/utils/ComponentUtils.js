@@ -7,42 +7,41 @@
 const { useState, useEffect, useCallback, useRef } = React;
 
 /**
- * Custom hook for GameStateManager integration - DEBOUNCED TO STOP LOOPS
+ * Custom hook for GameStateManager integration - FIXED VERSION
  */
 function useGameState() {
-    const [, forceUpdate] = useState(0);
+    const [gameState, setGameState] = useState(null);
     const gameStateManager = useRef(window.GameStateManager);
-    const updateTimeoutRef = useRef(null);
+    const isInitialized = useRef(false);
     
     useEffect(() => {
-        if (!gameStateManager.current) {
-            console.error('GameStateManager not available for event listener');
+        if (!gameStateManager.current || isInitialized.current) {
             return;
         }
         
+        // Initialize state once
+        const initialState = gameStateManager.current.getState();
+        setGameState(initialState);
+        isInitialized.current = true;
+        console.log('useGameState: Initialized with state:', initialState.players?.length, 'players');
+        
         const handleStateChange = () => {
-            // Clear any pending update
-            clearTimeout(updateTimeoutRef.current);
-            
-            // Debounce updates to prevent rapid loops
-            updateTimeoutRef.current = setTimeout(() => {
-                console.log('useGameState: Debounced state update');
-                forceUpdate(prev => prev + 1);
-            }, 50); // 50ms debounce
+            const newState = gameStateManager.current.getState();
+            setGameState(newState);
+            console.log('useGameState: State updated to', newState.players?.length, 'players');
         };
         
         const unsubscribe1 = gameStateManager.current.on('stateChanged', handleStateChange);
         const unsubscribe2 = gameStateManager.current.on('gameInitialized', handleStateChange);
         
         return () => {
-            clearTimeout(updateTimeoutRef.current);
             unsubscribe1?.();
             unsubscribe2?.();
         };
     }, []);
     
-    // Get state once per render
-    const currentState = gameStateManager.current ? gameStateManager.current.getState() : {
+    // Return cached state or fallback
+    const currentState = gameState || {
         players: [],
         gamePhase: 'SETUP',
         currentPlayer: 0,
