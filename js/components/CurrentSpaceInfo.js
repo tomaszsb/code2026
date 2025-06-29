@@ -34,8 +34,52 @@ function CurrentSpaceInfo({ player, debugMode = false }) {
         };
     };
 
+    // Helper functions for contextual information
+    const getContextualEffects = (effects) => {
+        if (!effects || effects.length === 0) return [];
+        
+        const contextualEffects = [];
+        
+        effects.forEach(effect => {
+            // Only show time effects in space panel (contextual info)
+            if (effect.effect_type === 'time') {
+                const value = effect.use_dice ? 'varies by dice' : `${effect.effect_value > 0 ? '+' : ''}${effect.effect_value} day${Math.abs(effect.effect_value) !== 1 ? 's' : ''}`;
+                const condition = effect.condition && effect.condition !== 'always' ? ` (${effect.condition})` : '';
+                
+                contextualEffects.push({
+                    icon: '⏰',
+                    label: 'Time',
+                    value: value + condition
+                });
+            }
+        });
+        
+        return contextualEffects;
+    };
+    
+    const getMovementContext = (movement, diceOutcomes) => {
+        if (!movement) return null;
+        
+        // Only show single fixed destination in space panel (contextual)
+        // Multiple destinations/choices belong in action panel (interactive)
+        if (movement.movement_type === 'fixed') {
+            const destination = movement.destination_1;
+            if (destination && destination !== 'null') {
+                return {
+                    type: 'single',
+                    destination: destination
+                };
+            }
+        }
+        
+        return null;
+    };
+
     const spaceInfo = getCurrentSpaceInfo();
     const allSpaceData = debugMode ? spaceInfo : null;
+    
+    const contextualEffects = spaceInfo ? getContextualEffects(spaceInfo.effects) : [];
+    const movementContext = spaceInfo ? getMovementContext(spaceInfo.movement, spaceInfo.diceOutcomes) : null;
 
     if (!player) {
         return React.createElement('div', {
@@ -98,10 +142,13 @@ function CurrentSpaceInfo({ player, debugMode = false }) {
                     React.createElement('strong', {key: 'label'}, spaceInfo.content.title)
                 ]),
                 
-                spaceInfo.content.story && React.createElement('p', {
+                spaceInfo.content.story && React.createElement('div', {
                     key: 'story',
                     className: 'space-narrative'
-                }, spaceInfo.content.story)
+                }, [
+                    React.createElement('span', {key: 'icon'}, '📖 '),
+                    spaceInfo.content.story
+                ])
             ]),
             
             // Expected outcome (context only, not interactive)
@@ -112,6 +159,31 @@ function CurrentSpaceInfo({ player, debugMode = false }) {
                 React.createElement('span', {key: 'icon'}, '📋 '),
                 React.createElement('strong', {key: 'label'}, 'Expected Outcome: '),
                 spaceInfo.content.outcome_description
+            ]),
+            
+            // Contextual effects (time only - other effects handled in ActionPanel)
+            contextualEffects.length > 0 && React.createElement('div', {
+                key: 'contextual-effects',
+                className: 'contextual-effects'
+            }, contextualEffects.map((effect, index) => 
+                React.createElement('div', {
+                    key: `context-effect-${index}`,
+                    className: 'context-effect-item'
+                }, [
+                    React.createElement('span', {key: 'icon'}, effect.icon + ' '),
+                    React.createElement('strong', {key: 'label'}, effect.label + ': '),
+                    effect.value
+                ])
+            )),
+            
+            // Single destination movement (contextual - choices handled in ActionPanel)
+            movementContext && React.createElement('div', {
+                key: 'movement-context',
+                className: 'movement-context'
+            }, [
+                React.createElement('span', {key: 'icon'}, '➡️ '),
+                React.createElement('strong', {key: 'label'}, 'Next: '),
+                movementContext.destination
             ])
         ]),
 
