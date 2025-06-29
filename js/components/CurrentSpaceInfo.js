@@ -15,14 +15,6 @@ function CurrentSpaceInfo({ player, debugMode = false }) {
         
         const configData = window.CSVDatabase.gameConfig.find(player.position);
         
-        console.log('CurrentSpaceInfo debug:', {
-            playerPosition: player.position,
-            visitType: player.visitType,
-            spaceData,
-            configData,
-            phase: configData?.phase
-        });
-        
         // Always return an object with phase, even if spaceData is null
         return {
             ...spaceData,

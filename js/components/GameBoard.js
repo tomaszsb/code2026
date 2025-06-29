@@ -172,7 +172,7 @@ function GameBoard() {
             ),
             React.createElement('div', 
                 { className: 'section__content' },
-                React.createElement(VisualBoard, {
+                React.createElement(window.VisualBoard, {
                     gameState,
                     onSpaceClick: handleSpaceClick,
                     availableMoves,

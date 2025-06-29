@@ -1,10 +1,11 @@
 /**
  * WinConditionManager Component - Handle game completion and scoring
  * Detects when players reach FINISH and calculates final scores
+ * Updated for React state compatibility (Phase 2 reconnection)
  */
 
-function WinConditionManager() {
-    const [gameState, gameStateManager] = useGameState();
+function WinConditionManager({ gameState, gameStateManager, onGameStateUpdate }) {
+    // Use props instead of problematic useGameState hook
 
     // Listen for player movements to check win conditions
     useEventListener('playerMoved', ({ player, playerId, newSpace, toSpace }) => {
@@ -28,20 +29,30 @@ function WinConditionManager() {
         // Calculate final scores for all players
         const finalScores = calculateFinalScores();
         
-        // Mark game as completed
-        gameStateManager.setState({
+        // Mark game as completed using React state update
+        const gameCompletionData = {
             gameStatus: 'completed',
             winner: winner,
             finalScores: finalScores,
             completedAt: new Date()
-        });
+        };
+        
+        if (onGameStateUpdate) {
+            onGameStateUpdate(prevState => ({
+                ...prevState,
+                ...gameCompletionData
+            }));
+        }
 
-        // Emit game completion event
-        gameStateManager.emit('gameCompleted', {
-            winner,
-            finalScores,
-            completedAt: new Date()
-        });
+        // Also update GameStateManager for component compatibility
+        if (gameStateManager) {
+            gameStateManager.setState(gameCompletionData);
+            gameStateManager.emit('gameCompleted', {
+                winner,
+                finalScores,
+                completedAt: new Date()
+            });
+        }
     };
 
     // Calculate final scores based on time and money
@@ -74,7 +85,7 @@ function WinConditionManager() {
         
         // Check if any player exceeded time limit
         const playerOverTime = gameState.players?.find(p => p.timeSpent > maxTimeLimit);
-        if (playerOverTime) {
+        if (playerOverTime && gameStateManager) {
             gameStateManager.emit('gameTimeout', {
                 player: playerOverTime,
                 timeLimit: maxTimeLimit
@@ -90,3 +101,6 @@ function WinConditionManager() {
     // This is a logic-only component
     return null;
 }
+
+// Export component globally for integration
+window.WinConditionManager = WinConditionManager;

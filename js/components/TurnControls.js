@@ -84,7 +84,6 @@ function TurnControls({
             });
         }
 
-        console.log(`TurnControls: Actions ${completedActionsCount}/${requiredActionsCount}, canEndTurn: ${canEnd}`);
     };
 
     // Check if negotiate button should be enabled and get reason if disabled
@@ -144,14 +143,12 @@ function TurnControls({
 
     // Handle negotiate action
     const handleNegotiate = () => {
-        console.log('TurnControls: Negotiate button clicked');
         
         if (!currentPlayer) {
             console.error('TurnControls: No current player found for negotiation');
             return;
         }
 
-        console.log('TurnControls: Applying negotiation - restoring state and time penalty');
 
         // Restore player state to space entry snapshot and apply time penalty
         if (currentPlayer.spaceEntrySnapshot) {
@@ -159,7 +156,6 @@ function TurnControls({
             gameStateManager.restorePlayerSnapshot(currentPlayer.id);
         } else {
             // No snapshot (first space) - just apply time penalty
-            console.log('TurnControls: No snapshot found, applying direct time penalty for first space');
             
             // Get time penalty from space effects
             const timeEffects = window.CSVDatabase.spaceEffects.query({
@@ -170,7 +166,6 @@ function TurnControls({
             
             const timePenalty = timeEffects.length > 0 ? parseInt(timeEffects[0].effect_value) || 1 : 1;
             
-            console.log(`TurnControls: Applying ${timePenalty} day time penalty for negotiation`);
             
             gameStateManager.emit('timeChanged', {
                 playerId: currentPlayer.id,
@@ -178,12 +173,7 @@ function TurnControls({
                 source: 'negotiation_penalty'
             });
             
-            console.log(`TurnControls: Applied ${timePenalty} time penalty for negotiation on first space`);
         }
-        
-        console.log('TurnControls: Current player after negotiation:', {
-            timeSpent: currentPlayer.timeSpent
-        });
 
         // Show message about negotiation
         gameStateManager.emit('showMessage', {
@@ -192,7 +182,6 @@ function TurnControls({
             description: 'Player state restored to space entry. Time penalty applied.'
         });
 
-        console.log('TurnControls: Player state restored with time penalty');
 
         // Reset all turn state
         if (onTurnControlsStateChange) {
@@ -219,7 +208,6 @@ function TurnControls({
             });
         }
 
-        console.log('TurnControls: Reset turn state, triggering immediate action rediscovery');
 
         // Immediately trigger action rediscovery before ending turn
         setTimeout(() => {
@@ -235,7 +223,6 @@ function TurnControls({
                 playerId: currentPlayer.id,
                 source: 'negotiation'
             });
-            console.log('TurnControls: Turn ended after negotiation with immediate action rediscovery');
         }, 100); // Reduced delay and immediate action rediscovery
     };
 
@@ -266,12 +253,9 @@ function TurnControls({
         
         // Execute selected move if one is selected
         if (selectedMove) {
-            console.log(`TurnControls: Executing selected move to ${selectedMove}`);
-            console.log('TurnControls: Current player:', currentPlayer);
             
             // Determine correct visit type using MovementEngine
             const visitType = movementEngine.getVisitType(currentPlayer, selectedMove);
-            console.log(`TurnControls: Visit type for ${selectedMove}: ${visitType}`);
             
             // Execute the move (GameManager will handle position update and emit playerMoved)
             gameStateManager.emit('movePlayerRequest', {

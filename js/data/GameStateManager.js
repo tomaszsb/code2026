@@ -216,7 +216,6 @@ class GameStateManager {
         // Add small delay to ensure React can process the state change
         setTimeout(() => {
             this.emit('gameInitialized', this.getState());
-            console.log('GameStateManager: Game initialized with state:', this.getState());
         }, 0);
     }
 
@@ -260,7 +259,6 @@ class GameStateManager {
             scopeTotalCost: player.scopeTotalCost || 0
         };
 
-        console.log(`GameStateManager: Saved snapshot for player ${playerId}`);
         
         this.setState({ players });
     }
@@ -319,7 +317,6 @@ class GameStateManager {
      * Add cards to player hand
      */
     addCardsToPlayer(playerId, cardType, cards) {
-        console.log(`GameStateManager: addCardsToPlayer called with playerId=${playerId}, cardType=${cardType}, cards=`, cards);
         
         const players = [...this.state.players];
         const player = players.find(p => p.id === playerId);
@@ -329,16 +326,13 @@ class GameStateManager {
             throw new Error(`Player ${playerId} not found`);
         }
 
-        console.log(`GameStateManager: Player before adding cards:`, player);
 
         // Initialize cards object if it doesn't exist
         if (!player.cards) {
-            console.log('GameStateManager: Initializing cards object for player');
             player.cards = {};
         }
 
         if (!player.cards[cardType]) {
-            console.log(`GameStateManager: Initializing ${cardType} cards array for player`);
             player.cards[cardType] = [];
         }
 
@@ -352,33 +346,27 @@ class GameStateManager {
                 if (card.loan_amount) {
                     const loanAmount = parseInt(card.loan_amount) || 0;
                     player.money = (player.money || 0) + loanAmount;
-                    console.log(`GameStateManager: Applied loan amount ${loanAmount} from card ${card.card_name || card.card_id}. Player money now: ${player.money}`);
                 }
                 
                 // Process Investment card investment amounts
                 if (card.investment_amount) {
                     const investmentAmount = parseInt(card.investment_amount) || 0;
                     player.money = (player.money || 0) + investmentAmount;
-                    console.log(`GameStateManager: Applied investment amount ${investmentAmount} from card ${card.card_name || card.card_id}. Player money now: ${player.money}`);
                 }
                 
                 // Process general money effects
                 if (card.money_effect) {
                     const moneyEffect = parseInt(card.money_effect) || 0;
                     player.money = (player.money || 0) + moneyEffect;
-                    console.log(`GameStateManager: Applied money effect ${moneyEffect} from card ${card.card_name || card.card_id}. Player money now: ${player.money}`);
                 }
                 
                 // Process time effects
                 if (card.time_effect) {
                     const timeEffect = parseInt(card.time_effect) || 0;
                     player.timeSpent = (player.timeSpent || 0) + timeEffect;
-                    console.log(`GameStateManager: Applied time effect ${timeEffect} from card ${card.card_name || card.card_id}. Player time spent now: ${player.timeSpent}`);
                 }
             });
-            console.log(`GameStateManager: Applied immediate effects for ${cards.length} ${cardType} cards`);
         } else {
-            console.log(`GameStateManager: Added ${cards.length} E cards to hand for player-controlled usage`);
         }
         
         // Update player scope if W cards were added
@@ -386,8 +374,6 @@ class GameStateManager {
             this.updatePlayerScope(playerId, players);
         }
         
-        console.log(`GameStateManager: Player after adding cards:`, player);
-        console.log(`GameStateManager: Player now has ${player.cards[cardType].length} ${cardType} cards`);
 
         this.setState({ players });
         
@@ -398,7 +384,6 @@ class GameStateManager {
             totalCards: player.cards[cardType].length
         });
         
-        console.log('GameStateManager: State updated and event emitted');
     }
 
     /**
@@ -422,7 +407,6 @@ class GameStateManager {
         }
 
         const snapshot = player.spaceEntrySnapshot;
-        console.log('GameStateManager: Restoring from snapshot - cards:', Object.keys(snapshot.cards), 'scope:', snapshot.scope);
 
         // Get current space time cost for penalty if not provided
         let actualTimePenalty = timePenalty;
@@ -460,7 +444,6 @@ class GameStateManager {
             reason: 'Negotiation - state restored with time penalty'
         });
         
-        console.log(`GameStateManager: Player state restored with +${actualTimePenalty} time penalty`);
     }
 
     // Legacy method name for compatibility
@@ -472,7 +455,6 @@ class GameStateManager {
      * Remove card from player's hand when used
      */
     useCard(playerId, cardType, cardId, card) {
-        console.log(`GameStateManager: Using card ${cardId} of type ${cardType} for player ${playerId}`);
         
         const players = this.state.players;
         const player = players.find(p => p.id === playerId);
@@ -491,7 +473,6 @@ class GameStateManager {
         const cardIndex = player.cards[cardType].findIndex(c => c.card_id === cardId);
         if (cardIndex >= 0) {
             player.cards[cardType].splice(cardIndex, 1);
-            console.log(`GameStateManager: Removed card ${cardId} from player ${playerId}'s hand`);
             
             // Emit state change
             this.setState({ players });
@@ -620,7 +601,6 @@ class GameStateManager {
         player.scopeItems = scopeItems;
         player.scopeTotalCost = totalCost;
         
-        console.log(`GameStateManager: Updated player ${playerId} scope with ${scopeItems.length} work types, total cost: $${totalCost.toLocaleString()}`);
         
         // If players array was not passed in, update state
         if (!players) {
@@ -654,9 +634,7 @@ class GameStateManager {
     log(message, data = null) {
         if (this.debug) {
             if (data) {
-                console.log(`[GameStateManager] ${message}`, data);
             } else {
-                console.log(`[GameStateManager] ${message}`);
             }
         }
     }

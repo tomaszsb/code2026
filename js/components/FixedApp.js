@@ -27,11 +27,9 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
         lastAction: null
     });
     
-    console.log('FixedApp render - gamePhase:', gameState.gamePhase, 'players:', gameState.players.length);
     
     // Initialize game function
     const initializeGame = (players, settings = {}) => {
-        console.log('FixedApp: Initializing game with players:', players);
         
         const newGameState = {
             ...gameState,
@@ -62,11 +60,9 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
         if (window.GameStateManager) {
             window.GameStateManager.setState(newGameState);
             window.GameStateManager.emit('gameInitialized');
-            console.log('FixedApp: Updated GameStateManager immediately with new game state');
         }
         
         setGameState(newGameState);
-        console.log('FixedApp: Game initialized successfully');
     };
     
     // Initialize systems and sync state only when needed
@@ -79,7 +75,6 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
                 const movementEngine = window.movementEngine || (window.MovementEngine?.getInstance && window.MovementEngine.getInstance());
                 if (movementEngine && !movementEngine.gameStateManager) {
                     movementEngine.initialize(window.GameStateManager);
-                    console.log('FixedApp: Initialized MovementEngine instance');
                 }
             } catch (error) {
                 console.error('Error initializing MovementEngine:', error);
@@ -91,12 +86,10 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
     useEffect(() => {
         if (window.GameStateManager && gameState.gamePhase === 'PLAYING') {
             window.GameStateManager.setState(gameState);
-            console.log('FixedApp: Synced game state to GameStateManager (players:', gameState.players.length, ')');
             
             // Debug: Show current card counts
             gameState.players.forEach((player, index) => {
                 const totalCards = Object.values(player.cards || {}).reduce((sum, cardArray) => sum + cardArray.length, 0);
-                console.log(`FixedApp: Player ${index + 1} has ${totalCards} total cards:`, player.cards);
             });
         }
     }, [gameState.gamePhase, gameState.players.length, gameState.players[0]?.cards]); // Also watch for card changes
@@ -112,7 +105,6 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
             // Only sync back for game phase changes or similar critical updates
             const newState = window.GameStateManager.getState();
             if (newState.gamePhase !== gameState.gamePhase) {
-                console.log('FixedApp: Critical state change detected, syncing game phase');
                 setGameState(prevState => ({
                     ...prevState,
                     gamePhase: newState.gamePhase
@@ -122,7 +114,6 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
         
         // Listen to critical game events that need React state updates
         const handleCardsDrawn = ({ playerId, cardType, cards }) => {
-            console.log('FixedApp: Cards drawn for player', playerId, ':', cards.length, cardType, 'cards');
             setGameState(prevState => {
                 const newPlayers = [...prevState.players];
                 const playerIndex = newPlayers.findIndex(p => p.id === playerId);
@@ -131,7 +122,6 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
                         newPlayers[playerIndex].cards[cardType] = [];
                     }
                     newPlayers[playerIndex].cards[cardType].push(...cards);
-                    console.log('FixedApp: Updated player cards in React state - Player now has', newPlayers[playerIndex].cards[cardType].length, cardType, 'cards');
                     
                     // Also update GameStateManager to keep both in sync
                     if (window.GameStateManager) {
@@ -173,7 +163,6 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
     
     const showPlayerSetup = gameState.gamePhase === 'SETUP' || gameState.players.length === 0;
     
-    console.log('FixedApp: showPlayerSetup =', showPlayerSetup);
     
     // Main application
     return React.createElement(ErrorBoundary, null,
@@ -195,22 +184,60 @@ function GameInterface({ gameState, updateGameState }) {
         showingDiceResult: false,
         diceResult: null,
         availableMoves: [],
-        showingMoves: false
+        showingMoves: false,
+        showSpaceExplorer: false,
+        selectedSpaceData: null
     });
     
-    console.log('GameInterface: Rendering with gameState:', gameState);
-    console.log('GameInterface: Players:', gameState.players?.length, 'Current player index:', gameState.currentPlayer);
     
     // Get current player
     const currentPlayer = gameState.players?.[gameState.currentPlayer];
-    console.log('GameInterface: Current player object:', currentPlayer);
+    
+    // Listen for space selection events to show modal
+    React.useEffect(() => {
+        const handleSpaceSelected = (data) => {
+            setGameUIState(prev => ({
+                ...prev,
+                showSpaceExplorer: true,
+                selectedSpaceData: data
+            }));
+        };
+        
+        if (window.GameStateManager) {
+            window.GameStateManager.on('spaceSelected', handleSpaceSelected);
+            return () => {
+                window.GameStateManager.off('spaceSelected', handleSpaceSelected);
+            };
+        }
+    }, []);
+    
+    // Close space explorer modal
+    const closeSpaceExplorer = () => {
+        setGameUIState(prev => ({
+            ...prev,
+            showSpaceExplorer: false,
+            selectedSpaceData: null
+        }));
+    };
+    
+    // Listen for Escape key to close modal
+    React.useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape' && gameUIState.showSpaceExplorer) {
+                closeSpaceExplorer();
+            }
+        };
+        
+        if (gameUIState.showSpaceExplorer) {
+            document.addEventListener('keydown', handleKeyDown);
+            return () => {
+                document.removeEventListener('keydown', handleKeyDown);
+            };
+        }
+    }, [gameUIState.showSpaceExplorer]);
     
     // Roll dice function
     const rollDice = () => {
-        console.log('🎲 DICE BUTTON CLICKED!');
-        console.log('CSVDatabase loaded:', window.CSVDatabase?.loaded);
-        console.log('MovementEngine available:', !!window.MovementEngine);
-        console.log('Current player:', currentPlayer);
         
         if (!window.CSVDatabase?.loaded) {
             alert('Game data not loaded yet');
@@ -218,16 +245,12 @@ function GameInterface({ gameState, updateGameState }) {
         }
         
         const diceResult = Math.floor(Math.random() * 6) + 1;
-        console.log('Dice rolled:', diceResult);
         
         // Get available moves using MovementEngine instance
         const movementEngine = window.movementEngine || (window.MovementEngine?.getInstance && window.MovementEngine.getInstance());
         if (movementEngine && currentPlayer) {
-            console.log('Getting moves for player at:', currentPlayer.position);
             try {
                 const moves = movementEngine.getAvailableMoves(currentPlayer);
-                console.log('Available moves returned:', moves);
-                console.log('Moves type:', typeof moves, 'Array?', Array.isArray(moves));
                 
                 setGameUIState({
                     showingDiceResult: true,
@@ -236,7 +259,6 @@ function GameInterface({ gameState, updateGameState }) {
                     showingMoves: (moves && moves.length > 0)
                 });
                 
-                console.log('UI state updated successfully');
             } catch (error) {
                 console.error('Error getting moves:', error);
                 setGameUIState({
@@ -247,7 +269,6 @@ function GameInterface({ gameState, updateGameState }) {
                 });
             }
         } else {
-            console.log('No MovementEngine or currentPlayer, showing basic result');
             setGameUIState({
                 showingDiceResult: true,
                 diceResult: diceResult,
@@ -264,7 +285,6 @@ function GameInterface({ gameState, updateGameState }) {
             return;
         }
         
-        console.log('Moving player to:', destination);
         
         // Apply space effects (draw cards, spend time/money)
         let updatedPlayer = { ...currentPlayer };
@@ -278,7 +298,6 @@ function GameInterface({ gameState, updateGameState }) {
                     visitType: 'First'
                 });
                 
-                console.log('Space effects found:', spaceEffects);
                 
                 spaceEffects.forEach(effect => {
                     if (effect.effect_type === 'e_cards') {
@@ -351,7 +370,6 @@ function GameInterface({ gameState, updateGameState }) {
     const useSimplified = !window.PlayerStatusPanel || !window.ActionPanel || !window.ResultsPanel;
     
     if (useSimplified) {
-        console.log('Using simplified interface - gameState players:', gameState.players?.length);
         return React.createElement('div', { 
             style: { 
                 display: 'grid', 
@@ -499,7 +517,6 @@ function GameInterface({ gameState, updateGameState }) {
     }
     
     // Use sophisticated panel components - they get state from GameStateManager
-    console.log('Using sophisticated interface with full game logic');
     return React.createElement('div', { 
         className: 'game-interface',
         style: { 
@@ -513,6 +530,22 @@ function GameInterface({ gameState, updateGameState }) {
     },
         // Hidden GameManager component to handle game logic events
         window.GameManager ? React.createElement(window.GameManager, { key: 'game-manager' }) : null,
+        
+        // Hidden GameSaveManager component for save/load functionality
+        window.GameSaveManager ? React.createElement(window.GameSaveManager, { 
+            key: 'save-manager',
+            gameState: gameState,
+            gameStateManager: window.GameStateManager,
+            onGameStateUpdate: updateGameState
+        }) : null,
+        
+        // Hidden WinConditionManager component for game completion detection
+        window.WinConditionManager ? React.createElement(window.WinConditionManager, { 
+            key: 'win-manager',
+            gameState: gameState,
+            gameStateManager: window.GameStateManager,
+            onGameStateUpdate: updateGameState
+        }) : null,
         // Left Panel - Uses useGameState() hook to get data from GameStateManager
         window.PlayerStatusPanel ? 
             React.createElement(window.PlayerStatusPanel) :
@@ -526,7 +559,89 @@ function GameInterface({ gameState, updateGameState }) {
         // Right Panel - Action Panel with full game logic
         window.ActionPanel ? 
             React.createElement(window.ActionPanel) :
-            React.createElement('div', { className: 'panel-placeholder' }, 'Actions Loading...')
+            React.createElement('div', { className: 'panel-placeholder' }, 'Actions Loading...'),
+            
+        // Space Explorer Modal
+        gameUIState.showSpaceExplorer && gameUIState.selectedSpaceData && window.SpaceExplorer ? 
+            React.createElement('div', {
+                key: 'space-explorer-modal',
+                className: 'modal-backdrop',
+                style: {
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                },
+                onClick: closeSpaceExplorer
+            },
+                React.createElement('div', {
+                    className: 'modal-content',
+                    style: {
+                        backgroundColor: 'white',
+                        borderRadius: '8px',
+                        padding: '20px',
+                        maxWidth: '600px',
+                        maxHeight: '80vh',
+                        overflow: 'auto',
+                        position: 'relative',
+                        margin: '20px'
+                    },
+                    onClick: (e) => e.stopPropagation()
+                },
+                    React.createElement('button', {
+                        style: {
+                            position: 'absolute',
+                            top: '10px',
+                            right: '15px',
+                            background: 'none',
+                            border: 'none',
+                            fontSize: '24px',
+                            cursor: 'pointer',
+                            color: '#666'
+                        },
+                        onClick: closeSpaceExplorer
+                    }, '×'),
+                    React.createElement(window.SpaceDetails, {
+                        spaceName: gameUIState.selectedSpaceData.spaceName,
+                        spaceData: gameUIState.selectedSpaceData.spaceData,
+                        isValidMove: gameUIState.selectedSpaceData.isValidMove,
+                        player: gameUIState.selectedSpaceData.player,
+                        onExploreSpace: (spaceName) => {
+                            // Handle exploring another space from modal
+                            if (window.CSVDatabase?.loaded) {
+                                const spaceData = window.CSVDatabase.spaceContent.find(spaceName, 'First');
+                                if (spaceData) {
+                                    setGameUIState(prev => ({
+                                        ...prev,
+                                        selectedSpaceData: {
+                                            spaceName,
+                                            spaceData,
+                                            isValidMove: false,
+                                            player: currentPlayer
+                                        }
+                                    }));
+                                }
+                            }
+                        }
+                    })
+                )
+            ) : null,
+            
+        // Game End Screen Modal - Show when game is completed
+        gameState.gameStatus === 'completed' && window.GameEndScreen ? 
+            React.createElement(window.GameEndScreen, {
+                key: 'game-end-screen',
+                gameState: gameState,
+                gameStateManager: window.GameStateManager,
+                onGameStateUpdate: updateGameState,
+                show: true
+            }) : null
     );
 }
 
@@ -543,7 +658,6 @@ function FixedPlayerSetup({ onInitializeGame }) {
     ]);
     
     const startGame = () => {
-        console.log('FixedPlayerSetup: Starting game with players:', players);
         const validPlayers = players.filter(p => p.name.trim());
         if (validPlayers.length === 0) {
             alert('Please add at least one player');

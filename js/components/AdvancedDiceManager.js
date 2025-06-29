@@ -79,7 +79,6 @@ function AdvancedDiceManager() {
             rollRecord
         });
 
-        console.log('AdvancedDiceManager: Dice roll completed', rollRecord);
     };
 
     // Simulate dice rolling animation

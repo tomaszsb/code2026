@@ -17,21 +17,17 @@ function PlayerStatusPanel({ debugMode = false }) {
     // Debug logging for current player
     useEffect(() => {
         if (currentPlayer) {
-            console.log('PlayerStatusPanel: Current player:', currentPlayer);
-            console.log('PlayerStatusPanel: Current player cards:', currentPlayer.cards);
         }
     }, [currentPlayer]);
     
     
 
     const handleCardSelect = (card) => {
-        console.log('PlayerStatusPanel: Card clicked:', card);
         setPanelState(prev => ({
             ...prev,
             selectedCard: card,
             showCardDetails: true
         }));
-        console.log('PlayerStatusPanel: Card modal should now be visible');
     };
 
     const closeCardDetails = () => {

@@ -179,7 +179,6 @@ function ActionPanel() {
                 const requiresDice = ComponentUtils.requiresDiceRoll(currentPlayer.position, currentPlayer.visitType || 'First');
                 const cardTypes = ComponentUtils.getCardTypes(currentPlayer.position, currentPlayer.visitType || 'First');
                 
-                console.log(`ActionPanel: Current space ${currentPlayer.position} has ${cardTypes.length} card actions:`, cardTypes);
                 
                 setActionState(prev => ({
                     ...prev,
@@ -245,7 +244,7 @@ function ActionPanel() {
         // Take Action Section removed - space effects now auto-trigger on move
 
         // Dice Roll Section
-        React.createElement(DiceRollSection, {
+        React.createElement(window.DiceRollSection, {
             key: 'dice-roll-section',
             diceRequired: actionState.diceRequired,
             hasRolled: actionState.hasRolled,
@@ -261,7 +260,7 @@ function ActionPanel() {
         }),
 
         // Card Actions Section
-        React.createElement(CardActionsSection, {
+        React.createElement(window.CardActionsSection, {
             key: 'card-actions-section',
             availableCardActions: actionState.availableCardActions,
             showCardActions: actionState.showCardActions,
@@ -279,7 +278,7 @@ function ActionPanel() {
         }),
 
         // Space Actions Section
-        React.createElement(SpaceActionsSection, {
+        React.createElement(window.SpaceActionsSection, {
             key: 'space-actions-section',
             currentPlayer: currentPlayer,
             gameStateManager: gameStateManager,
@@ -291,7 +290,7 @@ function ActionPanel() {
         }),
 
         // Movement Section
-        React.createElement(MovementSection, {
+        React.createElement(window.MovementSection, {
             key: 'movement-section',
             currentPlayer: currentPlayer,
             gameStateManager: gameStateManager,
@@ -321,7 +320,7 @@ function ActionPanel() {
         // Old negotiation section removed - using negotiate button in turn controls instead
 
         // Turn Controls Section
-        React.createElement(TurnControls, {
+        React.createElement(window.TurnControls, {
             key: 'turn-controls',
             currentPlayer: currentPlayer,
             gameStateManager: gameStateManager,

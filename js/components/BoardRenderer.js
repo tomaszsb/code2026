@@ -66,7 +66,7 @@ function VisualBoard({ gameState, onSpaceClick, availableMoves, boardState, curr
                 const space = spaceMap[spaceName];
                 if (!space) return null;
                 
-                return React.createElement(BoardSpace, {
+                return React.createElement(window.BoardSpace, {
                     key: space.space_name,
                     space,
                     players: gameState.players.filter(p => p.position === space.space_name),

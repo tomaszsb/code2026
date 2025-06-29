@@ -572,7 +572,6 @@ class MovementEngine {
     log(message) {
         // Disabled to reduce console spam - enable only when debugging movement
         // if (this.debug) {
-        //     console.log(`[MovementEngine] ${message}`);
         // }
     }
 

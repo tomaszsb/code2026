@@ -583,7 +583,6 @@ class EffectsEngine {
      */
     log(message) {
         if (this.debug) {
-            console.log(`[EffectsEngine] ${message}`);
         }
     }
 

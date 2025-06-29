@@ -68,7 +68,6 @@ function GameManager() {
     // Handle using cards from hand
     useEventListener('useCard', ({ playerId, cardType, cardId, card }) => {
         try {
-            console.log('GameManager: Received useCard event', { playerId, cardType, cardId });
             gameStateManager.useCard(playerId, cardType, cardId, card);
         } catch (error) {
             gameStateManager.handleError(error, 'Use Card');
@@ -78,14 +77,11 @@ function GameManager() {
     // Handle time changes (for negotiation penalties, etc.)
     useEventListener('timeChanged', ({ playerId, amount, source }) => {
         try {
-            console.log(`GameManager: *** RECEIVED timeChanged EVENT *** - player ${playerId}, amount ${amount}, source: ${source}`);
             const playerBefore = gameState.players.find(p => p.id === playerId);
-            console.log(`GameManager: Player ${playerId} time BEFORE: ${playerBefore?.timeSpent || 'unknown'}`);
             
             updatePlayerTime(playerId, amount);
             
             const playerAfter = gameState.players.find(p => p.id === playerId);
-            console.log(`GameManager: Player ${playerId} time AFTER: ${playerAfter?.timeSpent || 'unknown'}`);
         } catch (error) {
             console.error('GameManager: Error in timeChanged handler:', error);
             gameStateManager.handleError(error, 'Time Change');
@@ -127,9 +123,7 @@ function GameManager() {
         
         // Show available card actions for manual selection (regardless of dice requirement)
         const cardTypes = ComponentUtils.getCardTypes(spaceData.space_name, spaceData.visit_type || 'First');
-        console.log(`GameManager: Found ${cardTypes.length} card actions for ${spaceData.space_name}:`, cardTypes);
         if (cardTypes.length > 0) {
-            console.log(`GameManager: Emitting showCardActions for player ${playerId}`);
             gameStateManager.emit('showCardActions', {
                 playerId,
                 spaceName: spaceData.space_name,
@@ -143,13 +137,10 @@ function GameManager() {
      * Process card actions (Draw, Replace, Remove, etc.)
      */
     function processCardAction(playerId, cardType, actionText) {
-        console.log(`GameManager: processCardAction called with playerId=${playerId}, cardType=${cardType}, actionText="${actionText}"`);
         
         const action = ComponentUtils.parseCardAction(actionText);
-        console.log(`GameManager: Parsed action:`, action);
         
         if (!action) {
-            console.log('GameManager: No action parsed, returning');
             return;
         }
         
@@ -180,7 +171,6 @@ function GameManager() {
      * Draw random cards for player
      */
     function drawCardsForPlayer(playerId, cardType, amount) {
-        console.log(`GameManager: drawCardsForPlayer called with playerId=${playerId}, cardType=${cardType}, amount=${amount}`);
         
         if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
             console.error('GameManager: CSVDatabase not loaded for card drawing');
@@ -188,7 +178,6 @@ function GameManager() {
         }
         
         const availableCards = window.CSVDatabase.cards.query({card_type: cardType});
-        console.log(`GameManager: Found ${availableCards.length} available ${cardType} cards`);
         
         if (availableCards.length === 0) {
             console.error(`GameManager: No ${cardType} cards available`);
@@ -201,11 +190,9 @@ function GameManager() {
             drawnCards.push(availableCards[randomIndex]);
         }
         
-        console.log(`GameManager: Drew ${drawnCards.length} cards:`, drawnCards.map(c => c.card_name || c.card_id));
         
         gameStateManager.addCardsToPlayer(playerId, cardType, drawnCards);
         
-        console.log(`GameManager: Added cards to player ${playerId}`);
         
         // Emit event for UI feedback
         gameStateManager.emit('cardsDrawnForPlayer', {
@@ -235,7 +222,6 @@ function GameManager() {
         
         // If player has no cards of this type, draw some first then allow replacement
         if (player.cards[cardType].length === 0) {
-            console.log(`GameManager: Player has no ${cardType} cards, drawing ${amount} first`);
             drawCardsForPlayer(playerId, cardType, amount);
             
             // Show feedback
@@ -339,10 +325,8 @@ function GameManager() {
      * Process dice roll outcomes from CSV data
      */
     function processDiceOutcome(playerId, outcome, cardType, spaceName, visitType) {
-        console.log(`GameManager: processDiceOutcome called with playerId=${playerId}, outcome="${outcome}", cardType="${cardType}", spaceName=${spaceName}, visitType=${visitType}`);
         
         if (!outcome || outcome === 'No change') {
-            console.log('GameManager: No outcome to process or outcome is "No change"');
             return;
         }
         
@@ -350,13 +334,11 @@ function GameManager() {
         if (outcome.includes('Draw') || outcome.includes('Replace') || outcome.includes('Remove')) {
             // Use the provided cardType if available, otherwise parse from outcome
             const effectiveCardType = cardType || ComponentUtils.parseCardTypeFromOutcome(outcome);
-            console.log(`GameManager: Using card type "${effectiveCardType}" for outcome "${outcome}"`);
             
             if (effectiveCardType) {
                 processCardAction(playerId, effectiveCardType, outcome);
             } else {
                 // If no specific card type, default to drawing any type of card
-                console.log(`GameManager: No specific card type found, defaulting to 'W' card for outcome "${outcome}"`);
                 processCardAction(playerId, 'W', outcome);
             }
         }
@@ -438,7 +420,6 @@ function GameManager() {
      * Update player time spent
      */
     function updatePlayerTime(playerId, timeAmount) {
-        console.log(`GameManager: *** updatePlayerTime CALLED *** - playerId: ${playerId}, timeAmount: ${timeAmount}`);
         
         const players = [...gameState.players];
         const player = players.find(p => p.id === playerId);
@@ -451,11 +432,9 @@ function GameManager() {
         const previousTime = player.timeSpent;
         player.timeSpent += timeAmount;
         
-        console.log(`GameManager: Updating player ${playerId} time: ${previousTime} + ${timeAmount} = ${player.timeSpent}`);
         
         gameStateManager.setState({ players });
         
-        console.log(`GameManager: *** EMITTING playerTimeChanged EVENT ***`);
         gameStateManager.emit('playerTimeChanged', {
             player,
             previousTime,
@@ -463,7 +442,6 @@ function GameManager() {
             change: timeAmount
         });
         
-        console.log(`GameManager: updatePlayerTime completed for player ${playerId}`);
     }
     
     

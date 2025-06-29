@@ -29,12 +29,10 @@ function MovementSection({
     useEffect(() => {
         if (currentPlayer && window.MovementEngine) {
             const advancedMoves = movementEngine.getAvailableMoves(currentPlayer);
-            console.log('MovementSection: Available moves for', currentPlayer.name, ':', advancedMoves);
             
             if (onMovementStateChange && advancedMoves.length > 0) {
                 // Auto-select if there's only one move (no choice needed)
                 if (advancedMoves.length === 1) {
-                    console.log('MovementSection: Auto-selecting single move:', advancedMoves[0]);
                     onMovementStateChange({
                         availableMoves: advancedMoves,
                         selectedMove: advancedMoves[0],
@@ -75,19 +73,16 @@ function MovementSection({
 
     // Handle move selection with advanced validation
     const handleMoveSelect = (spaceName) => {
-        console.log(`MovementSection: Selecting move to ${spaceName}`);
         
         // Check if dice roll is required first
         if (currentPlayer && movementEngine) {
             const currentSpaceData = movementEngine.getCurrentSpaceData(currentPlayer);
             if (currentSpaceData?.requires_dice_roll === 'Yes' && !hasRolled) {
                 // Show message but allow selection for display purposes
-                console.log(`MovementSection: Dice roll required before moving to ${spaceName}`);
                 // Continue to allow selection for UI feedback
             } else {
                 // Validate move with MovementEngine for non-dice spaces
                 const availableMoves = movementEngine.getAvailableMoves(currentPlayer);
-                console.log(`MovementSection: Available moves for ${currentPlayer.name}:`, availableMoves);
                 if (availableMoves.length > 0 && !availableMoves.includes(spaceName)) {
                     console.warn(`Move to ${spaceName} not allowed for ${currentPlayer.name}`);
                     return;

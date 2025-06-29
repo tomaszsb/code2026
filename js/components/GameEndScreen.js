@@ -1,11 +1,17 @@
 /**
  * GameEndScreen Component - Display final results and scores
  * Shows when game is completed with winner and score breakdown
+ * Updated for React state compatibility (Phase 2 reconnection)
  */
 
-function GameEndScreen() {
-    const [gameState, gameStateManager] = useGameState();
-    const [showResults, setShowResults] = useState(false);
+function GameEndScreen({ gameState, gameStateManager, onGameStateUpdate, show = false }) {
+    // Use props instead of problematic useGameState hook
+    const [showResults, setShowResults] = useState(show);
+
+    // Sync with show prop
+    React.useEffect(() => {
+        setShowResults(show);
+    }, [show]);
 
     // Show results when game is completed
     useEventListener('gameCompleted', ({ winner, finalScores }) => {
@@ -15,16 +21,26 @@ function GameEndScreen() {
     // Handle game restart
     const restartGame = () => {
         if (confirm('Start a new game? This will reset all progress.')) {
-            gameStateManager.setState({
-                gameStatus: 'setup',
+            const resetGameState = {
+                gamePhase: 'SETUP',
                 players: [],
                 currentPlayer: 0,
                 turnCount: 0,
                 winner: null,
-                finalScores: null
-            });
+                finalScores: null,
+                gameSettings: gameState.gameSettings || { maxPlayers: 4, winCondition: 'FIRST_TO_FINISH' }
+            };
+            
+            if (onGameStateUpdate) {
+                onGameStateUpdate(resetGameState);
+            }
+            
+            if (gameStateManager) {
+                gameStateManager.setState(resetGameState);
+                gameStateManager.emit('gameRestarted');
+            }
+            
             setShowResults(false);
-            gameStateManager.emit('gameRestarted');
         }
     };
 
@@ -252,3 +268,6 @@ function GameEndScreen() {
         )
     );
 }
+
+// Export component globally for integration
+window.GameEndScreen = GameEndScreen;

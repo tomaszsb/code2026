@@ -151,17 +151,32 @@ function ResultsPanel() {
     return React.createElement('div', {
         className: 'results-panel'
     }, [
-        // Space Explorer Section
+        // Space Explorer Hint Section
         React.createElement('div', {
-            key: 'space-explorer-section',
-            className: 'space-explorer-section'
+            key: 'space-explorer-hint',
+            className: 'space-explorer-hint'
         }, [
-            window.SpaceExplorer ? React.createElement(SpaceExplorer, {
-                key: 'space-explorer'
-            }) : React.createElement('div', {
-                key: 'explorer-loading',
-                className: 'explorer-loading'
-            }, 'Loading Space Explorer...')
+            React.createElement('div', {
+                key: 'hint-content',
+                className: 'hint-content',
+                style: {
+                    background: '#f8f9fa',
+                    border: '1px solid #dee2e6',
+                    borderRadius: '8px',
+                    padding: '15px',
+                    textAlign: 'center',
+                    color: '#6c757d'
+                }
+            }, [
+                React.createElement('div', {
+                    key: 'hint-icon',
+                    style: { fontSize: '24px', marginBottom: '8px' }
+                }, '🗺️'),
+                React.createElement('div', {
+                    key: 'hint-text',
+                    style: { fontSize: '14px' }
+                }, 'Click on any space on the game board to explore its details!')
+            ])
         ]),
 
         // Results Header

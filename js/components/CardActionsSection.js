@@ -17,10 +17,7 @@ function CardActionsSection({
 
     // Listen for card actions being shown
     useEventListener('showCardActions', ({ playerId, cardActions, spaceName }) => {
-        console.log(`CardActionsSection: Received showCardActions event for player ${playerId}, currentPlayer: ${currentPlayer?.id}`);
-        console.log('CardActionsSection: Card actions:', cardActions);
         if (playerId === currentPlayer?.id && onCardActionsStateChange) {
-            console.log('CardActionsSection: Setting card actions in state');
             onCardActionsStateChange({
                 availableCardActions: cardActions,
                 showCardActions: true
@@ -32,7 +29,6 @@ function CardActionsSection({
     const handleCardAction = (cardType, action) => {
         if (!currentPlayer) return;
 
-        console.log(`CardActionsSection: Processing card action ${cardType} - ${action}`);
         
         // Emit the card action processing event
         gameStateManager.emit('processCardAction', {
@@ -46,7 +42,6 @@ function CardActionsSection({
             ca => !(ca.type === cardType && ca.action === action)
         );
         
-        console.log(`CardActionsSection: Removed action, ${availableCardActions.length} -> ${newAvailableActions.length}`);
         
         // Update parent state
         if (onCardActionsStateChange) {
@@ -69,7 +64,6 @@ function CardActionsSection({
     // Check if a card action is dice-based
     const isDiceBasedAction = (cardAction) => {
         if (!currentPlayer || !window.CSVDatabase?.loaded || !window.CSVDatabase.diceEffects) {
-            console.log('CardActionsSection: isDiceBasedAction - missing dependencies');
             return false;
         }
         
@@ -81,7 +75,6 @@ function CardActionsSection({
             row.card_type === cardAction.type
         );
         
-        console.log(`CardActionsSection: isDiceBasedAction for ${cardAction.type} at ${currentPlayer.position}:`, !!matchingEffect);
         return !!matchingEffect;
     };
 
@@ -92,13 +85,11 @@ function CardActionsSection({
         return availableCardActions.filter((cardAction) => {
             // Filter out dice-based card actions (these are handled by dice roll automatically)
             if (isDiceBasedAction(cardAction)) {
-                console.log(`CardActionsSection: Filtering out dice-based action: ${cardAction.type} - ${cardAction.action}`);
                 return false;
             }
             
             // Temporary aggressive filter: remove any "Draw dice" actions
             if (cardAction.action && cardAction.action.includes('dice')) {
-                console.log(`CardActionsSection: Filtering out dice action by text: ${cardAction.type} - ${cardAction.action}`);
                 return false;
             }
             

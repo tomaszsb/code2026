@@ -87,7 +87,6 @@ function AdvancedCardManager() {
             window.InteractiveFeedback.info(message);
         }
 
-        console.log('AdvancedCardManager: Processed card effects', { card: card.card_id, effects });
     };
 
     // Check for combo opportunities when cards are drawn/played
@@ -246,7 +245,6 @@ function AdvancedCardManager() {
             );
         }
 
-        console.log('AdvancedCardManager: Applied combo effects', { combo, totalMoney, totalTime });
     };
 
     // Record combo execution for history

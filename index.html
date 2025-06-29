@@ -110,8 +110,19 @@
     <script type="text/babel" src="js/components/GamePanelLayout.js"></script>
     <script type="text/babel" src="js/components/DiceRoll.js"></script>
     <script type="text/babel" src="js/components/SpaceChoice.js"></script>
-    <!-- Removed unused components: CardDisplay, CardPlayInterface, HandManager, CardEffectAnimations,
-         TurnManager, WinConditionManager, GameEndScreen, GameTimer, GameSaveManager, LoadingAndErrorHandler -->
+    
+    <!-- Phase 1: Ready-to-Reconnect Components (Modern React Architecture) -->
+    <script type="text/babel" src="js/components/CardDisplay.js"></script>
+    <script type="text/babel" src="js/components/HandManager.js"></script>
+    <script type="text/babel" src="js/components/CardEffectAnimations.js"></script>
+    
+    <!-- Phase 2: Updated Legacy Components (React State Compatible) -->
+    <script type="text/babel" src="js/components/GameSaveManager.js"></script>
+    <script type="text/babel" src="js/components/WinConditionManager.js"></script>
+    <script type="text/babel" src="js/components/GameEndScreen.js"></script>
+    
+    <!-- Still disconnected - need useGameState updates: CardPlayInterface, GameTimer, LoadingAndErrorHandler -->
+    <!-- Dead code removed: TurnManager -->
     
     <!-- Main App Components -->
     <script type="text/babel" src="js/components/FixedApp.js"></script>

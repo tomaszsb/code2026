@@ -143,7 +143,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                         ]),
                         
                         // Card content area - now uses CardModalContent component
-                        React.createElement(CardModalContent, {
+                        React.createElement(window.CardModalContent, {
                             selectedCard,
                             cardFlipped: false
                         }),
@@ -176,7 +176,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                             borderRadius: '20px'
                         }
                     }, [
-                        React.createElement(CardModalContent, {
+                        React.createElement(window.CardModalContent, {
                             selectedCard,
                             cardFlipped: true
                         })

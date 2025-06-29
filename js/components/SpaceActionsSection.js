@@ -108,7 +108,6 @@ function SpaceActionsSection({
     const handleSpaceAction = (action) => {
         if (!currentPlayer || !gameStateManager) return;
         
-        console.log(`SpaceActionsSection: Executing ${action.name} for ${action.amountText}`);
         
         try {
             // Process money action

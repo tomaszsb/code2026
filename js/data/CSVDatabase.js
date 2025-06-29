@@ -363,12 +363,8 @@ class CSVDatabase {
      */
     logDataSummary() {
         if (this.debug) {
-            console.log('📊 CSV Database Summary:');
             if (this.cleanArchitecture) {
-                console.log(`  🔄 Clean Architecture: ${this.data.movement.length} movements, ${this.data.spaceEffects.length} effects, ${this.data.spaceContent.length} content`);
             }
-            console.log(`  📦 Cards: ${this.data.cards.length} cards loaded`);
-            console.log(`  🏗️ Primary System: ${this.cleanArchitecture ? 'Clean Architecture' : 'Legacy'}`);
         }
     }
 
@@ -385,7 +381,6 @@ class CSVDatabase {
      */
     log(message) {
         if (this.debug) {
-            console.log(`[CSVDatabase] ${message}`);
         }
     }
 

@@ -16,7 +16,6 @@ function GameInitializer() {
     
     // Handle player movement with MovementEngine integration
     useEventListener('movePlayerRequest', ({ playerId, spaceName, visitType }) => {
-        console.log('GameInitializer: Received movePlayerRequest', { playerId, spaceName, visitType });
         try {
             // Check if CSVDatabase is loaded before accessing it
             if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
@@ -30,9 +29,7 @@ function GameInitializer() {
             }
             
             // Move player
-            console.log('GameInitializer: About to call movePlayer with', { playerId, spaceName, visitType });
             gameStateManager.movePlayer(playerId, spaceName, visitType);
-            console.log('GameInitializer: movePlayer completed');
             
             // Save snapshot AFTER movement but BEFORE space effects
             // This captures clean state when entering the space
@@ -64,7 +61,6 @@ function GameInitializer() {
                 // Get the destination space for the specific dice roll
                 const destination = diceConfig[`roll_${rollValue}`];
                 if (destination) {
-                    console.log(`GameInitializer: Dice roll ${rollValue} moving player ${playerId} from ${spaceName} to ${destination}`);
                     // Move player to the destination space
                     gameStateManager.emit('movePlayerToSpace', { playerId, destination, visitType: 'First' });
                 }
@@ -77,7 +73,6 @@ function GameInitializer() {
     // Handle space re-entry (for rediscovering actions after negotiation)
     useEventListener('spaceReentry', ({ playerId, spaceName, visitType }) => {
         try {
-            console.log(`GameInitializer: *** RECEIVED spaceReentry EVENT *** - player ${playerId}, space: ${spaceName}, visitType: ${visitType}`);
             
             // Check if CSVDatabase is loaded before accessing it
             if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
@@ -88,7 +83,6 @@ function GameInitializer() {
             // Get space data and emit for GameManager to re-process space effects
             const spaceData = window.CSVDatabase.spaceContent.find(spaceName, visitType);
             if (spaceData) {
-                console.log(`GameInitializer: Re-processing space effects for ${spaceName}`);
                 gameStateManager.emit('processSpaceEffectsFallback', { playerId, spaceData });
             } else {
                 console.error(`GameInitializer: Space data not found for ${spaceName}/${visitType}`);

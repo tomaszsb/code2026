@@ -1,10 +1,11 @@
 /**
  * GameSaveManager Component - Save and load game state
  * Provides persistent game storage using localStorage
+ * Updated for React state compatibility (Phase 2 reconnection)
  */
 
-function GameSaveManager() {
-    const [gameState, gameStateManager] = useGameState();
+function GameSaveManager({ gameState, gameStateManager, onGameStateUpdate }) {
+    // Use props instead of problematic useGameState hook
     const [saveState, setSaveState] = useState({
         autoSaveEnabled: true,
         lastSaveTime: null,
@@ -87,11 +88,15 @@ function GameSaveManager() {
             // Also update localStorage index
             localStorage.setItem('pm_game_saves_index', JSON.stringify(updatedSlots));
 
-            gameStateManager.emit('gameSaved', { slotName, timestamp: Date.now() });
+            if (gameStateManager) {
+                gameStateManager.emit('gameSaved', { slotName, timestamp: Date.now() });
+            }
             return true;
         } catch (error) {
             console.error('Save failed:', error);
-            gameStateManager.emit('saveError', { error: error.message });
+            if (gameStateManager) {
+                gameStateManager.emit('saveError', { error: error.message });
+            }
             return false;
         }
     };
@@ -111,17 +116,25 @@ function GameSaveManager() {
                 throw new Error('Invalid save file format');
             }
 
-            // Restore game state
-            gameStateManager.setState(parsedData.gameState);
+            // Restore game state using React state update
+            if (onGameStateUpdate) {
+                onGameStateUpdate(parsedData.gameState);
+            }
             
-            gameStateManager.emit('gameLoaded', { 
-                saveId, 
-                metadata: parsedData.metadata 
-            });
+            // Also update GameStateManager for component compatibility
+            if (gameStateManager) {
+                gameStateManager.setState(parsedData.gameState);
+                gameStateManager.emit('gameLoaded', { 
+                    saveId, 
+                    metadata: parsedData.metadata 
+                });
+            }
             return true;
         } catch (error) {
             console.error('Load failed:', error);
-            gameStateManager.emit('loadError', { error: error.message });
+            if (gameStateManager) {
+                gameStateManager.emit('loadError', { error: error.message });
+            }
             return false;
         }
     };
@@ -249,22 +262,27 @@ function GameSaveManager() {
 
     // Expose save manager functions
     useEffect(() => {
-        gameStateManager.saveManager = {
-            saveGame,
-            loadGame,
-            loadAutoSave,
-            deleteSave,
-            exportSave,
-            importSave,
-            hasAutoSave,
-            getSaveSlots: () => saveState.saveSlots,
-            toggleAutoSave: () => setSaveState(prev => ({ 
-                ...prev, 
-                autoSaveEnabled: !prev.autoSaveEnabled 
-            }))
-        };
+        if (gameStateManager) {
+            gameStateManager.saveManager = {
+                saveGame,
+                loadGame,
+                loadAutoSave,
+                deleteSave,
+                exportSave,
+                importSave,
+                hasAutoSave,
+                getSaveSlots: () => saveState.saveSlots,
+                toggleAutoSave: () => setSaveState(prev => ({ 
+                    ...prev, 
+                    autoSaveEnabled: !prev.autoSaveEnabled 
+                }))
+            };
+        }
     }, [saveState.saveSlots, saveState.autoSaveEnabled]);
 
     // This is a logic-only component
     return null;
 }
+
+// Export component globally for integration
+window.GameSaveManager = GameSaveManager;

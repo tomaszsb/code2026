@@ -65,7 +65,6 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
             return;
         }
         
-        console.log('CardsInHand: Using E card:', card);
         
         // Apply card effects based on card properties
         const effects = {
@@ -121,7 +120,6 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
             description: baseMessage
         });
         
-        console.log('CardsInHand: E card effects applied:', effects);
     };
 
     if (!player) {
@@ -175,100 +173,101 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
         
         cardsExpanded && React.createElement('div', {
             key: 'cards-container',
-            className: 'cards-container'
+            className: 'cards-container enhanced-cards'
         }, 
-            allCards.length > 0 ? 
-                allCards.map((card, index) => {
-                    const cardColors = getCardTypeColor(card.card_type);
-                    return React.createElement('div', {
-                        key: `card-${index}`,
-                        className: 'card-mini',
-                        title: card.card_name || `${card.card_type} Card`,
+            allCards.length > 0 ? [
+                // Use enhanced CardDisplay component if available, otherwise fallback to basic
+                window.CardDisplay ? 
+                    React.createElement(window.CardDisplay, {
+                        key: 'enhanced-cards',
+                        cards: allCards,
+                        layout: 'compact',
+                        maxCards: 7,
+                        onCardSelect: onCardSelect
+                    }) :
+                    // Fallback to basic card display
+                    React.createElement('div', {
+                        key: 'basic-cards',
+                        className: 'basic-cards-fallback'
+                    }, allCards.map((card, index) => {
+                        const cardColors = getCardTypeColor(card.card_type);
+                        return React.createElement('div', {
+                            key: `card-${index}`,
+                            className: 'card-mini',
+                            title: card.card_name || `${card.card_type} Card`,
+                            style: {
+                                backgroundColor: cardColors.bg,
+                                border: `2px solid ${cardColors.text}`,
+                                borderRadius: '8px',
+                                padding: '8px',
+                                margin: '4px',
+                                transition: 'all 0.2s ease',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '4px'
+                            }
+                        }, [
+                            React.createElement('div', {
+                                key: 'card-type',
+                                className: `card-type-indicator ${card.card_type}`,
+                                style: {
+                                    color: cardColors.text,
+                                    fontWeight: 'bold',
+                                    fontSize: '12px'
+                                }
+                            }, card.card_type),
+                            React.createElement('div', {
+                                key: 'card-name',
+                                className: 'card-name-mini',
+                                style: {
+                                    color: cardColors.text,
+                                    fontSize: '10px',
+                                    marginTop: '4px'
+                                }
+                            }, (card.card_name || 'Unknown').substring(0, 10) + '...')
+                        ]);
+                    })),
+                    
+                // Action buttons for E cards (separate from display)
+                ...allCards.filter(card => card.card_type === 'E').map((card, index) => 
+                    React.createElement('div', {
+                        key: `e-card-actions-${index}`,
+                        className: 'e-card-actions',
                         style: {
-                            backgroundColor: cardColors.bg,
-                            border: `2px solid ${cardColors.text}`,
-                            borderRadius: '8px',
-                            padding: '8px',
-                            margin: '4px',
-                            transition: 'all 0.2s ease',
                             display: 'flex',
-                            flexDirection: 'column',
-                            gap: '4px'
+                            gap: '8px',
+                            margin: '8px 4px',
+                            padding: '8px',
+                            backgroundColor: '#f0f8ff',
+                            borderRadius: '4px',
+                            border: '1px solid #d1ecf1'
                         }
                     }, [
-                        React.createElement('div', {
-                            key: 'card-type',
-                            className: `card-type-indicator ${card.card_type}`,
-                            style: {
-                                color: cardColors.text,
-                                fontWeight: 'bold',
-                                fontSize: '12px'
-                            }
-                        }, card.card_type),
-                        React.createElement('div', {
+                        React.createElement('span', {
                             key: 'card-name',
-                            className: 'card-name-mini',
-                            style: {
-                                color: cardColors.text,
-                                fontSize: '10px',
-                                marginTop: '4px'
-                            }
-                        }, (card.card_name || 'Unknown').substring(0, 10) + '...'),
-                        
-                        // Only show buttons for E cards
-                        ...(card.card_type === 'E' ? [
-                            // Use card button (disabled if wrong phase)
-                            React.createElement('button', {
-                                key: 'use-button',
-                                className: `btn btn--sm ${!canUseECard(card) ? 'btn--disabled' : ''}`,
-                                onClick: (e) => {
-                                    e.stopPropagation();
-                                    handleUseCard(card);
-                                },
-                                disabled: !canUseECard(card),
-                                title: !canUseECard(card) ? `Can only be used in ${card.phase_restriction} phase` : 'Use this card',
-                                style: {
-                                    fontSize: '10px',
-                                    padding: '2px 6px',
-                                    marginTop: '2px'
-                                }
-                            }, 'Use'),
-                            
-                            // View card button
-                            React.createElement('button', {
-                                key: 'view-button',
-                                className: 'btn btn--outline btn--sm',
-                                onClick: (e) => {
-                                    e.stopPropagation();
-                                    onCardSelect(card);
-                                },
-                                style: {
-                                    fontSize: '10px',
-                                    padding: '2px 6px'
-                                }
-                            }, 'View')
-                        ] : [
-                            // Only View button for non-E cards (W, B, I, L)
-                            React.createElement('button', {
-                                key: 'view-button',
-                                className: 'btn btn--outline btn--sm',
-                                onClick: (e) => {
-                                    e.stopPropagation();
-                                    onCardSelect(card);
-                                },
-                                style: {
-                                    fontSize: '10px',
-                                    padding: '2px 6px',
-                                    marginTop: '2px'
-                                }
-                            }, 'View')
-                        ])
-                    ]);
-                }) :
-                React.createElement('p', {
-                    key: 'no-cards',
-                    className: 'no-cards-message'
-                }, 'No cards in hand')
+                            style: { fontSize: '12px', fontWeight: 'bold', flex: 1 }
+                        }, card.card_name || 'E Card'),
+                        React.createElement('button', {
+                            key: 'use-button',
+                            className: `btn btn--sm ${!canUseECard(card) ? 'btn--disabled' : ''}`,
+                            onClick: () => handleUseCard(card),
+                            disabled: !canUseECard(card),
+                            title: !canUseECard(card) ? `Can only be used in ${card.phase_restriction} phase` : 'Use this card',
+                            style: { fontSize: '10px', padding: '4px 8px' }
+                        }, 'Use'),
+                        React.createElement('button', {
+                            key: 'view-button',
+                            className: 'btn btn--outline btn--sm',
+                            onClick: () => onCardSelect(card),
+                            style: { fontSize: '10px', padding: '4px 8px' }
+                        }, 'View')
+                    ])
+                )
+            ] :
+            React.createElement('p', {
+                key: 'no-cards',
+                className: 'no-cards-message'
+            }, 'No cards in hand')
         )
     ]);
 }

@@ -362,7 +362,6 @@ class ContentEngine {
      */
     log(message) {
         if (this.debug) {
-            console.log(`[ContentEngine] ${message}`);
         }
     }
 

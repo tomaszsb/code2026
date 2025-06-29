@@ -23,12 +23,10 @@ function useGameState() {
         const initialState = gameStateManager.current.getState();
         setGameState(initialState);
         isInitialized.current = true;
-        console.log('useGameState: Initialized with state:', initialState.players?.length, 'players');
         
         const handleStateChange = () => {
             const newState = gameStateManager.current.getState();
             setGameState(newState);
-            console.log('useGameState: State updated to', newState.players?.length, 'players');
         };
         
         const unsubscribe1 = gameStateManager.current.on('stateChanged', handleStateChange);
@@ -374,7 +372,7 @@ setTimeout(() => {
     if (window.GameManager) globalThis.GameManager = window.GameManager;
     if (window.DiceRoll) globalThis.DiceRoll = window.DiceRoll;
     if (window.SpaceChoice) globalThis.SpaceChoice = window.SpaceChoice;
-    if (window.TurnManager) globalThis.TurnManager = window.TurnManager;
+    // TurnManager removed as dead code - replaced by TurnControls
     if (window.WinConditionManager) globalThis.WinConditionManager = window.WinConditionManager;
     if (window.GameEndScreen) globalThis.GameEndScreen = window.GameEndScreen;
     if (window.GameTimer) globalThis.GameTimer = window.GameTimer;
