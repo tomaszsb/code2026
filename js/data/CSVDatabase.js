@@ -185,9 +185,38 @@ class CSVDatabase {
         });
 
         if (result.errors.length > 0) {
-            console.error('Papa Parse errors:', result.errors);
+            console.error(`Papa Parse found ${result.errors.length} errors in CSV:`, result.errors);
+            
+            // Detailed error reporting for debugging
+            result.errors.forEach((error, index) => {
+                console.error(`Error ${index + 1}:`, {
+                    type: error.type,
+                    code: error.code,
+                    message: error.message,
+                    row: error.row !== undefined ? error.row + 1 : 'Unknown', // Convert to 1-based
+                    index: error.index
+                });
+            });
+            
+            // Show sample of parsed data to see what did work
+            console.log(`Successfully parsed ${result.data.length} rows`);
+            if (result.data.length > 0) {
+                console.log('Sample of parsed data (first 3 rows):', result.data.slice(0, 3));
+            }
         }
 
+        // Safety check: Don't return data if there are critical parsing errors
+        if (result.errors.length > 0) {
+            const criticalErrors = result.errors.filter(error => 
+                error.type === 'Delimiter' || error.type === 'FieldMismatch'
+            );
+            
+            if (criticalErrors.length > 5) {
+                console.error('Too many critical CSV parsing errors. Data may be corrupted.');
+                console.error('Consider checking the CSV file structure manually.');
+            }
+        }
+        
         return result.data;
     }
 
