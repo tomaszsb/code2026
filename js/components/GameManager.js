@@ -88,6 +88,15 @@ function GameManager() {
         }
     });
     
+    // Handle money changes (for E-card costs and other money effects)
+    useEventListener('moneyChanged', ({ playerId, amount, source }) => {
+        try {
+            gameStateManager.updatePlayerMoney(playerId, amount, source);
+        } catch (error) {
+            gameStateManager.handleError(error, 'Money Change');
+        }
+    });
+    
     
     /**
      * Process space effects when player lands on space
