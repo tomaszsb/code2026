@@ -460,7 +460,8 @@ function GameManager() {
             return;
         }
         
-        const card = window.CSVDatabase.cards.data.find(c => c.card_id === cardId);
+        // Use correct CSVDatabase API - cards.find() with filter object
+        const card = window.CSVDatabase.cards.find({ card_id: cardId });
         if (card) {
             // Determine card type and add to player
             gameStateManager.addCardsToPlayer(playerId, card.card_type, [card]);
