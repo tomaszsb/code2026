@@ -453,6 +453,23 @@ function GameManager() {
         
     }
     
+    // Debug function for testing specific cards
+    window.giveCardToPlayer = (cardId, playerId) => {
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+            console.error('CSVDatabase not loaded. Cannot give card.');
+            return;
+        }
+        
+        const card = window.CSVDatabase.cards.data.find(c => c.card_id === cardId);
+        if (card) {
+            // Determine card type and add to player
+            gameStateManager.addCardsToPlayer(playerId, card.card_type, [card]);
+            console.log(`Successfully gave card "${cardId}" (${card.card_name}) to ${playerId}.`);
+        } else {
+            console.error(`Card with ID "${cardId}" not found in CSVDatabase.`);
+        }
+    };
+    
     
     // GameManager is a logic-only component - no render
     return null;
