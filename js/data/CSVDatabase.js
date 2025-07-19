@@ -169,51 +169,28 @@ class CSVDatabase {
 
 
     /**
-     * Parse CSV text into JavaScript objects
+     * Parse CSV text into JavaScript objects using Papa Parse
      */
     parseCSV(csvText) {
-        const lines = csvText.split('\n').filter(line => line.trim());
-        if (lines.length < 2) return [];
-
-        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-        const rows = [];
-
-        for (let i = 1; i < lines.length; i++) {
-            const values = this.parseCSVLine(lines[i]);
-            if (values.length === headers.length) {
-                const row = {};
-                headers.forEach((header, index) => {
-                    row[header] = values[index].trim().replace(/"/g, '');
-                });
-                rows.push(row);
-            }
+        if (typeof Papa === 'undefined') {
+            console.error('Papa Parse library not loaded');
+            return [];
         }
 
-        return rows;
-    }
+        const result = Papa.parse(csvText, {
+            header: true,           // Treat first row as headers
+            skipEmptyLines: true,   // Skip empty lines
+            transformHeader: header => header.trim(), // Clean header whitespace
+            transform: value => value.trim() // Clean all values
+        });
 
-    /**
-     * Parse a single CSV line, handling commas within quotes
-     */
-    parseCSVLine(line) {
-        const result = [];
-        let current = '';
-        let inQuotes = false;
-
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            if (char === '"') {
-                inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-                result.push(current);
-                current = '';
-            } else {
-                current += char;
-            }
+        if (result.errors.length > 0) {
+            console.error('Papa Parse errors:', result.errors);
         }
-        result.push(current);
-        return result;
+
+        return result.data;
     }
+
 
     /**
      * Query API for clean architecture
