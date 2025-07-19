@@ -156,6 +156,11 @@ class CSVDatabase {
             const csvText = await response.text();
             this.data.cards = this.parseCSV(csvText);
             this.log(`Loaded ${this.data.cards.length} cards`);
+            
+            // DEBUG: Verify card data parsing - first 5 card IDs
+            console.log('First 5 card IDs:', this.data.cards.slice(0, 5).map(card => `"${card.card_id}"`));
+            
+            
         } catch (error) {
             console.error('Failed to load cards.csv:', error);
             throw error;
@@ -343,17 +348,21 @@ class CSVDatabase {
                 if (!filters || typeof filters !== 'object') {
                     return this.data.cards;
                 }
-                return this.data.cards.filter(row => {
+                const results = this.data.cards.filter(row => {
                     return Object.entries(filters).every(([key, value]) => row[key] === value);
                 });
+                
+                return results;
             },
             find: (filters) => {
                 if (!filters || typeof filters !== 'object') {
                     return this.data.cards[0] || null;
                 }
-                return this.data.cards.find(row => {
+                const result = this.data.cards.find(row => {
                     return Object.entries(filters).every(([key, value]) => row[key] === value);
                 });
+                
+                return result;
             }
         };
     }
