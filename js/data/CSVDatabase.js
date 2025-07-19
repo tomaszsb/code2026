@@ -189,13 +189,14 @@ class CSVDatabase {
             
             // Detailed error reporting for debugging
             result.errors.forEach((error, index) => {
-                console.error(`Error ${index + 1}:`, {
+                const errorDetails = {
                     type: error.type,
                     code: error.code,
                     message: error.message,
                     row: error.row !== undefined ? error.row + 1 : 'Unknown', // Convert to 1-based
                     index: error.index
-                });
+                };
+                console.error(`Error ${index + 1}:\n${JSON.stringify(errorDetails, null, 2)}`);
             });
             
             // Show sample of parsed data to see what did work
