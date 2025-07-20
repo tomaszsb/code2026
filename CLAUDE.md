@@ -190,7 +190,28 @@ gameState.players?.find()  // Defensive
 
 ## Recent Improvements
 
-### ✅ **Phase 29: Complete Game Logic Restoration (Latest - RESOLVED)**
+### 🚨 **Phase 33: Critical Card Effect Bug Discovery & CSV Architecture Finalization (Latest - IN PROGRESS)**
+- **Issue Identified**: E-card money effects work correctly, but time effects completely fail to update player state
+- **Root Cause Discovered**: `timeChanged` event handler in GameManager.js calls broken local function instead of GameStateManager method
+- **Detailed Bug Analysis**:
+  - **Working (moneyChanged)**: `gameStateManager.updatePlayerMoney(playerId, amount, source)` ✅
+  - **Broken (timeChanged)**: `updatePlayerTime(playerId, amount)` ❌ - calls local function that modifies copy of players array
+  - **Local Function Flaw**: `updatePlayerTime()` creates array copy `[...gameState.players]` but never updates actual gameState
+  - **GameStateManager Gap**: No `updatePlayerTime` method exists (unlike `updatePlayerMoney`)
+- **Discovery Process**:
+  - **CSV Data Repair**: Fixed 47 Papa Parse field mismatch errors using Python CSV parser for clean data standardization
+  - **Debug Infrastructure**: Added `showGameState()` function to expose live GameStateManager state for player ID discovery
+  - **Card Testing**: Successfully used `giveCardToPlayer('E008', playerId)` to test E-card functionality
+  - **Event Tracing**: Comprehensive analysis of timeChanged event execution path from CardsInHand.js → GameManager.js → broken local function
+- **Solutions Implemented**:
+  - **CSV Architecture Complete**: All 405 rows standardized to exactly 51 fields using Python csv.reader/writer
+  - **Debug Tools Added**: Global `showGameState()` function shows live state, player IDs, and card counts
+  - **Bug Isolation**: Confirmed money effects work (GameStateManager integration) while time effects fail (local function)
+- **Key Architecture**: Event-driven card effects with proper GameStateManager integration required for state persistence
+- **Current Status**: ✅ CSV data clean ✅ Debug tools active ✅ Bug precisely identified ⏳ Fix implementation pending
+- **Next Steps**: Fix timeChanged handler to use GameStateManager method, complete Phase 1.2 Advanced Engine Integration
+
+### ✅ **Phase 29: Complete Game Logic Restoration (RESOLVED)**
 - **Issue Identified**: React refactoring preserved UI but broke sophisticated game logic (cards, dice, movement, time/money)
 - **Root Causes Found**: 
   - GameManager component not rendered in FixedApp (card actions never processed)

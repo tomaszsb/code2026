@@ -152,7 +152,7 @@ class CSVDatabase {
      */
     async loadCards() {
         try {
-            const response = await fetch('data/cards.csv?v=1.2');
+            const response = await fetch('data/cards.csv?v=1.5');
             const csvText = await response.text();
             this.data.cards = this.parseCSV(csvText);
             this.log(`Loaded ${this.data.cards.length} cards`);

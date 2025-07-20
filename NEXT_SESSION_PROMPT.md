@@ -1,23 +1,24 @@
 # Next Session Starting Prompt
 
-## Critical Issue: React Rendering Bug
+## Critical Issue: E-Card Time Effect Bug  
 
-**Status**: Phase 28 - UNRESOLVED React rendering issue preventing game progression
+**Status**: Phase 33 - Bug identified and isolated, fix implementation pending
 
 ## Problem Summary
 
-The Project Management Board Game has a **critical React rendering bug**:
+The Project Management Board Game has a **critical card effect bug**:
 
-1. **EnhancedPlayerSetup** "Starting Game..." button correctly updates GameStateManager state
-2. **Console logs confirm** state changes: `gamePhase: 'PLAYING'`, `showPlayerSetup: false`  
-3. **useGameState hook** receives updates and calls React setState()
-4. **Visual DOM never updates** - still shows old state: `gamePhase: 'SETUP'`, `showPlayerSetup: true`
+1. **E-card money effects work correctly** - GameStateManager integration via `gameStateManager.updatePlayerMoney()`
+2. **E-card time effects completely fail** - Calls broken local function `updatePlayerTime()` instead of GameStateManager method
+3. **Root cause identified** - `timeChanged` event handler in GameManager.js uses local function that modifies copy of players array but never updates actual gameState
+4. **GameStateManager missing method** - No `updatePlayerTime` method exists (unlike working `updatePlayerMoney`)
 
 ## Current State
 
-- App loads and shows player setup screen correctly
-- "Starting Game..." button exists and triggers state changes
-- React component tree has multiple debugging elements showing the disconnect
+- CSV data architecture completed (all 405 rows standardized to 51 fields, Papa Parse errors resolved)
+- Debug infrastructure active (`showGameState()` function for live state inspection)
+- Card testing framework working (`giveCardToPlayer('E008', playerId)` successfully tested)
+- Bug precisely isolated to timeChanged event execution path
 - All React components properly loaded and available
 - ErrorBoundary exists and functioning
 

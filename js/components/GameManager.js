@@ -471,6 +471,39 @@ function GameManager() {
         }
     };
     
+    // Debug function to inspect live GameStateManager state
+    window.showGameState = () => {
+        if (!window.GameStateManager) {
+            console.error('GameStateManager not available');
+            return;
+        }
+        console.log('=== Live GameStateManager State ===');
+        console.log(window.GameStateManager.state);
+        
+        // Also show player details for convenience
+        if (window.GameStateManager.state.players) {
+            console.log('=== Player Details ===');
+            window.GameStateManager.state.players.forEach((player, index) => {
+                console.log(`Player ${index}:`, {
+                    id: player.id,
+                    name: player.name,
+                    space: player.space,
+                    money: player.money,
+                    timeSpent: player.timeSpent,
+                    cardCounts: {
+                        W: player.cards.W?.length || 0,
+                        B: player.cards.B?.length || 0,
+                        I: player.cards.I?.length || 0,
+                        L: player.cards.L?.length || 0,
+                        E: player.cards.E?.length || 0
+                    }
+                });
+            });
+        }
+        
+        return window.GameStateManager.state;
+    };
+    
     
     // GameManager is a logic-only component - no render
     return null;
