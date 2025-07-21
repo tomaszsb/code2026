@@ -39,8 +39,9 @@ git pull origin main                                # Pull latest changes
 ```
 # Core Systems
 js/data/CSVDatabase.js              # Unified CSV query system
-js/data/GameStateManager.js         # Central state + events (legacy - not used in FixedApp)
+js/data/GameStateManager.js         # Central state + events (active in FixedApp)
 js/utils/CardUtils.js               # Centralized card configurations & utilities
+js/utils/EffectsEngine.js           # Complete card effect processing system
 
 # Main Interface (New Architecture)
 js/components/FixedApp.js           # Production React app with native state management
@@ -190,26 +191,25 @@ gameState.players?.find()  // Defensive
 
 ## Recent Improvements
 
-### 🚨 **Phase 33: Critical Card Effect Bug Discovery & CSV Architecture Finalization (Latest - IN PROGRESS)**
-- **Issue Identified**: E-card money effects work correctly, but time effects completely fail to update player state
-- **Root Cause Discovered**: `timeChanged` event handler in GameManager.js calls broken local function instead of GameStateManager method
-- **Detailed Bug Analysis**:
-  - **Working (moneyChanged)**: `gameStateManager.updatePlayerMoney(playerId, amount, source)` ✅
-  - **Broken (timeChanged)**: `updatePlayerTime(playerId, amount)` ❌ - calls local function that modifies copy of players array
-  - **Local Function Flaw**: `updatePlayerTime()` creates array copy `[...gameState.players]` but never updates actual gameState
-  - **GameStateManager Gap**: No `updatePlayerTime` method exists (unlike `updatePlayerMoney`)
-- **Discovery Process**:
-  - **CSV Data Repair**: Fixed 47 Papa Parse field mismatch errors using Python CSV parser for clean data standardization
-  - **Debug Infrastructure**: Added `showGameState()` function to expose live GameStateManager state for player ID discovery
-  - **Card Testing**: Successfully used `giveCardToPlayer('E008', playerId)` to test E-card functionality
-  - **Event Tracing**: Comprehensive analysis of timeChanged event execution path from CardsInHand.js → GameManager.js → broken local function
-- **Solutions Implemented**:
-  - **CSV Architecture Complete**: All 405 rows standardized to exactly 51 fields using Python csv.reader/writer
-  - **Debug Tools Added**: Global `showGameState()` function shows live state, player IDs, and card counts
-  - **Bug Isolation**: Confirmed money effects work (GameStateManager integration) while time effects fail (local function)
-- **Key Architecture**: Event-driven card effects with proper GameStateManager integration required for state persistence
-- **Current Status**: ✅ CSV data clean ✅ Debug tools active ✅ Bug precisely identified ⏳ Fix implementation pending
-- **Next Steps**: Fix timeChanged handler to use GameStateManager method, complete Phase 1.2 Advanced Engine Integration
+### ✅ **Phase 34: EffectsEngine Phase 0 & 1 Implementation (Latest - COMPLETE)**
+- **Strategic Audit Completed**: Comprehensive CSV analysis revealed 5 missing card effect handlers blocking core gameplay
+- **Phase 0: Card Handlers Added**: All card effect handlers implemented in EffectsEngine:
+  - **`applyWorkEffect()`** - W cards → Project scope integration via GameStateManager.updatePlayerScope()
+  - **`applyLoanEffect()`** - B cards → Money addition via GameStateManager.updatePlayerMoney()
+  - **`applyInvestmentEffect()`** - I cards → Money addition via GameStateManager.updatePlayerMoney()
+  - **`applyLifeBalanceEffect()`** - L cards → Time adjustment via GameStateManager.updatePlayerTime()
+  - **`applyEfficiencyEffect()`** - E cards → Multi-effect (time & money) via GameStateManager methods
+- **Phase 1: EffectsEngine Integration**: EffectsEngine initialized in GameManager with CSV database connection
+- **Immutable State Fix**: Created explicit immutable `updatePlayerTime()` method to resolve time effect rendering bug
+- **Enhanced Debug Infrastructure**: Global debug functions now available immediately when scripts load
+- **Architecture Foundation**: EffectsEngine fully equipped and ready for card effect routing integration
+- **Current Status**: ✅ All card handlers complete ✅ EffectsEngine initialized ✅ Time effect bug resolved ✅ Ready for routing
+- **Next Steps**: Create card effect router and event listener to connect card usage to EffectsEngine handlers
+
+### ✅ **Phase 33: Critical Card Effect Bug Discovery & CSV Architecture Finalization (RESOLVED)**
+- **Issue Resolved**: E-card time effects completely failed due to direct state mutation in GameManager.js
+- **Root Cause Fixed**: timeChanged event handler was calling broken local function instead of GameStateManager method
+- **Solution Implemented**: Created explicit immutable updatePlayerTime() method and refactored all time change events
 
 ### ✅ **Phase 29: Complete Game Logic Restoration (RESOLVED)**
 - **Issue Identified**: React refactoring preserved UI but broke sophisticated game logic (cards, dice, movement, time/money)

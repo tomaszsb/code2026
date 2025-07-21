@@ -7,6 +7,51 @@
 function GameManager() {
     const [gameState, gameStateManager] = useGameState();
     
+    // Initialize EffectsEngine instance - persistent for component lifetime
+    const effectsEngineRef = React.useRef(null);
+    
+    // Initialize EffectsEngine once when component mounts
+    React.useEffect(() => {
+        if (!effectsEngineRef.current) {
+            // Get the singleton EffectsEngine instance
+            effectsEngineRef.current = window.EffectsEngine;
+            
+            if (effectsEngineRef.current) {
+                // Initialize with CSV database when available
+                if (window.CSVDatabase && window.CSVDatabase.loaded) {
+                    effectsEngineRef.current.initialize(window.CSVDatabase);
+                    console.log('✅ GameManager: EffectsEngine successfully initialized and connected to CSVDatabase');
+                } else {
+                    // Wait for CSV database to load
+                    const waitForDatabase = setInterval(() => {
+                        if (window.CSVDatabase && window.CSVDatabase.loaded) {
+                            effectsEngineRef.current.initialize(window.CSVDatabase);
+                            console.log('✅ GameManager: EffectsEngine successfully initialized and connected to CSVDatabase (delayed)');
+                            clearInterval(waitForDatabase);
+                        }
+                    }, 100);
+                    
+                    // Cleanup interval if component unmounts
+                    return () => clearInterval(waitForDatabase);
+                }
+            } else {
+                console.error('❌ GameManager: EffectsEngine not available on window object');
+            }
+        }
+    }, []);
+    
+    // Utility function to get EffectsEngine instance
+    const getEffectsEngine = () => {
+        return effectsEngineRef.current;
+    };
+    
+    // Make EffectsEngine accessible globally for debugging and testing
+    React.useEffect(() => {
+        if (effectsEngineRef.current) {
+            window.GameManagerEffectsEngine = effectsEngineRef.current;
+        }
+    }, [effectsEngineRef.current]);
+    
     // Handle fallback space effects processing (when MovementEngine not available)
     useEventListener('processSpaceEffectsFallback', ({ playerId, spaceData }) => {
         try {
@@ -77,11 +122,7 @@ function GameManager() {
     // Handle time changes (for negotiation penalties, etc.)
     useEventListener('timeChanged', ({ playerId, amount, source }) => {
         try {
-            const playerBefore = gameState.players.find(p => p.id === playerId);
-            
-            updatePlayerTime(playerId, amount);
-            
-            const playerAfter = gameState.players.find(p => p.id === playerId);
+            gameStateManager.updatePlayerTime(playerId, amount, source);
         } catch (error) {
             console.error('GameManager: Error in timeChanged handler:', error);
             gameStateManager.handleError(error, 'Time Change');
@@ -106,7 +147,7 @@ function GameManager() {
         if (spaceData.Time) {
             const timeValue = parseInt(spaceData.Time.replace(/\D/g, '')) || 0;
             if (timeValue > 0) {
-                updatePlayerTime(playerId, timeValue);
+                gameStateManager.updatePlayerTime(playerId, timeValue, `${spaceData.space_name} time cost`);
             }
         }
         
@@ -384,7 +425,7 @@ function GameManager() {
             const timeMatch = outcome.match(/(\d+)\s*day/);
             if (timeMatch) {
                 const timeAmount = parseInt(timeMatch[1]);
-                updatePlayerTime(playerId, timeAmount);
+                gameStateManager.updatePlayerTime(playerId, timeAmount, 'dice outcome');
             }
         }
         
@@ -425,84 +466,6 @@ function GameManager() {
         }
     }
     
-    /**
-     * Update player time spent
-     */
-    function updatePlayerTime(playerId, timeAmount) {
-        
-        const players = [...gameState.players];
-        const player = players.find(p => p.id === playerId);
-        
-        if (!player) {
-            console.error(`GameManager: Player ${playerId} not found in updatePlayerTime`);
-            return;
-        }
-        
-        const previousTime = player.timeSpent;
-        player.timeSpent += timeAmount;
-        
-        
-        gameStateManager.setState({ players });
-        
-        gameStateManager.emit('playerTimeChanged', {
-            player,
-            previousTime,
-            newTime: player.timeSpent,
-            change: timeAmount
-        });
-        
-    }
-    
-    // Debug function for testing specific cards
-    window.giveCardToPlayer = (cardId, playerId) => {
-        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
-            console.error('CSVDatabase not loaded. Cannot give card.');
-            return;
-        }
-        
-        // Use correct CSVDatabase API - cards.find() with filter object
-        const card = window.CSVDatabase.cards.find({ card_id: cardId });
-        if (card) {
-            // Determine card type and add to player
-            gameStateManager.addCardsToPlayer(playerId, card.card_type, [card]);
-            console.log(`Successfully gave card "${cardId}" (${card.card_name}) to ${playerId}.`);
-        } else {
-            console.error(`Card with ID "${cardId}" not found in CSVDatabase.`);
-        }
-    };
-    
-    // Debug function to inspect live GameStateManager state
-    window.showGameState = () => {
-        if (!window.GameStateManager) {
-            console.error('GameStateManager not available');
-            return;
-        }
-        console.log('=== Live GameStateManager State ===');
-        console.log(window.GameStateManager.state);
-        
-        // Also show player details for convenience
-        if (window.GameStateManager.state.players) {
-            console.log('=== Player Details ===');
-            window.GameStateManager.state.players.forEach((player, index) => {
-                console.log(`Player ${index}:`, {
-                    id: player.id,
-                    name: player.name,
-                    space: player.space,
-                    money: player.money,
-                    timeSpent: player.timeSpent,
-                    cardCounts: {
-                        W: player.cards.W?.length || 0,
-                        B: player.cards.B?.length || 0,
-                        I: player.cards.I?.length || 0,
-                        L: player.cards.L?.length || 0,
-                        E: player.cards.E?.length || 0
-                    }
-                });
-            });
-        }
-        
-        return window.GameStateManager.state;
-    };
     
     
     // GameManager is a logic-only component - no render
@@ -511,3 +474,59 @@ function GameManager() {
 
 // Export component
 window.GameManager = GameManager;
+
+// Debug functions - Available immediately when script loads
+window.giveCardToPlayer = (cardId, playerId) => {
+    if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+        console.error('CSVDatabase not loaded. Cannot give card.');
+        return;
+    }
+    
+    if (!window.GameStateManager) {
+        console.error('GameStateManager not available. Cannot give card.');
+        return;
+    }
+    
+    // Use correct CSVDatabase API - cards.find() with filter object
+    const card = window.CSVDatabase.cards.find({ card_id: cardId });
+    if (card) {
+        // Determine card type and add to player
+        window.GameStateManager.addCardsToPlayer(playerId, card.card_type, [card]);
+        console.log(`Successfully gave card "${cardId}" (${card.card_name}) to ${playerId}.`);
+    } else {
+        console.error(`Card with ID "${cardId}" not found in CSVDatabase.`);
+    }
+};
+
+// Debug function to inspect live GameStateManager state
+window.showGameState = () => {
+    if (!window.GameStateManager) {
+        console.error('GameStateManager not available');
+        return;
+    }
+    console.log('=== Live GameStateManager State ===');
+    console.log(window.GameStateManager.state);
+    
+    // Also show player details for convenience
+    if (window.GameStateManager.state.players) {
+        console.log('=== Player Details ===');
+        window.GameStateManager.state.players.forEach((player, index) => {
+            console.log(`Player ${index}:`, {
+                id: player.id,
+                name: player.name,
+                space: player.space,
+                money: player.money,
+                timeSpent: player.timeSpent,
+                cardCounts: {
+                    W: player.cards.W?.length || 0,
+                    B: player.cards.B?.length || 0,
+                    I: player.cards.I?.length || 0,
+                    L: player.cards.L?.length || 0,
+                    E: player.cards.E?.length || 0
+                }
+            });
+        });
+    }
+    
+    return window.GameStateManager.state;
+};

@@ -314,6 +314,43 @@ class GameStateManager {
     }
 
     /**
+     * Update player time spent - Explicit immutable implementation
+     */
+    updatePlayerTime(playerId, amount, reason = '') {
+        const playerIndex = this.state.players.findIndex(p => p.id === playerId);
+        
+        if (playerIndex === -1) {
+            throw new Error(`Player ${playerId} not found`);
+        }
+
+        const currentPlayer = this.state.players[playerIndex];
+        const previousAmount = currentPlayer.timeSpent || 0;
+        
+        // Create completely new player object
+        const updatedPlayer = {
+            ...currentPlayer,
+            timeSpent: previousAmount + amount
+        };
+        
+        // Create completely new players array
+        const players = [
+            ...this.state.players.slice(0, playerIndex),
+            updatedPlayer,
+            ...this.state.players.slice(playerIndex + 1)
+        ];
+
+        this.setState({ players });
+        
+        this.emit('playerTimeChanged', {
+            player: updatedPlayer,
+            previousAmount,
+            newAmount: updatedPlayer.timeSpent,
+            change: amount,
+            reason
+        });
+    }
+
+    /**
      * Add cards to player hand
      */
     addCardsToPlayer(playerId, cardType, cards) {

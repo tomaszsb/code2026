@@ -397,6 +397,286 @@ class EffectsEngine {
     }
 
     /**
+     * Apply work effect to player - Adds work to project scope
+     */
+    applyWorkEffect(card, playerId) {
+        this.log(`Applying work effect for card ${card.card_id} to player ${playerId}`);
+        
+        // Validate inputs
+        if (!card) {
+            this.log('Error: No card provided to applyWorkEffect');
+            return { success: false, reason: 'No card provided' };
+        }
+        
+        if (!playerId) {
+            this.log('Error: No playerId provided to applyWorkEffect');
+            return { success: false, reason: 'No playerId provided' };
+        }
+
+        // Get work cost from card
+        const workCost = parseInt(card.work_cost) || 0;
+        
+        if (workCost === 0) {
+            this.log(`Warning: Card ${card.card_id} has no work_cost value`);
+            return { success: false, reason: 'No work cost in card' };
+        }
+
+        // Ensure GameStateManager is available
+        if (!window.GameStateManager) {
+            this.log('Error: GameStateManager not available for work effect');
+            return { success: false, reason: 'GameStateManager not available' };
+        }
+
+        try {
+            // Call existing updatePlayerScope method
+            window.GameStateManager.updatePlayerScope(playerId);
+            
+            this.log(`Successfully applied work effect: Added $${workCost} work cost to player ${playerId} scope`);
+            
+            return {
+                success: true,
+                action: 'work_added_to_scope',
+                workCost: workCost,
+                cardId: card.card_id,
+                cardName: card.card_name,
+                workType: card.work_type_restriction || 'General Construction'
+            };
+            
+        } catch (error) {
+            this.log(`Error applying work effect: ${error.message}`);
+            return { success: false, reason: error.message };
+        }
+    }
+
+    /**
+     * Apply loan effect to player - Adds loan amount to player's money
+     */
+    applyLoanEffect(card, playerId) {
+        this.log(`Applying loan effect for card ${card.card_id} to player ${playerId}`);
+        
+        // Validate inputs
+        if (!card) {
+            this.log('Error: No card provided to applyLoanEffect');
+            return { success: false, reason: 'No card provided' };
+        }
+        
+        if (!playerId) {
+            this.log('Error: No playerId provided to applyLoanEffect');
+            return { success: false, reason: 'No playerId provided' };
+        }
+
+        // Get loan amount from card
+        const loanAmount = parseInt(card.loan_amount) || 0;
+        
+        if (loanAmount === 0) {
+            this.log(`Warning: Card ${card.card_id} has no loan_amount value`);
+            return { success: false, reason: 'No loan amount in card' };
+        }
+
+        // Ensure GameStateManager is available
+        if (!window.GameStateManager) {
+            this.log('Error: GameStateManager not available for loan effect');
+            return { success: false, reason: 'GameStateManager not available' };
+        }
+
+        try {
+            // Call existing updatePlayerMoney method
+            window.GameStateManager.updatePlayerMoney(playerId, loanAmount, `Bank loan: ${card.card_name}`);
+            
+            this.log(`Successfully applied loan effect: Added $${loanAmount} to player ${playerId} from loan`);
+            
+            return {
+                success: true,
+                action: 'loan_amount_added',
+                loanAmount: loanAmount,
+                cardId: card.card_id,
+                cardName: card.card_name,
+                loanRate: card.loan_rate || 'N/A'
+            };
+            
+        } catch (error) {
+            this.log(`Error applying loan effect: ${error.message}`);
+            return { success: false, reason: error.message };
+        }
+    }
+
+    /**
+     * Apply investment effect to player - Adds investment amount to player's money
+     */
+    applyInvestmentEffect(card, playerId) {
+        this.log(`Applying investment effect for card ${card.card_id} to player ${playerId}`);
+        
+        // Validate inputs
+        if (!card) {
+            this.log('Error: No card provided to applyInvestmentEffect');
+            return { success: false, reason: 'No card provided' };
+        }
+        
+        if (!playerId) {
+            this.log('Error: No playerId provided to applyInvestmentEffect');
+            return { success: false, reason: 'No playerId provided' };
+        }
+
+        // Get investment amount from card
+        const investmentAmount = parseInt(card.investment_amount) || 0;
+        
+        if (investmentAmount === 0) {
+            this.log(`Warning: Card ${card.card_id} has no investment_amount value`);
+            return { success: false, reason: 'No investment amount in card' };
+        }
+
+        // Ensure GameStateManager is available
+        if (!window.GameStateManager) {
+            this.log('Error: GameStateManager not available for investment effect');
+            return { success: false, reason: 'GameStateManager not available' };
+        }
+
+        try {
+            // Call existing updatePlayerMoney method
+            window.GameStateManager.updatePlayerMoney(playerId, investmentAmount, `Investment: ${card.card_name}`);
+            
+            this.log(`Successfully applied investment effect: Added $${investmentAmount} to player ${playerId} from investment`);
+            
+            return {
+                success: true,
+                action: 'investment_amount_added',
+                investmentAmount: investmentAmount,
+                cardId: card.card_id,
+                cardName: card.card_name
+            };
+            
+        } catch (error) {
+            this.log(`Error applying investment effect: ${error.message}`);
+            return { success: false, reason: error.message };
+        }
+    }
+
+    /**
+     * Apply life balance effect to player - Adjusts time using time_effect
+     */
+    applyLifeBalanceEffect(card, playerId) {
+        this.log(`Applying life balance effect for card ${card.card_id} to player ${playerId}`);
+        
+        // Validate inputs
+        if (!card) {
+            this.log('Error: No card provided to applyLifeBalanceEffect');
+            return { success: false, reason: 'No card provided' };
+        }
+        
+        if (!playerId) {
+            this.log('Error: No playerId provided to applyLifeBalanceEffect');
+            return { success: false, reason: 'No playerId provided' };
+        }
+
+        // Get time effect from card
+        const timeEffect = parseInt(card.time_effect) || 0;
+        
+        if (timeEffect === 0) {
+            this.log(`Warning: Card ${card.card_id} has no time_effect value`);
+            return { success: false, reason: 'No time effect in card' };
+        }
+
+        // Ensure GameStateManager is available
+        if (!window.GameStateManager) {
+            this.log('Error: GameStateManager not available for life balance effect');
+            return { success: false, reason: 'GameStateManager not available' };
+        }
+
+        try {
+            // Call existing updatePlayerTime method
+            window.GameStateManager.updatePlayerTime(playerId, timeEffect, `Life balance: ${card.card_name}`);
+            
+            this.log(`Successfully applied life balance effect: ${timeEffect > 0 ? 'Added' : 'Saved'} ${Math.abs(timeEffect)} days for player ${playerId}`);
+            
+            return {
+                success: true,
+                action: 'life_balance_time_adjusted',
+                timeEffect: timeEffect,
+                cardId: card.card_id,
+                cardName: card.card_name
+            };
+            
+        } catch (error) {
+            this.log(`Error applying life balance effect: ${error.message}`);
+            return { success: false, reason: error.message };
+        }
+    }
+
+    /**
+     * Apply efficiency effect to player - Handles both time and money effects for E cards
+     */
+    applyEfficiencyEffect(card, playerId) {
+        this.log(`Applying efficiency effect for card ${card.card_id} to player ${playerId}`);
+        
+        // Validate inputs
+        if (!card) {
+            this.log('Error: No card provided to applyEfficiencyEffect');
+            return { success: false, reason: 'No card provided' };
+        }
+        
+        if (!playerId) {
+            this.log('Error: No playerId provided to applyEfficiencyEffect');
+            return { success: false, reason: 'No playerId provided' };
+        }
+
+        // Ensure GameStateManager is available
+        if (!window.GameStateManager) {
+            this.log('Error: GameStateManager not available for efficiency effect');
+            return { success: false, reason: 'GameStateManager not available' };
+        }
+
+        const results = [];
+        let hasEffects = false;
+
+        try {
+            // Check for time effect
+            const timeEffect = parseInt(card.time_effect) || 0;
+            if (timeEffect !== 0) {
+                window.GameStateManager.updatePlayerTime(playerId, timeEffect, `Efficiency: ${card.card_name}`);
+                results.push({
+                    type: 'time',
+                    value: timeEffect,
+                    description: `${timeEffect > 0 ? 'Added' : 'Saved'} ${Math.abs(timeEffect)} days`
+                });
+                hasEffects = true;
+                this.log(`Applied time effect: ${timeEffect} days for player ${playerId}`);
+            }
+
+            // Check for money effect
+            const moneyEffect = parseInt(card.money_effect) || 0;
+            if (moneyEffect !== 0) {
+                window.GameStateManager.updatePlayerMoney(playerId, moneyEffect, `Efficiency: ${card.card_name}`);
+                results.push({
+                    type: 'money',
+                    value: moneyEffect,
+                    description: `${moneyEffect > 0 ? 'Gained' : 'Spent'} $${Math.abs(moneyEffect)}`
+                });
+                hasEffects = true;
+                this.log(`Applied money effect: $${moneyEffect} for player ${playerId}`);
+            }
+
+            if (!hasEffects) {
+                this.log(`Warning: Card ${card.card_id} has no time_effect or money_effect values`);
+                return { success: false, reason: 'No effects in card' };
+            }
+
+            this.log(`Successfully applied efficiency effects for player ${playerId}: ${results.length} effects processed`);
+            
+            return {
+                success: true,
+                action: 'efficiency_effects_applied',
+                effects: results,
+                cardId: card.card_id,
+                cardName: card.card_name
+            };
+            
+        } catch (error) {
+            this.log(`Error applying efficiency effect: ${error.message}`);
+            return { success: false, reason: error.message };
+        }
+    }
+
+    /**
      * Check if effect condition is met
      */
     meetsCondition(condition, gameState, player) {
