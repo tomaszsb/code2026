@@ -187,7 +187,7 @@ class GameStateManager {
                 avatar: playerData.avatar || '👤',
                 position: playerData.position || 'OWNER-SCOPE-INITIATION',
                 visitType: playerData.visitType || 'First',
-                money: playerData.money || 10000,
+                money: playerData.money,
                 timeSpent: playerData.timeSpent || 0,
                 cards: {
                     W: [],
@@ -208,8 +208,8 @@ class GameStateManager {
         this.setState(newGameState);
         
         // Save initial snapshots for all players at their starting positions
-        this.state.players.forEach((player, index) => {
-            this.savePlayerSnapshot(index);
+        this.state.players.forEach((player) => {
+            this.savePlayerSnapshot(player.id);
         });
         
         // Emit game initialized event (stateChanged already emitted by setState)

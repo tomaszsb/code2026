@@ -1,143 +1,38 @@
 /**
- * FixedApp - Working version using React useState instead of useGameState hook
+ * FixedApp - Fixed version using useGameState hook for automatic state synchronization
  */
 
 function FixedApp({ debugMode = false, logLevel = 'info' }) {
     const { useState, useEffect } = React;
     const { loaded, error } = useCSVData();
     
-    // Use React's built-in state instead of useGameState hook
-    const [gameState, setGameState] = useState({
-        gamePhase: 'SETUP',
-        currentPlayer: 0,
-        turnCount: 0,
-        players: [],
-        gameSettings: {
-            maxPlayers: 4,
-            winCondition: 'FIRST_TO_FINISH',
-            debugMode: false
-        },
-        ui: {
-            activeModal: null,
-            showingSpace: null,
-            diceRolling: false,
-            loading: false
-        },
-        error: null,
-        lastAction: null
-    });
+    // Use working useGameState hook pattern (same as other components)
+    const [gameState, gameStateManager] = window.useGameState();
     
     
-    // Initialize game function
+    // Initialize game function - now uses GameStateManager directly
     const initializeGame = (players, settings = {}) => {
-        
-        const newGameState = {
-            ...gameState,
-            gamePhase: 'PLAYING',
-            currentPlayer: 0, // Explicitly set current player to first player
-            players: players.map((playerData, index) => ({
-                id: playerData.id || index,
-                name: typeof playerData === 'string' ? playerData : playerData.name,
-                color: typeof playerData === 'string' ? '#007bff' : playerData.color,
-                avatar: playerData.avatar || '👤',
-                position: playerData.position || 'OWNER-SCOPE-INITIATION',
-                visitType: playerData.visitType || 'First',
-                money: playerData.money || 10000,
-                timeSpent: playerData.timeSpent || 0,
-                cards: {
-                    W: [],
-                    B: [],
-                    I: [],
-                    L: [],
-                    E: []
-                },
-                phase: playerData.phase || 'INITIATION'
-            })),
-            gameSettings: { ...gameState.gameSettings, ...settings }
-        };
-        
-        // Update GameStateManager directly and immediately
-        if (window.GameStateManager) {
-            window.GameStateManager.setState(newGameState);
-            window.GameStateManager.emit('gameInitialized');
+        if (gameStateManager) {
+            gameStateManager.initializeGame(players, settings);
         }
-        
-        setGameState(newGameState);
     };
     
-    // Initialize systems and sync state only when needed
+    // Initialize systems only once
     useEffect(() => {
         window.FixedGameInitializer = { initializeGame };
         
         // Initialize MovementEngine once
-        if (window.GameStateManager && window.MovementEngine) {
+        if (gameStateManager && window.MovementEngine) {
             try {
                 const movementEngine = window.movementEngine || (window.MovementEngine?.getInstance && window.MovementEngine.getInstance());
                 if (movementEngine && !movementEngine.gameStateManager) {
-                    movementEngine.initialize(window.GameStateManager);
+                    movementEngine.initialize(gameStateManager);
                 }
             } catch (error) {
                 console.error('Error initializing MovementEngine:', error);
             }
         }
     }, []); // Run only once
-    
-    // Sync React state to GameStateManager only when game phase changes
-    useEffect(() => {
-        if (window.GameStateManager && gameState.gamePhase === 'PLAYING') {
-            window.GameStateManager.setState(gameState);
-            
-            // Debug: Show current card counts
-            gameState.players.forEach((player, index) => {
-                const totalCards = Object.values(player.cards || {}).reduce((sum, cardArray) => sum + cardArray.length, 0);
-            });
-        }
-    }, [gameState.gamePhase, gameState.players.length, gameState.players[0]?.cards]); // Also watch for card changes
-    
-    // Listen for GameStateManager changes and sync back to React state (DISABLED TO PREVENT LOOPS)
-    // The sophisticated components use useGameState() hook which reads directly from GameStateManager
-    // No need for bidirectional sync - just push React state TO GameStateManager
-    useEffect(() => {
-        // Only listen for critical events that require React re-render
-        if (!window.GameStateManager) return;
-        
-        const handleCriticalStateChange = () => {
-            // Only sync back for game phase changes or similar critical updates
-            const newState = window.GameStateManager.getState();
-            if (newState.gamePhase !== gameState.gamePhase) {
-                setGameState(prevState => ({
-                    ...prevState,
-                    gamePhase: newState.gamePhase
-                }));
-            }
-        };
-        
-        // Listen to critical game events that need React state updates
-        const handleCardsDrawn = ({ playerId, cardType, cards }) => {
-            // Cards are already added to GameStateManager by GameManager.drawCardsForPlayer()
-            // This event is just for UI feedback - sync GameStateManager state to React
-            setGameState(prevState => {
-                // Get the current state from GameStateManager instead of adding cards again
-                const currentGameState = window.GameStateManager?.getState();
-                if (currentGameState && currentGameState.players) {
-                    return { ...prevState, players: currentGameState.players };
-                }
-                return prevState;
-            });
-        };
-        
-        const unsubscribe1 = window.GameStateManager.on('gamePhaseChanged', handleCriticalStateChange);
-        const unsubscribe2 = window.GameStateManager.on('cardsDrawnForPlayer', handleCardsDrawn);
-        const unsubscribe3 = window.GameStateManager.on('cardsDrawn', handleCardsDrawn); // Alternative event name
-        const unsubscribe4 = window.GameStateManager.on('playerCardsUpdated', handleCardsDrawn); // Another possible event name
-        
-        return () => {
-            unsubscribe1?.();
-            unsubscribe2?.();
-            unsubscribe3?.();
-            unsubscribe4?.();
-        };
-    }, []);
     
     // Handle errors
     if (error) {
@@ -163,15 +58,14 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
             showPlayerSetup 
                 ? React.createElement(FixedPlayerSetup, { onInitializeGame: initializeGame })
                 : React.createElement(GameInterface, { 
-                    gameState: gameState,
-                    updateGameState: setGameState
+                    gameState: gameState
                 })
         )
     );
 }
 
 // Game interface component - Using actual game components
-function GameInterface({ gameState, updateGameState }) {
+function GameInterface({ gameState }) {
     const { useState } = React;
     const [gameUIState, setGameUIState] = useState({
         showingDiceResult: false,
@@ -343,7 +237,7 @@ function GameInterface({ gameState, updateGameState }) {
             turnCount: gameState.turnCount + 1
         };
         
-        updateGameState(newGameState);
+        // State updates now handled by GameStateManager automatically
         
         // Reset UI state
         setGameUIState({
@@ -530,16 +424,14 @@ function GameInterface({ gameState, updateGameState }) {
         window.GameSaveManager ? React.createElement(window.GameSaveManager, { 
             key: 'save-manager',
             gameState: gameState,
-            gameStateManager: window.GameStateManager,
-            onGameStateUpdate: updateGameState
+            gameStateManager: window.GameStateManager
         }) : null,
         
         // Hidden WinConditionManager component for game completion detection
         window.WinConditionManager ? React.createElement(window.WinConditionManager, { 
             key: 'win-manager',
             gameState: gameState,
-            gameStateManager: window.GameStateManager,
-            onGameStateUpdate: updateGameState
+            gameStateManager: window.GameStateManager
         }) : null,
         // Left Panel - Complete Player Container
         React.createElement('div', {
@@ -665,7 +557,6 @@ function GameInterface({ gameState, updateGameState }) {
                 key: 'game-end-screen',
                 gameState: gameState,
                 gameStateManager: window.GameStateManager,
-                onGameStateUpdate: updateGameState,
                 show: true
             }) : null
     );
@@ -679,7 +570,8 @@ function FixedPlayerSetup({ onInitializeGame }) {
             id: 1, 
             name: 'Player 1', 
             color: '#007bff',
-            avatar: '👤'
+            avatar: '👤',
+            money: 0
         }
     ]);
     

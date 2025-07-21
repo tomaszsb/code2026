@@ -106,7 +106,7 @@ function EnhancedPlayerSetup() {
                 avatar: player.avatar,
                 position: 'OWNER-SCOPE-INITIATION',
                 visitType: 'First',
-                money: 10000, // Starting money
+                money: 0, // Starting money
                 timeSpent: 0,
                 cards: [],
                 visitedSpaces: []
