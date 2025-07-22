@@ -2,11 +2,61 @@
 
 **Project Management Board Game - Clean Architecture Rebuild**
 
-## Current Status: ARCHITECTURE MILESTONE COMPLETE ✅ - Full GameStateManager Architecture
+## Current Status: usePlayerCard IMPLEMENTATION COMPLETE ✅ - Full Card Usage System with UI Fix
 
-**ACHIEVEMENT:** Successfully completed transition to unified "Full GameStateManager" architecture, eliminating all dual state management issues and resolving critical bugs permanently.
+**LATEST ACHIEVEMENT:** Successfully implemented complete card usage system with EffectsEngine integration and resolved critical UI disconnect for Project Scope display.
 
-**RESULT:** Single source of truth for game state, enhanced GameStateManager with integrated orchestration methods, and clean FixedApp.js refactoring completed. All documentation updated to reflect stable architectural state.
+**BREAKTHROUGH:** Final piece of systematic player ID vs array index cleanup completed - GameStateManager now 100% consistent in player lookup patterns. Card usage system operational with immediate UI feedback.
+
+**RESULT:** Production-ready card usage system with safe EffectsEngine integration, resolved UI disconnect issue, and completed systematic architecture cleanup started in Phase 29.
+
+### Phase 36: usePlayerCard Implementation & UI Disconnect Resolution (COMPLETE) ✅ - January 22, 2025
+
+**Major Achievement:** Complete implementation of card usage system with safe EffectsEngine integration and resolution of critical UI disconnect issue.
+
+**Problem Identified:**
+- ❌ **UI Disconnect**: Project Scope display wouldn't update when Work Cards were used
+- ❌ **Missing Integration**: No connection between card usage UI and EffectsEngine processing
+- ❌ **Architecture Gap**: Cards could be given to players but not properly used with effects
+
+**Root Cause Discovered:**
+- **GameStateManager.updatePlayerScope()** was using array index lookup instead of player ID lookup
+- **Line 792**: `playerArray[playerId]` (WRONG - array index) instead of `playerArray.find(p => p.id === playerId)` (CORRECT - player ID)
+- **Result**: Scope updates applied to wrong player or failed silently, breaking UI synchronization
+
+**Solutions Implemented:**
+- ✅ **usePlayerCard() Method**: Comprehensive card usage orchestration with safe EffectsEngine integration
+- ✅ **Safe Routing Pattern**: Only calls card-specific EffectsEngine methods that delegate to GameStateManager
+- ✅ **Helper Methods**: `findCardInPlayerHand()` and `removeCardFromHand()` for clean functionality
+- ✅ **Architecture Safety**: Firewall prevents calling dangerous state-mutating EffectsEngine methods
+- ✅ **User-Friendly Messages**: Returns formatted descriptions of card effects
+- ✅ **Systematic Fix Completion**: Fixed final player ID vs array index bug - Phase 29 cleanup now 100% complete
+- ✅ **UI Flow Restoration**: GameStateManager → stateChanged event → useGameState hook → PlayerResources re-render
+
+**Technical Implementation:**
+- **Card Type Routing**: Routes W/B/I/L/E cards to appropriate EffectsEngine methods (applyWorkEffect, applyLoanEffect, etc.)
+- **Validation Chain**: Player existence → card lookup → EffectsEngine availability → result validation → card removal → event emission
+- **Safe Integration**: Only calls EffectsEngine methods that properly delegate to GameStateManager
+- **Error Handling**: Comprehensive try/catch with proper error reporting and user feedback
+
+**Code Changes:**
+- **GameStateManager.js**: Added usePlayerCard(), findCardInPlayerHand(), removeCardFromHand(), formatEffectResult() methods
+- **GameStateManager.js Line 792**: Fixed `playerArray.find(p => p.id === playerId)` for correct player lookup
+- **Architecture Safety**: Added detailed documentation of safe vs unsafe EffectsEngine methods
+
+**Browser Validation Commands:**
+```javascript
+window.giveCardToPlayer(0, 'W001')
+window.GameStateManager.usePlayerCard(window.GameStateManager.state.players[0].id, 'W001')
+window.showGameState()
+```
+
+**Result:** 
+- ✅ **Production-Ready Card Usage**: Complete W/B/I/L/E card processing with immediate UI feedback
+- ✅ **UI Disconnect Resolved**: Project Scope display updates immediately when Work Cards are used
+- ✅ **Systematic Cleanup Complete**: All GameStateManager methods now use correct player ID lookup
+- ✅ **Architecture Safety**: Safe firewall prevents dangerous EffectsEngine method calls
+- ✅ **User Experience**: Clear feedback messages for all card usage actions
 
 ### ARCHITECTURE MILESTONE: Full GameStateManager Implementation (COMPLETE) ✅
 

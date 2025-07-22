@@ -552,6 +552,158 @@ class GameStateManager {
     }
 
     /**
+     * Find card in player's hand by card ID
+     */
+    findCardInPlayerHand(player, cardId) {
+        if (!player || !player.cards) {
+            return null;
+        }
+        
+        // Search through all card types
+        for (const cardType of ['W', 'B', 'I', 'L', 'E']) {
+            if (player.cards[cardType]) {
+                const card = player.cards[cardType].find(c => c.card_id === cardId);
+                if (card) {
+                    return { card, cardType };
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Remove card from player's hand (helper method)
+     */
+    removeCardFromHand(playerId, cardId) {
+        const players = [...this.state.players];
+        const player = players.find(p => p.id === playerId);
+        
+        if (!player) {
+            console.error(`GameStateManager: Player ${playerId} not found for card removal`);
+            return false;
+        }
+        
+        const cardResult = this.findCardInPlayerHand(player, cardId);
+        if (!cardResult) {
+            console.error(`GameStateManager: Card ${cardId} not found in player ${playerId}'s hand`);
+            return false;
+        }
+        
+        const { cardType } = cardResult;
+        const cardIndex = player.cards[cardType].findIndex(c => c.card_id === cardId);
+        
+        if (cardIndex >= 0) {
+            player.cards[cardType].splice(cardIndex, 1);
+            this.setState({ players });
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * ARCHITECTURE SAFETY NOTE:
+     * This method ONLY calls card-specific EffectsEngine methods that 
+     * properly delegate to GameStateManager. It NEVER calls space effect 
+     * methods that perform direct state mutation.
+     * 
+     * Use player card with effects processing through EffectsEngine
+     * Returns user-friendly message for UI feedback
+     */
+    usePlayerCard(playerId, cardId) {
+        try {
+            // 1. Validation & Card Lookup
+            const player = this.state.players.find(p => p.id === playerId);
+            if (!player) {
+                throw new Error(`Player ${playerId} not found`);
+            }
+            
+            const cardResult = this.findCardInPlayerHand(player, cardId);
+            if (!cardResult) {
+                throw new Error(`Card ${cardId} not found in player's hand`);
+            }
+            
+            const { card, cardType } = cardResult;
+            
+            // Ensure EffectsEngine is available
+            if (!window.EffectsEngine) {
+                throw new Error('EffectsEngine not available');
+            }
+            
+            // 2. SAFE ROUTING - Only call card-specific methods that delegate to GameStateManager
+            let result;
+            switch (cardType.toUpperCase()) {
+                case 'W':
+                    result = window.EffectsEngine.applyWorkEffect(card, playerId);
+                    break;
+                case 'B': 
+                    result = window.EffectsEngine.applyLoanEffect(card, playerId);
+                    break;
+                case 'I':
+                    result = window.EffectsEngine.applyInvestmentEffect(card, playerId);
+                    break;
+                case 'L':
+                    result = window.EffectsEngine.applyLifeBalanceEffect(card, playerId);
+                    break;
+                case 'E':
+                    result = window.EffectsEngine.applyEfficiencyEffect(card, playerId);
+                    break;
+                default:
+                    throw new Error(`Unknown card type: ${cardType}`);
+            }
+            
+            // 3. Validate effect result
+            if (!result || !result.success) {
+                throw new Error(result?.reason || 'Card effect failed');
+            }
+            
+            // 4. Remove card from hand & emit events
+            const removed = this.removeCardFromHand(playerId, cardId);
+            if (!removed) {
+                throw new Error('Failed to remove card from hand');
+            }
+            
+            this.emit('cardUsed', { playerId, card, cardType, result });
+            
+            // 5. Return user-friendly message
+            const cardName = card.card_name || `${cardType} Card`;
+            const effectDescription = this.formatEffectResult(result, cardType);
+            
+            this.log(`Successfully used card: ${cardName} for player ${playerId}`);
+            return `Used ${cardName}: ${effectDescription}`;
+            
+        } catch (error) {
+            console.error('Error in usePlayerCard:', error);
+            this.handleError(error, 'usePlayerCard');
+            return `Failed to use card: ${error.message}`;
+        }
+    }
+
+    /**
+     * Format effect result for user-friendly display
+     */
+    formatEffectResult(result, cardType) {
+        switch (result.action) {
+            case 'work_added_to_scope':
+                return `Added $${result.workCost?.toLocaleString()} ${result.workType} to project scope`;
+            case 'loan_amount_added':
+                return `Received $${result.loanAmount?.toLocaleString()} loan`;
+            case 'investment_amount_added':
+                return `Received $${result.investmentAmount?.toLocaleString()} investment`;
+            case 'life_balance_time_adjusted':
+                const timeDesc = result.timeEffect > 0 ? 'Added' : 'Saved';
+                const days = Math.abs(result.timeEffect);
+                const dayLabel = days === 1 ? 'day' : 'days';
+                return `${timeDesc} ${days} ${dayLabel}`;
+            case 'efficiency_effects_applied':
+                return result.effects?.map(e => e.description).join(', ') || 'Applied efficiency effects';
+            default:
+                return result.note || 'Effect applied';
+        }
+    }
+
+    /**
      * UI STATE MANAGEMENT
      */
 
@@ -637,7 +789,7 @@ class GameStateManager {
      */
     updatePlayerScope(playerId, players = null) {
         const playerArray = players || [...this.state.players];
-        const player = playerArray[playerId];
+        const player = playerArray.find(p => p.id === playerId);
         
         if (!player) return;
         
