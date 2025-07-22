@@ -12,7 +12,7 @@ function PlayerStatusPanel({ debugMode = false }) {
         cardsExpanded: true
     });
 
-    const currentPlayer = gameState.players[gameState.currentPlayer];
+    const currentPlayer = gameState.players?.find(p => p.id === gameState.currentPlayer);
     
     // Debug logging for current player
     useEffect(() => {

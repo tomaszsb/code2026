@@ -62,7 +62,7 @@ function ResultsPanel() {
             description,
             type,
             timestamp: Date.now(),
-            playerColor: gameState.players[gameState.currentPlayer]?.color
+            playerColor: gameState.players?.find(p => p.id === gameState.currentPlayer)?.color
         };
 
         setResultsState(prev => ({

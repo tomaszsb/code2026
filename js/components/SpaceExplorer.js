@@ -54,7 +54,7 @@ function SpaceExplorer() {
                 spaceName,
                 spaceData,
                 isValidMove: false,
-                player: gameState.players[gameState.currentPlayer]
+                player: gameState.players?.find(p => p.id === gameState.currentPlayer)
             });
         }
     }, [gameStateManager, gameState.players, gameState.currentPlayer]);

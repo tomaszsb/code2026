@@ -107,7 +107,7 @@ function ActionPanel({ isInUnifiedContainer = false }) {
         }));
     };
 
-    const currentPlayer = gameState.players[gameState.currentPlayer];
+    const currentPlayer = gameState.players?.find(p => p.id === gameState.currentPlayer);
 
     // Listen for game state changes
 

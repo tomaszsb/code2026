@@ -71,8 +71,7 @@ function GameSaveManager({ gameState, gameStateManager, onGameStateUpdate }) {
             timestamp: Date.now(),
             turnCount: gameState.turnCount || 0,
             playerCount: gameState.players ? gameState.players.length : 0,
-            currentPlayer: gameState.players && gameState.players[gameState.currentPlayer] ? 
-                          gameState.players[gameState.currentPlayer].name : 'Unknown'
+            currentPlayer: gameState.players?.find(p => p.id === gameState.currentPlayer)?.name || 'Unknown'
         };
 
         try {

@@ -14,7 +14,7 @@ function GameBoard() {
         visitedSpaces: []
     });
     
-    const currentPlayer = gameState.players[gameState.currentPlayer];
+    const currentPlayer = gameState.players?.find(p => p.id === gameState.currentPlayer);
     
     // Check if panel layout is active
     const isPanelLayoutActive = window.GamePanelLayout && gameState.players && gameState.players.length > 0;
@@ -79,13 +79,13 @@ function GameBoard() {
         }
         
         // Move player
-        gameStateManager.movePlayer(gameState.currentPlayer, spaceName, visitType);
+        gameStateManager.movePlayer(currentPlayer.id, spaceName, visitType);
         
         // Process space effects
         processSpaceEffects(spaceData, currentPlayer);
         
         setSelectedSpace(null);
-    }, [currentPlayer, gameState.currentPlayer, gameStateManager]);
+    }, [currentPlayer, gameStateManager]);
     
     // Process space effects based on CSV data
     const processSpaceEffects = (spaceData, player) => {
