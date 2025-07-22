@@ -165,92 +165,39 @@ function GameInterface({ gameState }) {
         }
     };
     
-    // Move player function
+    // Move player function - REFACTORED to use enhanced GameStateManager
     const movePlayer = (destination) => {
         if (!currentPlayer || !destination) {
             alert('Invalid move');
             return;
         }
         
-        
-        // Apply space effects (draw cards, spend time/money)
-        let updatedPlayer = { ...currentPlayer };
-        let effectMessages = [];
-        
-        // Check for space effects
-        if (window.CSVDatabase?.loaded && window.EffectsEngine) {
-            try {
-                const spaceEffects = window.CSVDatabase.spaceEffects.query({
-                    space: destination,
-                    visitType: 'First'
-                });
-                
-                
-                spaceEffects.forEach(effect => {
-                    if (effect.effect_type === 'e_cards') {
-                        const cardType = effect.card_type || 'W';
-                        const amount = parseInt(effect.effect_value) || 1;
-                        
-                        // Draw cards
-                        if (!updatedPlayer.cards[cardType]) {
-                            updatedPlayer.cards[cardType] = [];
-                        }
-                        
-                        for (let i = 0; i < amount; i++) {
-                            updatedPlayer.cards[cardType].push({
-                                id: Date.now() + i,
-                                type: cardType,
-                                drawnAt: destination
-                            });
-                        }
-                        
-                        effectMessages.push(`Drew ${amount} ${cardType} card(s)`);
-                    }
-                    
-                    if (effect.effect_type === 'e_time') {
-                        const timeSpent = parseInt(effect.effect_value) || 0;
-                        updatedPlayer.timeSpent += timeSpent;
-                        effectMessages.push(`Spent ${timeSpent} days`);
-                    }
-                    
-                    if (effect.effect_type === 'e_money') {
-                        const moneyChange = parseInt(effect.effect_value) || 0;
-                        updatedPlayer.money += moneyChange;
-                        effectMessages.push(moneyChange > 0 ? `Gained $${moneyChange}` : `Spent $${Math.abs(moneyChange)}`);
-                    }
-                });
-            } catch (error) {
-                console.error('Error applying space effects:', error);
-            }
+        try {
+            // Use enhanced GameStateManager for all game logic
+            const allMessages = window.GameStateManager.movePlayerWithEffects(
+                currentPlayer.id, 
+                destination, 
+                'First' // For now, always first visit
+            );
+            
+            // Reset UI state (UI-only concern, stays in FixedApp)
+            setGameUIState({
+                showingDiceResult: false,
+                diceResult: null,
+                availableMoves: [],
+                showingMoves: false
+            });
+            
+            // Show results using messages from GameStateManager
+            const message = allMessages.length > 0 ? 
+                allMessages.join('\n\n') : 
+                `Moved to ${destination}!`;
+            alert(message);
+            
+        } catch (error) {
+            console.error('Error in movePlayer:', error);
+            alert(`Failed to move to ${destination}: ${error.message}`);
         }
-        
-        // Update player position
-        updatedPlayer.position = destination;
-        updatedPlayer.visitType = 'First'; // For now, always first visit
-        
-        const newPlayers = [...gameState.players];
-        newPlayers[gameState.currentPlayer] = updatedPlayer;
-        
-        const newGameState = {
-            ...gameState,
-            players: newPlayers,
-            turnCount: gameState.turnCount + 1
-        };
-        
-        // State updates now handled by GameStateManager automatically
-        
-        // Reset UI state
-        setGameUIState({
-            showingDiceResult: false,
-            diceResult: null,
-            availableMoves: [],
-            showingMoves: false
-        });
-        
-        // Show results
-        const message = `Moved to ${destination}!` + 
-            (effectMessages.length > 0 ? '\n\n' + effectMessages.join('\n') : '');
-        alert(message);
     };
     
     // Test if sophisticated components work with fixed useGameState hook

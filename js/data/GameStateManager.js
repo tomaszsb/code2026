@@ -266,7 +266,7 @@ class GameStateManager {
     /**
      * Move player to new space
      */
-    movePlayer(playerId, spaceName, visitType = 'First') {
+    movePlayer(playerId, spaceName, visitType = 'First', returnMessage = false) {
         const players = [...this.state.players];
         const player = players.find(p => p.id === playerId);
         
@@ -286,12 +286,17 @@ class GameStateManager {
             newPosition: spaceName,
             visitType
         });
+        
+        // NEW: Return user-friendly message if requested
+        if (returnMessage) {
+            return `Moved to ${spaceName}`;
+        }
     }
 
     /**
      * Update player money
      */
-    updatePlayerMoney(playerId, amount, reason = '') {
+    updatePlayerMoney(playerId, amount, reason = '', returnMessage = false) {
         const players = [...this.state.players];
         const player = players.find(p => p.id === playerId);
         
@@ -311,12 +316,21 @@ class GameStateManager {
             change: amount,
             reason
         });
+        
+        // NEW: Return user-friendly message if requested
+        if (returnMessage) {
+            if (amount > 0) {
+                return `Gained $${amount.toLocaleString()}`;
+            } else {
+                return `Spent $${Math.abs(amount).toLocaleString()}`;
+            }
+        }
     }
 
     /**
      * Update player time spent - Explicit immutable implementation
      */
-    updatePlayerTime(playerId, amount, reason = '') {
+    updatePlayerTime(playerId, amount, reason = '', returnMessage = false) {
         const playerIndex = this.state.players.findIndex(p => p.id === playerId);
         
         if (playerIndex === -1) {
@@ -348,12 +362,22 @@ class GameStateManager {
             change: amount,
             reason
         });
+        
+        // NEW: Return user-friendly message if requested
+        if (returnMessage) {
+            const dayLabel = Math.abs(amount) === 1 ? 'day' : 'days';
+            if (amount > 0) {
+                return `Spent ${amount} ${dayLabel}`;
+            } else {
+                return `Saved ${Math.abs(amount)} ${dayLabel}`;
+            }
+        }
     }
 
     /**
      * Add cards to player hand
      */
-    addCardsToPlayer(playerId, cardType, cards) {
+    addCardsToPlayer(playerId, cardType, cards, returnMessage = false) {
         
         const players = [...this.state.players];
         const player = players.find(p => p.id === playerId);
@@ -362,7 +386,6 @@ class GameStateManager {
             console.error(`GameStateManager: Player ${playerId} not found`);
             throw new Error(`Player ${playerId} not found`);
         }
-
 
         // Initialize cards object if it doesn't exist
         if (!player.cards) {
@@ -373,12 +396,15 @@ class GameStateManager {
             player.cards[cardType] = [];
         }
 
-        player.cards[cardType].push(...cards);
+        const cardCount = Array.isArray(cards) ? cards.length : 1;
+        const cardsToAdd = Array.isArray(cards) ? cards : [cards];
+
+        player.cards[cardType].push(...cardsToAdd);
         
         // Apply immediate effects for W, B, I, L cards only
         // E cards remain in hand for player-controlled usage
         if (cardType !== 'E') {
-            cards.forEach(card => {
+            cardsToAdd.forEach(card => {
                 // Process Bank card loan amounts
                 if (card.loan_amount) {
                     const loanAmount = parseInt(card.loan_amount) || 0;
@@ -403,24 +429,30 @@ class GameStateManager {
                     player.timeSpent = (player.timeSpent || 0) + timeEffect;
                 }
             });
-        } else {
         }
         
         // Update player scope if W cards were added
         if (cardType === 'W') {
             this.updatePlayerScope(playerId, players);
         }
-        
 
         this.setState({ players });
         
         this.emit('cardsAddedToPlayer', {
             player,
             cardType,
-            cards,
+            cards: cardsToAdd,
             totalCards: player.cards[cardType].length
         });
         
+        // NEW: Return user-friendly message if requested
+        if (returnMessage) {
+            const cardLabel = cardCount === 1 ? 'card' : 'cards';
+            const cardTypeName = window.CardUtils ? 
+                window.CardUtils.getCardTypeConfig(cardType)?.name || cardType : 
+                cardType;
+            return `Drew ${cardCount} ${cardTypeName} ${cardLabel}`;
+        }
     }
 
     /**
@@ -673,6 +705,232 @@ class GameStateManager {
             if (data) {
             } else {
             }
+        }
+    }
+
+    /**
+     * SPACE EFFECTS PROCESSING (NEW)
+     */
+
+    /**
+     * Get space effects from CSV database for a specific space and visit type
+     */
+    getSpaceEffects(spaceName, visitType = 'First') {
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+            this.log('CSV Database not loaded, no space effects available');
+            return [];
+        }
+
+        try {
+            const effects = window.CSVDatabase.spaceEffects.query({
+                space: spaceName,
+                visitType: visitType
+            });
+            
+            this.log(`Found ${effects.length} space effects for ${spaceName}/${visitType}`);
+            return effects || [];
+        } catch (error) {
+            console.error('Error querying space effects:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Process a single space effect through appropriate GameStateManager method
+     * Returns effect message for UI feedback
+     */
+    processSpaceEffect(playerId, effect) {
+        try {
+            switch (effect.effect_type) {
+                case 'e_cards': {
+                    const cardType = effect.card_type || 'W';
+                    const amount = parseInt(effect.effect_value) || 1;
+                    
+                    // Generate card objects matching FixedApp.js pattern
+                    const cards = [];
+                    for (let i = 0; i < amount; i++) {
+                        cards.push({
+                            id: Date.now() + Math.random(), // Ensure uniqueness
+                            card_id: `generated_${Date.now()}_${i}`,
+                            type: cardType,
+                            drawnAt: effect.space || 'unknown'
+                        });
+                    }
+                    
+                    // Add cards through existing method with message return
+                    return this.addCardsToPlayer(playerId, cardType, cards, true);
+                }
+                
+                case 'e_time': {
+                    const timeAmount = parseInt(effect.effect_value) || 0;
+                    return this.updatePlayerTime(playerId, timeAmount, `Space effect: ${effect.space}`, true);
+                }
+                
+                case 'e_money': {
+                    const moneyAmount = parseInt(effect.effect_value) || 0;
+                    return this.updatePlayerMoney(playerId, moneyAmount, `Space effect: ${effect.space}`, true);
+                }
+                
+                default:
+                    this.log(`Unknown effect type: ${effect.effect_type}`);
+                    return null;
+            }
+        } catch (error) {
+            console.error('Error processing space effect:', error);
+            return `Error applying ${effect.effect_type} effect`;
+        }
+    }
+
+    /**
+     * Process all space effects for a player at a specific space
+     * Returns array of effect messages for UI feedback
+     */
+    processAllSpaceEffects(playerId, spaceName, visitType = 'First') {
+        const effects = this.getSpaceEffects(spaceName, visitType);
+        const effectMessages = [];
+        
+        this.log(`Processing ${effects.length} space effects for player ${playerId} at ${spaceName}`);
+        
+        effects.forEach((effect, index) => {
+            this.log(`Processing effect ${index + 1}:`, effect);
+            
+            const message = this.processSpaceEffect(playerId, effect);
+            if (message) {
+                effectMessages.push(message);
+            }
+        });
+        
+        return effectMessages;
+    }
+
+    /**
+     * INTEGRATED MOVEMENT & EFFECTS (NEW)
+     */
+
+    /**
+     * Move player to new space and apply all associated space effects
+     * This replaces the functionality currently in FixedApp.js movePlayer()
+     * Returns array of all effect messages for UI feedback
+     */
+    movePlayerWithEffects(playerId, destination, visitType = 'First') {
+        // Input validation (matching FixedApp.js validation)
+        const currentPlayer = this.state.players.find(p => p.id === playerId);
+        if (!currentPlayer) {
+            throw new Error(`Player ${playerId} not found`);
+        }
+        
+        if (!destination) {
+            throw new Error('Destination is required');
+        }
+        
+        this.log(`Moving player ${playerId} to ${destination} with effects processing`);
+        
+        const allMessages = [];
+        
+        try {
+            // Step 1: Move the player (this handles position and visitType)
+            const moveMessage = this.movePlayer(playerId, destination, visitType, true);
+            if (moveMessage) {
+                allMessages.push(moveMessage);
+            }
+            
+            // Step 2: Save snapshot for potential negotiation (existing functionality)
+            this.savePlayerSnapshot(playerId);
+            
+            // Step 3: Process all space effects and collect messages
+            const effectMessages = this.processAllSpaceEffects(playerId, destination, visitType);
+            allMessages.push(...effectMessages);
+            
+            // Step 4: Emit integrated movement event for other components
+            this.emit('playerMovedWithEffects', {
+                playerId,
+                destination,
+                visitType,
+                effects: effectMessages,
+                allMessages
+            });
+            
+            this.log(`Successfully moved player ${playerId} to ${destination}. Applied ${effectMessages.length} effects.`);
+            
+            return allMessages;
+            
+        } catch (error) {
+            console.error('Error in movePlayerWithEffects:', error);
+            this.handleError(error, 'movePlayerWithEffects');
+            throw error;
+        }
+    }
+
+    /**
+     * Move player based on dice roll (common pattern in game)
+     * Handles getting available moves and applying effects
+     */
+    movePlayerWithDiceEffects(playerId, diceRoll) {
+        try {
+            // Get available moves using existing MovementEngine integration
+            const movementEngine = window.movementEngine || 
+                (window.MovementEngine?.getInstance && window.MovementEngine.getInstance());
+                
+            if (!movementEngine) {
+                throw new Error('MovementEngine not available');
+            }
+            
+            const currentPlayer = this.state.players.find(p => p.id === playerId);
+            if (!currentPlayer) {
+                throw new Error(`Player ${playerId} not found`);
+            }
+            
+            const availableMoves = movementEngine.getAvailableMoves(currentPlayer);
+            
+            if (!availableMoves || availableMoves.length === 0) {
+                throw new Error('No available moves found');
+            }
+            
+            // For now, take first available move (can be enhanced later for choice handling)
+            const destination = availableMoves[0].destination || availableMoves[0];
+            const visitType = availableMoves[0].visitType || 'First';
+            
+            // Use the main orchestration method
+            return this.movePlayerWithEffects(playerId, destination, visitType);
+            
+        } catch (error) {
+            console.error('Error in movePlayerWithDiceEffects:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Complete player turn with movement and effects, then advance turn
+     * Matches the full turn cycle from FixedApp.js
+     */
+    completePlayerTurnWithEffects(playerId, destination, visitType = 'First') {
+        try {
+            // Execute movement and effects
+            const messages = this.movePlayerWithEffects(playerId, destination, visitType);
+            
+            // Advance turn count (matching FixedApp.js behavior)
+            this.setState({
+                turnCount: this.state.turnCount + 1,
+                lastAction: `Player moved to ${destination}`
+            });
+            
+            // Emit turn completion event
+            this.emit('turnCompletedWithEffects', {
+                playerId,
+                destination,
+                visitType,
+                messages,
+                newTurnCount: this.state.turnCount
+            });
+            
+            return {
+                messages,
+                newTurnCount: this.state.turnCount
+            };
+            
+        } catch (error) {
+            console.error('Error in completePlayerTurnWithEffects:', error);
+            throw error;
         }
     }
 
