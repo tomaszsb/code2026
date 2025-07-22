@@ -180,6 +180,7 @@ class GameStateManager {
         const newGameState = {
             ...this.getInitialState(),
             gamePhase: 'PLAYING', // Transition from SETUP to PLAYING
+            currentPlayer: players[0]?.id || 0, // CRITICAL FIX: Use first player's actual ID
             players: players.map((playerData, index) => ({
                 id: playerData.id || index,
                 name: typeof playerData === 'string' ? playerData : playerData.name,
@@ -631,26 +632,29 @@ class GameStateManager {
                 throw new Error('EffectsEngine not available');
             }
             
-            // 2. SAFE ROUTING - Only call card-specific methods that delegate to GameStateManager
+            // 2. SAFE ROUTING - Route by actual card mechanic from immediate_effect column
             let result;
-            switch (cardType.toUpperCase()) {
-                case 'W':
+            switch (card.immediate_effect) {
+                case 'Apply Work':
                     result = window.EffectsEngine.applyWorkEffect(card, playerId);
                     break;
-                case 'B': 
+                case 'Apply Loan':
                     result = window.EffectsEngine.applyLoanEffect(card, playerId);
                     break;
-                case 'I':
+                case 'Apply Investment':
                     result = window.EffectsEngine.applyInvestmentEffect(card, playerId);
                     break;
-                case 'L':
+                case 'Apply Life Balance':
                     result = window.EffectsEngine.applyLifeBalanceEffect(card, playerId);
                     break;
-                case 'E':
+                case 'Apply Efficiency':
                     result = window.EffectsEngine.applyEfficiencyEffect(card, playerId);
                     break;
+                case 'Apply Card':
+                    result = window.EffectsEngine.applyCardEffect(card, playerId);
+                    break;
                 default:
-                    throw new Error(`Unknown card type: ${cardType}`);
+                    throw new Error(`Unknown immediate effect: ${card.immediate_effect}`);
             }
             
             // 3. Validate effect result
@@ -785,7 +789,90 @@ class GameStateManager {
      */
 
     /**
-     * Update player scope based on W cards
+     * Add work to player scope (additive, not recalculated)
+     */
+    addWorkToPlayerScope(playerId, workCost, workType, returnMessage = false) {
+        const players = [...this.state.players];
+        const player = players.find(p => p.id === playerId);
+        
+        if (!player) {
+            throw new Error(`Player ${playerId} not found`);
+        }
+        
+        // Initialize scope tracking if needed
+        if (!player.scopeItems) player.scopeItems = [];
+        if (!player.scopeTotalCost) player.scopeTotalCost = 0;
+        
+        // Add new work to existing scope
+        const existingItem = player.scopeItems.find(item => item.workType === workType);
+        if (existingItem) {
+            existingItem.cost += workCost;
+            existingItem.count += 1;
+        } else {
+            player.scopeItems.push({
+                workType: workType,
+                cost: workCost,
+                count: 1
+            });
+        }
+        
+        player.scopeTotalCost += workCost;
+        
+        this.setState({ players });
+        this.emit('playerScopeChanged', { player, workCost, workType });
+        
+        if (returnMessage) {
+            return `Added $${workCost.toLocaleString()} ${workType} to project scope`;
+        }
+        
+        return {
+            success: true,
+            action: 'work_added_to_scope',
+            workCost: workCost,
+            workType: workType,
+            newScopeTotal: player.scopeTotalCost
+        };
+    }
+
+    /**
+     * Force player to discard cards
+     */
+    forcePlayerDiscard(playerId, cardCount, cardTypeFilter = null) {
+        const players = [...this.state.players];
+        const player = players.find(p => p.id === playerId);
+        
+        if (!player || !player.cards) {
+            throw new Error(`Player ${playerId} not found or has no cards`);
+        }
+        
+        const discardedCards = [];
+        let remainingToDiscard = cardCount;
+        
+        // Get eligible cards for discard
+        const cardTypes = cardTypeFilter ? [cardTypeFilter] : ['W', 'B', 'I', 'L', 'E'];
+        
+        for (const cardType of cardTypes) {
+            const cards = player.cards[cardType] || [];
+            const toDiscard = Math.min(remainingToDiscard, cards.length);
+            
+            if (toDiscard > 0) {
+                const discarded = cards.splice(0, toDiscard);
+                discardedCards.push(...discarded);
+                remainingToDiscard -= toDiscard;
+            }
+            
+            if (remainingToDiscard === 0) break;
+        }
+        
+        this.setState({ players });
+        this.emit('playerCardsDiscarded', { player, discardedCards, cardTypeFilter });
+        
+        const filterText = cardTypeFilter ? ` ${cardTypeFilter}` : '';
+        return `Discarded ${discardedCards.length}${filterText} cards`;
+    }
+
+    /**
+     * Update player scope based on W cards (legacy method for compatibility)
      */
     updatePlayerScope(playerId, players = null) {
         const playerArray = players || [...this.state.players];

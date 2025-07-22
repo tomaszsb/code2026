@@ -428,8 +428,9 @@ class EffectsEngine {
         }
 
         try {
-            // Call existing updatePlayerScope method
-            window.GameStateManager.updatePlayerScope(playerId);
+            // Call new addWorkToPlayerScope method with extracted values
+            const workType = card.work_type_restriction || 'General Construction';
+            const result = window.GameStateManager.addWorkToPlayerScope(playerId, workCost, workType);
             
             this.log(`Successfully applied work effect: Added $${workCost} work cost to player ${playerId} scope`);
             
@@ -439,7 +440,8 @@ class EffectsEngine {
                 workCost: workCost,
                 cardId: card.card_id,
                 cardName: card.card_name,
-                workType: card.work_type_restriction || 'General Construction'
+                workType: workType,
+                newScopeTotal: result.newScopeTotal
             };
             
         } catch (error) {
@@ -480,8 +482,9 @@ class EffectsEngine {
         }
 
         try {
-            // Call existing updatePlayerMoney method
-            window.GameStateManager.updatePlayerMoney(playerId, loanAmount, `Bank loan: ${card.card_name}`);
+            // Call existing updatePlayerMoney method with extracted values
+            const reason = `Bank loan: ${card.card_name}`;
+            const message = window.GameStateManager.updatePlayerMoney(playerId, loanAmount, reason, true);
             
             this.log(`Successfully applied loan effect: Added $${loanAmount} to player ${playerId} from loan`);
             
@@ -491,7 +494,8 @@ class EffectsEngine {
                 loanAmount: loanAmount,
                 cardId: card.card_id,
                 cardName: card.card_name,
-                loanRate: card.loan_rate || 'N/A'
+                loanRate: card.loan_rate || 'N/A',
+                message: message
             };
             
         } catch (error) {
@@ -532,8 +536,9 @@ class EffectsEngine {
         }
 
         try {
-            // Call existing updatePlayerMoney method
-            window.GameStateManager.updatePlayerMoney(playerId, investmentAmount, `Investment: ${card.card_name}`);
+            // Call existing updatePlayerMoney method with extracted values
+            const reason = `Investment: ${card.card_name}`;
+            const message = window.GameStateManager.updatePlayerMoney(playerId, investmentAmount, reason, true);
             
             this.log(`Successfully applied investment effect: Added $${investmentAmount} to player ${playerId} from investment`);
             
@@ -542,7 +547,8 @@ class EffectsEngine {
                 action: 'investment_amount_added',
                 investmentAmount: investmentAmount,
                 cardId: card.card_id,
-                cardName: card.card_name
+                cardName: card.card_name,
+                message: message
             };
             
         } catch (error) {
@@ -583,8 +589,9 @@ class EffectsEngine {
         }
 
         try {
-            // Call existing updatePlayerTime method
-            window.GameStateManager.updatePlayerTime(playerId, timeEffect, `Life balance: ${card.card_name}`);
+            // Call existing updatePlayerTime method with extracted values
+            const reason = `Life balance: ${card.card_name}`;
+            const message = window.GameStateManager.updatePlayerTime(playerId, timeEffect, reason, true);
             
             this.log(`Successfully applied life balance effect: ${timeEffect > 0 ? 'Added' : 'Saved'} ${Math.abs(timeEffect)} days for player ${playerId}`);
             
@@ -593,7 +600,8 @@ class EffectsEngine {
                 action: 'life_balance_time_adjusted',
                 timeEffect: timeEffect,
                 cardId: card.card_id,
-                cardName: card.card_name
+                cardName: card.card_name,
+                message: message
             };
             
         } catch (error) {
@@ -632,11 +640,13 @@ class EffectsEngine {
             // Check for time effect
             const timeEffect = parseInt(card.time_effect) || 0;
             if (timeEffect !== 0) {
-                window.GameStateManager.updatePlayerTime(playerId, timeEffect, `Efficiency: ${card.card_name}`);
+                const timeReason = `Efficiency: ${card.card_name}`;
+                const timeMessage = window.GameStateManager.updatePlayerTime(playerId, timeEffect, timeReason, true);
                 results.push({
                     type: 'time',
                     value: timeEffect,
-                    description: `${timeEffect > 0 ? 'Added' : 'Saved'} ${Math.abs(timeEffect)} days`
+                    description: `${timeEffect > 0 ? 'Added' : 'Saved'} ${Math.abs(timeEffect)} days`,
+                    message: timeMessage
                 });
                 hasEffects = true;
                 this.log(`Applied time effect: ${timeEffect} days for player ${playerId}`);
@@ -645,11 +655,13 @@ class EffectsEngine {
             // Check for money effect
             const moneyEffect = parseInt(card.money_effect) || 0;
             if (moneyEffect !== 0) {
-                window.GameStateManager.updatePlayerMoney(playerId, moneyEffect, `Efficiency: ${card.card_name}`);
+                const moneyReason = `Efficiency: ${card.card_name}`;
+                const moneyMessage = window.GameStateManager.updatePlayerMoney(playerId, moneyEffect, moneyReason, true);
                 results.push({
                     type: 'money',
                     value: moneyEffect,
-                    description: `${moneyEffect > 0 ? 'Gained' : 'Spent'} $${Math.abs(moneyEffect)}`
+                    description: `${moneyEffect > 0 ? 'Gained' : 'Spent'} $${Math.abs(moneyEffect)}`,
+                    message: moneyMessage
                 });
                 hasEffects = true;
                 this.log(`Applied money effect: $${moneyEffect} for player ${playerId}`);
@@ -672,6 +684,74 @@ class EffectsEngine {
             
         } catch (error) {
             this.log(`Error applying efficiency effect: ${error.message}`);
+            return { success: false, reason: error.message };
+        }
+    }
+
+    /**
+     * Apply card effect to player - Handles time effects and forced discards
+     */
+    applyCardEffect(card, playerId) {
+        this.log(`Applying card effect for card ${card.card_id} to player ${playerId}`);
+        
+        // Validate inputs
+        if (!card) {
+            this.log('Error: No card provided to applyCardEffect');
+            return { success: false, reason: 'No card provided' };
+        }
+        
+        if (!playerId) {
+            this.log('Error: No playerId provided to applyCardEffect');
+            return { success: false, reason: 'No playerId provided' };
+        }
+
+        // Ensure GameStateManager is available
+        if (!window.GameStateManager) {
+            this.log('Error: GameStateManager not available for card effect');
+            return { success: false, reason: 'GameStateManager not available' };
+        }
+
+        const results = [];
+        let hasEffects = false;
+
+        try {
+            // Handle time effects
+            const timeEffect = parseInt(card.time_effect) || 0;
+            if (timeEffect !== 0) {
+                const timeReason = `Card effect: ${card.card_name}`;
+                const timeMessage = window.GameStateManager.updatePlayerTime(playerId, timeEffect, timeReason, true);
+                results.push(timeMessage);
+                hasEffects = true;
+                this.log(`Applied time effect: ${timeEffect} days for player ${playerId}`);
+            }
+            
+            // Handle forced discards
+            const discardCount = parseInt(card.discard_cards) || 0;
+            if (discardCount > 0) {
+                const cardTypeFilter = card.card_type_filter || null; // e.g., 'E' for Expeditor cards
+                const discardMessage = window.GameStateManager.forcePlayerDiscard(playerId, discardCount, cardTypeFilter);
+                results.push(discardMessage);
+                hasEffects = true;
+                this.log(`Forced discard: ${discardCount} cards for player ${playerId}`);
+            }
+
+            if (!hasEffects) {
+                this.log(`Warning: Card ${card.card_id} has no time_effect or discard_cards values`);
+                return { success: false, reason: 'No effects in card' };
+            }
+
+            this.log(`Successfully applied card effects for player ${playerId}: ${results.length} effects processed`);
+            
+            return {
+                success: true,
+                action: 'card_effects_applied',
+                effects: results,
+                cardId: card.card_id,
+                cardName: card.card_name
+            };
+            
+        } catch (error) {
+            this.log(`Error applying card effect: ${error.message}`);
             return { success: false, reason: error.message };
         }
     }
