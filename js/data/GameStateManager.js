@@ -15,6 +15,9 @@ class GameStateManager {
         this.listeners = new Map();
         this.debug = false;
         this.eventHistory = [];
+        
+        // Event listeners
+        this.on('turnEnded', (event) => this.endTurn(event.playerId));
     }
 
     /**
@@ -236,6 +239,32 @@ class GameStateManager {
         });
 
         this.emit('turnStarted', { player, turnCount: this.state.turnCount, fromNegotiation });
+    }
+
+    /**
+     * End current turn and advance to next player
+     */
+    endTurn(playerId) {
+        const player = this.state.players.find(p => p.id === playerId);
+        if (!player) {
+            throw new Error(`Player ${playerId} not found`);
+        }
+
+        // Find next player
+        const currentIndex = this.state.players.findIndex(p => p.id === playerId);
+        const nextIndex = (currentIndex + 1) % this.state.players.length;
+        const nextPlayer = this.state.players[nextIndex];
+
+        this.setState({
+            currentPlayer: nextPlayer.id,
+            lastAction: `${player.name} ended their turn`
+        });
+
+        this.emit('turnAdvanced', { 
+            previousPlayer: player, 
+            currentPlayer: nextPlayer,
+            turnCount: this.state.turnCount 
+        });
     }
 
     /**

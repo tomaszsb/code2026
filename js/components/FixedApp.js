@@ -76,9 +76,22 @@ function GameInterface({ gameState }) {
         selectedSpaceData: null
     });
     
+    // Turn control state for End Turn button functionality
+    const [turnControlState, setTurnControlState] = useState({
+        canEndTurn: false,
+        completedActions: 0,
+        requiredActions: 0,
+        diceRequired: false,
+        hasRolled: false,
+        selectedMove: null,
+        availableCardActions: [],
+        originalCardActionCount: 0,
+        availableMoves: []
+    });
     
-    // Get current player
-    const currentPlayer = gameState.players?.[gameState.currentPlayer];
+    
+    // Get current player by ID lookup
+    const currentPlayer = gameState.players?.find(p => p.id === gameState.currentPlayer);
     
     // Listen for space selection events to show modal
     React.useEffect(() => {
@@ -223,14 +236,14 @@ function GameInterface({ gameState }) {
                 }
             },
                 React.createElement('h3', null, '👤 Player Status'),
-                gameState.players?.[0] ? [
-                    React.createElement('div', { key: 'name' }, React.createElement('strong', null, gameState.players[0].name)),
-                    React.createElement('div', { key: 'money' }, `💰 Money: $${gameState.players[0].money?.toLocaleString() || 0}`),
-                    React.createElement('div', { key: 'time' }, `⏰ Time: ${gameState.players[0].timeSpent || 0} days`),
-                    React.createElement('div', { key: 'position' }, `📍 Position: ${gameState.players[0].position || 'Unknown'}`),
+                currentPlayer ? [
+                    React.createElement('div', { key: 'name' }, React.createElement('strong', null, currentPlayer.name)),
+                    React.createElement('div', { key: 'money' }, `💰 Money: $${currentPlayer.money?.toLocaleString() || 0}`),
+                    React.createElement('div', { key: 'time' }, `⏰ Time: ${currentPlayer.timeSpent || 0} days`),
+                    React.createElement('div', { key: 'position' }, `📍 Position: ${currentPlayer.position || 'Unknown'}`),
                     React.createElement('div', { key: 'turn' }, `🔄 Turn: ${gameState.turnCount + 1}`),
                     React.createElement('div', { key: 'cards-header', style: { marginTop: '15px', fontWeight: 'bold' } }, '🃏 Cards'),
-                    ...Object.entries(gameState.players[0].cards || {}).map(([cardType, cards]) => 
+                    ...Object.entries(currentPlayer.cards || {}).map(([cardType, cards]) => 
                         React.createElement('div', { 
                             key: `card-type-${cardType}`,
                             style: { fontSize: '14px', margin: '2px 0' }
@@ -264,10 +277,10 @@ function GameInterface({ gameState }) {
                         }
                     },
                         React.createElement('h3', { style: { margin: '0 0 10px 0', color: '#1976d2' } }, 
-                            gameState.players?.[0]?.position || 'OWNER-SCOPE-INITIATION'
+                            currentPlayer?.position || 'OWNER-SCOPE-INITIATION'
                         ),
                         React.createElement('p', { style: { margin: '0', color: '#666' } }, 
-                            `${gameState.players?.[0]?.visitType || 'First'} Visit`
+                            `${currentPlayer?.visitType || 'First'} Visit`
                         )
                     ),
                     // Dice result display
@@ -421,7 +434,17 @@ function GameInterface({ gameState }) {
                     key: 'turn-controls-bottom',
                     currentPlayer: currentPlayer,
                     gameStateManager: window.GameStateManager,
-                    debugMode: debugMode
+                    debugMode: debugMode,
+                    canEndTurn: turnControlState.canEndTurn,
+                    completedActions: turnControlState.completedActions,
+                    requiredActions: turnControlState.requiredActions,
+                    diceRequired: turnControlState.diceRequired,
+                    hasRolled: turnControlState.hasRolled,
+                    selectedMove: turnControlState.selectedMove,
+                    availableCardActions: turnControlState.availableCardActions,
+                    originalCardActionCount: turnControlState.originalCardActionCount,
+                    availableMoves: turnControlState.availableMoves,
+                    onTurnControlsStateChange: setTurnControlState
                 }) :
                 React.createElement('div', { key: 'controls-loading', className: 'panel-placeholder' }, 'Turn Controls Loading...')
         ),
