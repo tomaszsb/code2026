@@ -12,32 +12,33 @@ function GameManager() {
     
     // Initialize EffectsEngine once when component mounts
     React.useEffect(() => {
-        if (!effectsEngineRef.current) {
-            // Get the singleton EffectsEngine instance
-            effectsEngineRef.current = window.EffectsEngine;
-            
-            if (effectsEngineRef.current) {
-                // Initialize with CSV database when available
-                if (window.CSVDatabase && window.CSVDatabase.loaded) {
-                    effectsEngineRef.current.initialize(window.CSVDatabase);
-                    console.log('✅ GameManager: EffectsEngine successfully initialized and connected to CSVDatabase');
+        const initializeEffectsEngine = async () => {
+            if (!effectsEngineRef.current) {
+                effectsEngineRef.current = window.EffectsEngine;
+
+                if (effectsEngineRef.current) {
+                    if (window.CSVDatabase && window.CSVDatabase.loaded) {
+                        effectsEngineRef.current.initialize(window.CSVDatabase);
+                        console.log('✅ GameManager: EffectsEngine successfully initialized and connected to CSVDatabase');
+                    } else {
+                        await new Promise(resolve => {
+                            const interval = setInterval(() => {
+                                if (window.CSVDatabase && window.CSVDatabase.loaded) {
+                                    effectsEngineRef.current.initialize(window.CSVDatabase);
+                                    console.log('✅ GameManager: EffectsEngine successfully initialized and connected to CSVDatabase (delayed)');
+                                    clearInterval(interval);
+                                    resolve();
+                                }
+                            }, 100);
+                        });
+                    }
                 } else {
-                    // Wait for CSV database to load
-                    const waitForDatabase = setInterval(() => {
-                        if (window.CSVDatabase && window.CSVDatabase.loaded) {
-                            effectsEngineRef.current.initialize(window.CSVDatabase);
-                            console.log('✅ GameManager: EffectsEngine successfully initialized and connected to CSVDatabase (delayed)');
-                            clearInterval(waitForDatabase);
-                        }
-                    }, 100);
-                    
-                    // Cleanup interval if component unmounts
-                    return () => clearInterval(waitForDatabase);
+                    console.error('❌ GameManager: EffectsEngine not available on window object');
                 }
-            } else {
-                console.error('❌ GameManager: EffectsEngine not available on window object');
             }
-        }
+        };
+
+        initializeEffectsEngine();
     }, []);
     
     // Utility function to get EffectsEngine instance
@@ -52,91 +53,40 @@ function GameManager() {
         }
     }, [effectsEngineRef.current]);
     
-    // Handle fallback space effects processing (when MovementEngine not available)
-    useEventListener('processSpaceEffectsFallback', ({ playerId, spaceData }) => {
-        try {
-            processSpaceEffects(playerId, spaceData);
-        } catch (error) {
-            gameStateManager.handleError(error, 'Space Effects Fallback');
-        }
-    });
+    const handleEvent = (handler, eventName) => {
+        return (event) => {
+            try {
+                handler(event);
+            } catch (error) {
+                console.error(`Error in ${eventName} event handler:`, error);
+                gameStateManager.handleError(error, eventName);
+            }
+        };
+    };
+
+    useEventListener('processSpaceEffects', handleEvent(processSpaceEffects, 'processSpaceEffects'));
+    useEventListener('movePlayerToSpace', handleEvent(({ playerId, destination, visitType }) => {
+        return gameStateManager.movePlayerWithEffects(playerId, destination, visitType || 'First');
+    }, 'movePlayerToSpace'));
+    useEventListener('processDiceOutcome', handleEvent(processDiceOutcome, 'processDiceOutcome'));
+    useEventListener('processCardAction', handleEvent(processCardAction, 'processCardAction'));
+    useEventListener('executeCardReplacement', handleEvent(executeCardReplacement, 'executeCardReplacement'));
+    useEventListener('clearCardsAddedThisTurn', handleEvent(() => {
+        // Obsolete feature - no longer needed in centralized architecture
+        console.log('clearCardsAddedThisTurn: Feature obsolete in new architecture');
+    }, 'clearCardsAddedThisTurn'));
     
-    // Handle movement to space requests
-    useEventListener('movePlayerToSpace', ({ playerId, destination, visitType }) => {
-        try {
-            gameStateManager.emit('movePlayerRequest', {
-                playerId,
-                spaceName: destination,
-                visitType: visitType || 'First'
-            });
-        } catch (error) {
-            gameStateManager.handleError(error, 'Move Player To Space');
-        }
-    });
+    useEventListener('useCard', handleEvent(({ playerId, cardId }) => {
+        return gameStateManager.usePlayerCard(playerId, cardId);
+    }, 'useCard'));
     
-    // Handle dice outcome processing
-    useEventListener('processDiceOutcome', ({ playerId, outcome, cardType, spaceName, visitType }) => {
-        try {
-            processDiceOutcome(playerId, outcome, cardType, spaceName, visitType);
-        } catch (error) {
-            gameStateManager.handleError(error, 'Dice Outcome Processing');
-        }
-    });
+    useEventListener('timeChanged', handleEvent(({ playerId, amount, source }) => {
+        return gameStateManager.updatePlayerTime(playerId, amount, source || 'game_event', true);
+    }, 'timeChanged'));
     
-    // Handle card actions
-    useEventListener('processCardAction', ({ playerId, cardType, action }) => {
-        try {
-            processCardAction(playerId, cardType, action);
-        } catch (error) {
-            gameStateManager.handleError(error, 'Card Action');
-        }
-    });
-    
-    // Handle card replacement execution
-    useEventListener('executeCardReplacement', ({ playerId, cardType, cardIndices }) => {
-        try {
-            executeCardReplacement(playerId, cardType, cardIndices);
-        } catch (error) {
-            gameStateManager.handleError(error, 'Card Replacement');
-        }
-    });
-    
-    // Handle clearing cards added during turn (for negotiation)
-    useEventListener('clearCardsAddedThisTurn', ({ playerId }) => {
-        try {
-            gameStateManager.clearCardsAddedThisTurn(playerId);
-        } catch (error) {
-            gameStateManager.handleError(error, 'Clear Cards');
-        }
-    });
-    
-    // Handle using cards from hand
-    useEventListener('useCard', ({ playerId, cardType, cardId, card }) => {
-        try {
-            gameStateManager.useCard(playerId, cardType, cardId, card);
-        } catch (error) {
-            gameStateManager.handleError(error, 'Use Card');
-        }
-    });
-    
-    // Handle time changes (for negotiation penalties, etc.)
-    useEventListener('timeChanged', ({ playerId, amount, source }) => {
-        try {
-            gameStateManager.updatePlayerTime(playerId, amount, source);
-        } catch (error) {
-            console.error('GameManager: Error in timeChanged handler:', error);
-            gameStateManager.handleError(error, 'Time Change');
-        }
-    });
-    
-    // Handle money changes (for E-card costs and other money effects)
-    useEventListener('moneyChanged', ({ playerId, amount, source }) => {
-        try {
-            gameStateManager.updatePlayerMoney(playerId, amount, source);
-        } catch (error) {
-            gameStateManager.handleError(error, 'Money Change');
-        }
-    });
+    useEventListener('moneyChanged', handleEvent(({ playerId, amount, source }) => {
+        return gameStateManager.updatePlayerMoney(playerId, amount, source || 'game_event', true);
+    }, 'moneyChanged'));
     
     
     /**

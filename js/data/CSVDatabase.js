@@ -35,6 +35,14 @@ class CSVDatabase {
     async loadAll() {
         this.loadStartTime = Date.now();
         try {
+            if (this.loadFromCache()) {
+                this.loaded = true;
+                const loadTime = Date.now() - this.loadStartTime;
+                this.log(`All CSV data loaded from cache in ${loadTime}ms`);
+                this.logDataSummary();
+                return;
+            }
+
             // Load clean architecture files
             await Promise.all([
                 this.loadMovement(),
@@ -50,11 +58,43 @@ class CSVDatabase {
             const loadTime = Date.now() - this.loadStartTime;
             this.log(`All CSV data loaded successfully in ${loadTime}ms`);
             this.logDataSummary();
+            this.saveToCache();
             
         } catch (error) {
             console.error('CSV loading failed:', error);
             throw error;
         }
+    }
+
+    saveToCache() {
+        try {
+            const cacheData = {
+                timestamp: Date.now(),
+                data: this.data
+            };
+            localStorage.setItem('csvCache', JSON.stringify(cacheData));
+            this.log('CSV data saved to cache.');
+        } catch (error) {
+            console.error('Failed to save CSV data to cache:', error);
+        }
+    }
+
+    loadFromCache() {
+        try {
+            const cachedData = localStorage.getItem('csvCache');
+            if (cachedData) {
+                const { timestamp, data } = JSON.parse(cachedData);
+                // Cache for 1 hour
+                if (Date.now() - timestamp < 3600000) {
+                    this.data = data;
+                    this.log('CSV data loaded from cache.');
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load CSV data from cache:', error);
+        }
+        return false;
     }
 
     /**

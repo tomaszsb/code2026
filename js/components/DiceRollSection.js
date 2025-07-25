@@ -173,6 +173,20 @@ function DiceRollSection({
                 rollValue: diceValue
             });
 
+            // Emit standardized player action taken event
+            gameStateManager.emit('playerActionTaken', {
+                playerId: currentPlayer.id,
+                actionType: 'dice',
+                actionData: {
+                    rollValue: diceValue,
+                    effects: diceOutcomeResult,
+                    outcome: formattedOutcome
+                },
+                timestamp: Date.now(),
+                spaceName: currentPlayer.position,
+                visitType: currentPlayer.visitType || 'First'
+            });
+
         } catch (error) {
             console.error('Error rolling dice:', error);
             onDiceRoll({ rolling: false });

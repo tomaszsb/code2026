@@ -36,6 +36,20 @@ function CardActionsSection({
             cardType,
             action
         });
+
+        // Emit standardized player action taken event
+        gameStateManager.emit('playerActionTaken', {
+            playerId: currentPlayer.id,
+            actionType: 'card',
+            actionData: {
+                cardType: cardType,
+                action: action,
+                source: 'available_card_action'
+            },
+            timestamp: Date.now(),
+            spaceName: currentPlayer.position,
+            visitType: currentPlayer.visitType || 'First'
+        });
         
         // Remove this action from available actions and track completion
         const newAvailableActions = availableCardActions.filter(

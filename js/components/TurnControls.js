@@ -1,90 +1,26 @@
 /**
- * TurnControls - Turn management and validation interface
- * Handles end turn, negotiate, action counting, and turn validation
+ * TurnControls - Pure presentation component for turn management
+ * Displays turn state from GameStateManager and handles turn actions
  */
 
 function TurnControls({ 
     currentPlayer,
     gameStateManager,
-    canEndTurn,
-    completedActions,
-    requiredActions,
-    diceRequired,
-    hasRolled,
-    selectedMove,
-    availableCardActions,
-    originalCardActionCount,
-    availableMoves,
-    onTurnControlsStateChange,
     onShowRulesModal,
     debugMode = false
 }) {
-    const { useState, useEffect } = React;
+    const { useState } = React;
     
-    // Get singleton MovementEngine instance for visit type determination
+    // Get game state directly from GameStateManager
+    const [gameState] = window.useGameState();
+    const { currentTurn } = gameState;
+    
+    // Get singleton MovementEngine instance for turn actions
     const [movementEngine] = useState(() => {
         const engine = window.MovementEngine.getInstance();
         engine.initialize(gameStateManager);
         return engine;
     });
-
-    // Listen for turn started events to reset state
-    useEventListener('turnStarted', ({ player, turnNumber }) => {
-        if (player.id === currentPlayer?.id && onTurnControlsStateChange) {
-            onTurnControlsStateChange({
-                turnPhase: 'MOVING',
-                actionsCompleted: [],
-                hasMoved: false,
-                canEndTurn: false
-            });
-        }
-    });
-
-    // Listen for space action completed events
-    useEventListener('spaceActionCompleted', ({ playerId }) => {
-        if (playerId === currentPlayer?.id) {
-            if (onTurnControlsStateChange) {
-                onTurnControlsStateChange({
-                    actionsCompleted: ['space_action'] // Add to existing array
-                });
-            }
-            setTimeout(() => checkCanEndTurn(), 100);
-        }
-    });
-
-    // Check if turn can end based on completed actions
-    const checkCanEndTurn = () => {
-        if (!currentPlayer) return;
-
-        // Calculate required vs completed actions
-        let requiredActionsCount = 0;
-        let completedActionsCount = 0;
-
-        // Count required actions
-        if (diceRequired) requiredActionsCount++;
-        if (originalCardActionCount > 0) requiredActionsCount++; // Card actions count as 1 total action
-        if (availableMoves && availableMoves.length > 1) requiredActionsCount++; // Only count movement if multiple choices
-
-        // Count completed actions
-        if (diceRequired && hasRolled) completedActionsCount++;
-        
-        // Card actions completed - any card action counts as 1 completed action
-        const cardActionsCompleted = originalCardActionCount - (availableCardActions ? availableCardActions.length : 0);
-        if (cardActionsCompleted > 0) completedActionsCount++; // Any card action completion counts as 1
-        
-        if (selectedMove && availableMoves && availableMoves.length > 1) completedActionsCount++; // Only count movement if choice was required
-
-        const canEnd = completedActionsCount >= requiredActionsCount;
-
-        if (onTurnControlsStateChange) {
-            onTurnControlsStateChange({
-                requiredActions: requiredActionsCount,
-                completedActions: completedActionsCount,
-                canEndTurn: canEnd
-            });
-        }
-
-    };
 
     // Check if negotiate button should be enabled and get reason if disabled
     const getNegotiateStatus = () => {
@@ -124,9 +60,12 @@ function TurnControls({
             return { enabled: true, reason: `Fixed time: ${timeValue} days` };
         }
 
-        // If time depends on dice roll, enable after dice rolled
+        // For dice-based time effects, check if dice action was completed
         if (useDice || timeValue === 'dice') {
-            if (hasRolled) {
+            const diceCompleted = currentTurn.requiredActions.some(action => 
+                action.type === 'dice' && action.completed
+            );
+            if (diceCompleted) {
                 return { enabled: true, reason: `Dice rolled, time determined` };
             } else {
                 return { enabled: false, reason: `Waiting for dice roll to determine time` };
@@ -143,12 +82,10 @@ function TurnControls({
 
     // Handle negotiate action
     const handleNegotiate = () => {
-        
         if (!currentPlayer) {
             console.error('TurnControls: No current player found for negotiation');
             return;
         }
-
 
         // Restore player state to space entry snapshot and apply time penalty
         if (currentPlayer.spaceEntrySnapshot) {
@@ -166,13 +103,11 @@ function TurnControls({
             
             const timePenalty = timeEffects.length > 0 ? parseInt(timeEffects[0].effect_value) || 1 : 1;
             
-            
             gameStateManager.emit('timeChanged', {
                 playerId: currentPlayer.id,
                 amount: timePenalty,
                 source: 'negotiation_penalty'
             });
-            
         }
 
         // Show message about negotiation
@@ -181,33 +116,6 @@ function TurnControls({
             message: 'Negotiation Used',
             description: 'Player state restored to space entry. Time penalty applied.'
         });
-
-
-        // Reset all turn state
-        if (onTurnControlsStateChange) {
-            onTurnControlsStateChange({
-                selectedMove: null,
-                showMoveDetails: false,
-                showNegotiate: false,
-                negotiationOptions: [],
-                hasRolled: false,
-                rolling: false,
-                diceRequired: false,
-                showDiceRoll: false,
-                diceRollValue: null,
-                diceOutcome: null,
-                pendingAction: null,
-                availableCardActions: [],
-                originalCardActionCount: 0,
-                showCardActions: false,
-                actionsCompleted: [],
-                hasMoved: false,
-                canEndTurn: false,
-                requiredActions: 0,
-                completedActions: 0
-            });
-        }
-
 
         // Immediately trigger action rediscovery before ending turn
         setTimeout(() => {
@@ -223,7 +131,7 @@ function TurnControls({
                 playerId: currentPlayer.id,
                 source: 'negotiation'
             });
-        }, 100); // Reduced delay and immediate action rediscovery
+        }, 100);
     };
 
     // Handle end turn action
@@ -251,44 +159,58 @@ function TurnControls({
             }
         }
         
-        // Execute selected move if one is selected
-        if (selectedMove) {
+        // Check if there's a selected move that needs to be executed
+        const movementAction = currentTurn.requiredActions.find(action => action.type === 'movement');
+        if (movementAction && !movementAction.completed && movementAction.moves) {
+            // For now, automatically select the first available move if there's only one
+            // In a full implementation, this would be handled by a movement selection UI
+            const selectedMove = movementAction.moves.length === 1 ? movementAction.moves[0] : null;
             
-            // Determine correct visit type using MovementEngine
-            const visitType = movementEngine.getVisitType(currentPlayer, selectedMove);
-            
-            // Execute the move (GameManager will handle position update and emit playerMoved)
-            gameStateManager.emit('movePlayerRequest', {
-                playerId: currentPlayer.id,
-                spaceName: selectedMove,
-                visitType: visitType
-            });
+            if (selectedMove) {
+                // Determine correct visit type using MovementEngine
+                const visitType = movementEngine.getVisitType(currentPlayer, selectedMove);
+                
+                // Execute the move directly through GameStateManager
+                try {
+                    const allMessages = gameStateManager.movePlayerWithEffects(
+                        currentPlayer.id, 
+                        selectedMove, 
+                        visitType
+                    );
+                    
+                    // Emit standardized player action taken event
+                    gameStateManager.emit('playerActionTaken', {
+                        playerId: currentPlayer.id,
+                        actionType: 'movement',
+                        actionData: {
+                            destination: selectedMove,
+                            visitType: visitType,
+                            movementMessages: allMessages
+                        },
+                        timestamp: Date.now(),
+                        spaceName: currentPlayer.position,
+                        visitType: currentPlayer.visitType || 'First'
+                    });
+                    
+                } catch (error) {
+                    console.error('Error executing player movement:', error);
+                    gameStateManager.handleError(error, 'Player Movement from TurnControls');
+                }
+            }
         }
         
         gameStateManager.emit('turnEnded', {
             playerId: currentPlayer.id
         });
-
-        // Reset turn-specific state
-        if (onTurnControlsStateChange) {
-            onTurnControlsStateChange({
-                selectedMove: null,
-                showMoveDetails: false,
-                diceRequired: false,
-                hasRolled: false,
-                pendingAction: null
-            });
-        }
     };
-
-    // Update turn validation when props change
-    useEffect(() => {
-        checkCanEndTurn();
-    }, [diceRequired, hasRolled, selectedMove, availableCardActions, originalCardActionCount, availableMoves]);
 
     if (!currentPlayer) {
         return null;
     }
+
+    // Extract current turn data with safe defaults
+    const actionCounts = currentTurn?.actionCounts || { required: 0, completed: 0 };
+    const canEndTurn = currentTurn?.canEndTurn || false;
 
     return React.createElement('div', {
         key: 'turn-controls',
@@ -307,7 +229,7 @@ function TurnControls({
             React.createElement('div', {
                 key: 'progress-text',
                 className: 'progress-text'
-            }, `Actions: ${completedActions || 0}/${requiredActions || 0}`)
+            }, `Actions: ${actionCounts.completed}/${actionCounts.required}`)
         ]),
 
         // Control Buttons
@@ -326,8 +248,8 @@ function TurnControls({
                 className: `btn ${canEndTurn ? 'btn--success' : 'btn--secondary is-disabled'} end-turn-button`,
                 onClick: handleEndTurn,
                 disabled: !canEndTurn,
-                title: canEndTurn ? 'End your turn' : `Complete ${requiredActions - completedActions} more action(s) to end turn`
-            }, `End Turn (${completedActions}/${requiredActions})`),
+                title: canEndTurn ? 'End your turn' : `Complete ${actionCounts.required - actionCounts.completed} more action(s) to end turn`
+            }, `End Turn (${actionCounts.completed}/${actionCounts.required})`),
 
             React.createElement('button', {
                 key: 'negotiate',
@@ -368,10 +290,10 @@ function TurnControls({
                 key: 'debug-content',
                 className: 'debug-content'
             }, [
-                React.createElement('div', { key: 'dice' }, `Dice Required: ${diceRequired}, Has Rolled: ${hasRolled}`),
-                React.createElement('div', { key: 'cards' }, `Card Actions: ${originalCardActionCount - (availableCardActions ? availableCardActions.length : 0)}/${originalCardActionCount}`),
-                React.createElement('div', { key: 'movement' }, `Selected Move: ${selectedMove || 'None'}`),
-                React.createElement('div', { key: 'can-end' }, `Can End Turn: ${canEndTurn}`)
+                React.createElement('div', { key: 'actions' }, `Actions: ${actionCounts.completed}/${actionCounts.required}`),
+                React.createElement('div', { key: 'can-end' }, `Can End Turn: ${canEndTurn}`),
+                React.createElement('div', { key: 'turn-phase' }, `Turn Phase: ${currentTurn?.phase || 'Unknown'}`),
+                React.createElement('div', { key: 'required-actions' }, `Required Actions: ${JSON.stringify(currentTurn?.requiredActions || [])}`)
             ])
         ])
     ]);

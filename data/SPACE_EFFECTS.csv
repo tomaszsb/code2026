@@ -12,10 +12,10 @@ OWNER-FUND-INITIATION,Subsequent,time,1,always,
 OWNER-FUND-INITIATION,Subsequent,b_cards,1,scope_le_4M,
 OWNER-FUND-INITIATION,Subsequent,b_cards,1,scope_gt_4M,
 PM-DECISION-CHECK,First,time,5,always,
-PM-DECISION-CHECK,First,l_cards,1,roll_1,
+PM-DECISION-CHECK,First,l_cards,1,roll_1,true
 PM-DECISION-CHECK,First,e_cards,1,replace,
 PM-DECISION-CHECK,Subsequent,time,5,always,
-PM-DECISION-CHECK,Subsequent,l_cards,1,roll_2,
+PM-DECISION-CHECK,Subsequent,l_cards,1,roll_2,true
 PM-DECISION-CHECK,Subsequent,e_cards,-1,to_right_player,
 LEND-SCOPE-CHECK,First,time,5,always,
 LEND-SCOPE-CHECK,First,l_cards,dice,always,true

@@ -65,8 +65,8 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
 }
 
 // Game interface component - Using actual game components
-function GameInterface({ gameState }) {
-    const { useState } = React;
+const GameInterface = React.memo(({ gameState }) => {
+    const { useState, useEffect } = React;
     const [gameUIState, setGameUIState] = useState({
         showingDiceResult: false,
         diceResult: null,
@@ -76,40 +76,10 @@ function GameInterface({ gameState }) {
         selectedSpaceData: null
     });
     
-    // Turn control state for End Turn button functionality
-    const [turnControlState, setTurnControlState] = useState({
-        canEndTurn: false,
-        completedActions: 0,
-        requiredActions: 0,
-        diceRequired: false,
-        hasRolled: false,
-        selectedMove: null,
-        availableCardActions: [],
-        originalCardActionCount: 0,
-        availableMoves: []
-    });
     
     
     // Get current player by ID lookup
     const currentPlayer = gameState.players?.find(p => p.id === gameState.currentPlayer);
-    
-    // Listen for space selection events to show modal
-    React.useEffect(() => {
-        const handleSpaceSelected = (data) => {
-            setGameUIState(prev => ({
-                ...prev,
-                showSpaceExplorer: true,
-                selectedSpaceData: data
-            }));
-        };
-        
-        if (window.GameStateManager) {
-            window.GameStateManager.on('spaceSelected', handleSpaceSelected);
-            return () => {
-                window.GameStateManager.off('spaceSelected', handleSpaceSelected);
-            };
-        }
-    }, []);
     
     // Close space explorer modal
     const closeSpaceExplorer = () => {
@@ -120,62 +90,69 @@ function GameInterface({ gameState }) {
         }));
     };
     
-    // Listen for Escape key to close modal
-    React.useEffect(() => {
+    useEffect(() => {
+        const handleSpaceSelected = (data) => {
+            setGameUIState(prev => ({
+                ...prev,
+                showSpaceExplorer: true,
+                selectedSpaceData: data
+            }));
+        };
+
         const handleKeyDown = (event) => {
             if (event.key === 'Escape' && gameUIState.showSpaceExplorer) {
                 closeSpaceExplorer();
             }
         };
-        
+
+        if (window.GameStateManager) {
+            window.GameStateManager.on('spaceSelected', handleSpaceSelected);
+        }
+
         if (gameUIState.showSpaceExplorer) {
             document.addEventListener('keydown', handleKeyDown);
-            return () => {
-                document.removeEventListener('keydown', handleKeyDown);
-            };
         }
+
+        return () => {
+            if (window.GameStateManager) {
+                window.GameStateManager.off('spaceSelected', handleSpaceSelected);
+            }
+            if (gameUIState.showSpaceExplorer) {
+                document.removeEventListener('keydown', handleKeyDown);
+            }
+        };
     }, [gameUIState.showSpaceExplorer]);
     
     // Roll dice function
+    const setDiceResult = (diceResult, moves) => {
+        setGameUIState(prev => ({
+            ...prev,
+            showingDiceResult: true,
+            diceResult: diceResult,
+            availableMoves: moves || [],
+            showingMoves: (moves && moves.length > 0)
+        }));
+    };
+
     const rollDice = () => {
-        
         if (!window.CSVDatabase?.loaded) {
             alert('Game data not loaded yet');
             return;
         }
-        
+
         const diceResult = Math.floor(Math.random() * 6) + 1;
-        
-        // Get available moves using MovementEngine instance
         const movementEngine = window.movementEngine || (window.MovementEngine?.getInstance && window.MovementEngine.getInstance());
+        let moves = window.gameConfig.fallbackMoves || [];
+
         if (movementEngine && currentPlayer) {
             try {
-                const moves = movementEngine.getAvailableMoves(currentPlayer);
-                
-                setGameUIState({
-                    showingDiceResult: true,
-                    diceResult: diceResult,
-                    availableMoves: moves || [],
-                    showingMoves: (moves && moves.length > 0)
-                });
-                
+                moves = movementEngine.getAvailableMoves(currentPlayer);
             } catch (error) {
                 console.error('Error getting moves:', error);
-                setGameUIState({
-                    showingDiceResult: true,
-                    diceResult: diceResult,
-                    availableMoves: ['OWNER-FUND-INITIATION'], // Hardcoded fallback
-                    showingMoves: true
-                });
             }
-        } else {
-            setGameUIState({
-                showingDiceResult: true,
-                diceResult: diceResult,
-                availableMoves: ['OWNER-FUND-INITIATION'], // Hardcoded fallback
-                showingMoves: true
-            });
         }
+        
+        setDiceResult(diceResult, moves);
     };
     
     // Move player function - REFACTORED to use enhanced GameStateManager
@@ -434,17 +411,7 @@ function GameInterface({ gameState }) {
                     key: 'turn-controls-bottom',
                     currentPlayer: currentPlayer,
                     gameStateManager: window.GameStateManager,
-                    debugMode: debugMode,
-                    canEndTurn: turnControlState.canEndTurn,
-                    completedActions: turnControlState.completedActions,
-                    requiredActions: turnControlState.requiredActions,
-                    diceRequired: turnControlState.diceRequired,
-                    hasRolled: turnControlState.hasRolled,
-                    selectedMove: turnControlState.selectedMove,
-                    availableCardActions: turnControlState.availableCardActions,
-                    originalCardActionCount: turnControlState.originalCardActionCount,
-                    availableMoves: turnControlState.availableMoves,
-                    onTurnControlsStateChange: setTurnControlState
+                    debugMode: debugMode
                 }) :
                 React.createElement('div', { key: 'controls-loading', className: 'panel-placeholder' }, 'Turn Controls Loading...')
         ),
@@ -530,15 +497,15 @@ function GameInterface({ gameState }) {
                 show: true
             }) : null
     );
-}
+});
 
 // Simple player setup component that works with the fixed app
-function FixedPlayerSetup({ onInitializeGame }) {
+const FixedPlayerSetup = React.memo(({ onInitializeGame }) => {
     const { useState } = React;
     const [players, setPlayers] = useState([
-        { 
-            id: 1, 
-            name: 'Player 1', 
+        {
+            id: 1,
+            name: 'Player 1',
             color: '#007bff',
             avatar: '👤',
             money: 0
@@ -593,7 +560,7 @@ function FixedPlayerSetup({ onInitializeGame }) {
                             setPlayers(newPlayers);
                         },
                         style: { 
-                            flex: 1, 
+                            flex: 1,
                             padding: '8px',
                             border: '1px solid #ccc',
                             borderRadius: '4px'
@@ -628,7 +595,7 @@ function FixedPlayerSetup({ onInitializeGame }) {
             )
         )
     );
-}
+});
 
 // Error boundary component
 class ErrorBoundary extends React.Component {

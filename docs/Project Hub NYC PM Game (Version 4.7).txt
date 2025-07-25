@@ -1,0 +1,85 @@
+Project Hub NYC PM Game (Version 4.7)
+Last Updated: July 22, 2025
+1. Project Charter & Vision
+1.1. Game Concept: A 27-space digital board game simulating the 6 major phases of an NYC construction project. Players navigate the board making decisions that impact their Time, Money, and Scope.
+1.2. Player Role & Goal: The player is a project manager whose primary objective is to complete a project by navigating all 6 phases. Success is measured by efficiency in managing Time, Money, and Scope.
+1.3. Core Mechanics & Rules: The game operates on dice-based movement, resource management, and a strategic card system. Key rules are based on real-world principles like sequential regulatory processes.
+1.4. Win & Loss Conditions: The primary win condition is reaching the FINISH space. A leaderboard ranks players based on final metrics.
+1.5. The "Vibe": A strategic puzzle under mounting pressure, evolving from optimistic and thoughtful to tense and complex.
+2. Current Project State
+2.1. Implemented Features
+NEW (v4.6): "End Turn" Button Logic FIXED. Repaired the two-part bug preventing turn advancement. This involved implementing turn-action state management in the FixedApp component and adding the endTurn event handler and method to the GameStateManager.
+(v4.3): Card Effect System & Game Initialization FIXED.
+(v4.0): System-Wide Player Lookup Refactor (Core logic complete).
+2.2. Known Issues & Master "Punch List"
+NEW: Player Movement Bug - After a successful dice roll, the player's token does not move to the selected space on the board. The turn ends, but the player's position is not updated in the game state. The breakdown is likely in the communication between TurnControls.js and GameStateManager.js.
+Environmental Bug (Workaround Found): The browser console enters a loop when the "Enter" key is used. The current workaround is to use the browser's "Snippets" tool for testing.
+RESOLVED: Lingering Technical Debt - UI Component Refactor.
+3. Project Assets
+Repository: https://github.com/tomaszsb/code2026
+Final Commit of Session: 7d89b27
+Tech: React (CDN), JavaScript (ES6 Modules), CSS, Papa Parse.
+Run locally: python3 -m http.server 8000
+4. Workflow & Session Management
+4.1. Mutual Synchronization Protocol (v3.1)
+PM Update: The human Project Manager provides the latest version of the Project Hub document.
+AI Update Query: The AI partner is explicitly asked to check for any independent updates or changes (e.g., via git log) that occurred since the last session.
+Reconciliation: Both parties review any discrepancies. If the AI has new information, it is discussed and merged into the Project Hub to create a reconciled baseline.
+Confirmation: The AI partner confirms the final, reconciled Project Hub as the official baseline for the session.
+4.2. Session Conclusion Protocol (v4.0)
+Work Completion Confirmation: The Owner and AI PM confirm that the session's primary objective has been met.
+AI Programmer Internal Docs Update: The AI Programmer is instructed to update its own internal documentation (CLAUDE.md, etc.) to reflect the work completed.
+Final Commit & Push: The AI Programmer commits all changes (code and internal documentation) and pushes them to the main branch.
+Confirmation & Final Report: The AI Programmer confirms the successful push, provides the commit hash, and reports any issues.
+AI PM Documentation Update: After a successful push, the AI PM generates the new, complete Project Hub document.
+Final Ingestion & Adjournment: The AI Programmer ingests the final Project Hub to conclude the session.
+4.3. Owner-to-PM Instruction Protocol (v4.5)
+Phase 1: Planning (Owner Command: "Propose a plan"): This command instructs the AI PM to analyze a situation and generate a human-readable, strategic plan.
+Phase 2: Execution (Owner Command: "Generate the prompt"): Once a plan is approved, this command instructs the AI PM to translate the plan into a separate, machine-optimized prompt for the AI Programmer.
+5. Team Roles & Responsibilities (v3.2)
+5.1. The Owner (Your Role): The project's visionary and final decision-maker.
+5.2. The AI Project Manager (My Role): The Translator and Strategist.
+5.3. The AI Programmer (Claude's Role): The hands-on technical expert.
+6. Document Management Directive
+At the end of every successful work session, I must provide a new, complete, and updated version of this entire Project Hub document.
+7. Active Development Plan
+Objective: Address the "Player Movement Bug" noted in the Punch List (Section 2.2).
+Status: PENDING.
+Next Action: Instruct the AI Programmer to investigate why the player's token is not moving on the board after a dice roll and move selection.
+8. Version Log
+v4.7 (July 22, 2025): Process Improvement: Explicit Documentation Audit. Corrected the Session Conclusion Protocol prompt to mandate a full audit of all .md files, removing ambiguity that led to incomplete documentation updates. This was codified in a new Core Principle (9.27).
+v4.6 (July 22, 2025): End Turn Logic Fixed, Movement Bug Identified. Successfully repaired the multi-part "End Turn" button bug by adding state management to FixedApp and the endTurn event handler to GameStateManager. Live testing of this fix revealed a new, critical bug where player movement is not processed. Logged the new bug and formally concluded the session to secure the completed work.
+v4.5 (July 22, 2025): Process Improvement & Bug Fix Kick-off. Formalized a two-phase Owner-to-PM instruction protocol ("Propose a plan" -> "Generate the prompt").
+v4.4 (July 22, 2025): Session End & Final Audit. Formally documented the remaining technical debt identified by the AI post-commit.
+v4.3 (July 22, 2025): Card Effects & Initialization FIXED. The game is now fully functional.
+v4.2 (July 22, 2025): New Issue Logged - Data Inconsistency.
+v4.1 (July 22, 2025): Process Improvement: AI-Optimized Prompts.
+v4.0 (July 22, 2025): Major Refactor Complete.
+9. Core Principles & Lessons Learned
+9.1. Lesson: Start with a complete, single-file document that defines the project's vision, state, and rules.
+9.2. Lesson: The AI Project Manager must protect the Owner from raw code.
+9.3. Lesson: A Master "Punch List" is essential for tracking known issues and technical debt.
+9.4. Lesson: The AI must be explicitly instructed to check for existing code before creating new assets.
+9.5. Lesson: The AI can and will hallucinate file paths and code structures.
+9.6. Lesson: The AI must be explicitly instructed to provide complete, a production-ready code.
+9.7. Lesson: A phased approach (Analyze > Plan > Code) prevents wasted effort.
+9.8. Lesson: Always ask the AI to "search for and update" all relevant code.
+9.9. Lesson: Treat every session as if the AI has amnesia. Provide the full context every time.
+9.10. Lesson: Use versioning for the guiding document itself.
+9.11. Lesson: Formally define team roles and responsibilities.
+9.12. Lesson: Use a "diff" format in prompts to show desired changes clearly.
+9.13. Lesson: Establish and follow a strict session startup protocol.
+9.14. (v3.1): Synchronization Must Be Mutual, Not Directive. A startup protocol that only pushes information one way is brittle.
+9.15. (v3.2): The Translator Must Serve the Visionary. Requests to the Owner should be strategic ("Do we approve this plan?"), never technical ("Do you want to see this code?").
+9.16. (v4.0): Commit Code First, Document Second. The Project Hub must reflect the ground truth of the committed code.
+9.17. (v4.0): The Definition of Done Includes All Documentation. A task is not complete until the code is written and all relevant project documentation is updated.
+9.18. (v4.0): A Task's "Blast Radius" Includes All Documentation. Task completion must include an audit of all documentation files that might have become stale.
+9.19. (v4.1): Prompts Must Be Optimized for the Recipient AI. Prompts must be structured for machine clarity and token efficiency, not human conversation.
+9.20. (v4.3): Trust, but Verify with Live Tests. An AI Programmer's report of "working as designed" can be incorrect. A live test by the Owner is the ultimate source of truth.
+9.21. (v4.3): Acknowledge a Deeper Problem. When a simple fix seems insufficient, it's crucial to pause and authorize deeper investigation.
+9.22. (v4.3): AI Can Go Off-Script. An AI Programmer may sometimes interpret documentation as a new set of instructions.
+9.23. (v4.5): The PM's Plan vs. The Programmer's Prompt. The "plan" shown to the Owner for approval should be human-readable. The final "prompt" delivered to the AI Programmer must be a separate, machine-optimized artifact.
+9.24. (v4.5): The AI PM's Prime Directive - Audit Thyself. The AI PM must first internally verify that a proposed action complies with all established Roles and Core Principles.
+9.25. (v4.5): Collaboration is Between AIs. The detailed, iterative collaboration should occur between the AI Project Manager and the AI Programmer.
+9.26. (v4.6): Functional Verification Over Component Verification. A bug fix is not complete until the entire user-facing workflow it belongs to is verified.
+9.27. NEW (v4.7): Prompts Must Command, Not Suggest. Vague instructions like "update relevant files" are ineffective. Prompts directed at an AI Programmer must be algorithmic and explicit. Instead of suggesting an outcome, they must command a specific, verifiable action (e.g., "Conduct a full audit of every .md file").

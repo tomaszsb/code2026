@@ -18,6 +18,7 @@ class GameStateManager {
         
         // Event listeners
         this.on('turnEnded', (event) => this.endTurn(event.playerId));
+        this.on('playerActionTaken', (event) => this.handlePlayerAction(event));
     }
 
     /**
@@ -29,6 +30,19 @@ class GameStateManager {
             currentPlayer: 0,
             turnCount: 0,
             players: [],
+            currentTurn: {
+                playerId: null,
+                turnNumber: 0,
+                phase: 'SETUP', // 'SETUP', 'ACTIONS', 'COMPLETED'
+                requiredActions: [],
+                completedActions: [],
+                actionCounts: {
+                    required: 0,
+                    completed: 0
+                },
+                canEndTurn: false,
+                lastActionTimestamp: null
+            },
             gameSettings: {
                 maxPlayers: 4,
                 winCondition: 'TIME_AND_MONEY',
@@ -220,6 +234,10 @@ class GameStateManager {
         // Add small delay to ensure React can process the state change
         setTimeout(() => {
             this.emit('gameInitialized', this.getState());
+            // Initialize turn actions for the first player
+            this.initializeTurnActions(players[0]?.id || 0);
+            // Emit gameReady event for TurnControls initialization
+            this.emit('gameReady', { gameState: this.getState() });
         }, 0);
     }
 
@@ -239,6 +257,9 @@ class GameStateManager {
         });
 
         this.emit('turnStarted', { player, turnCount: this.state.turnCount, fromNegotiation });
+        
+        // Initialize turn actions for the current player
+        this.initializeTurnActions(playerId);
     }
 
     /**
@@ -265,6 +286,9 @@ class GameStateManager {
             currentPlayer: nextPlayer,
             turnCount: this.state.turnCount 
         });
+
+        // Initialize turn actions for the new current player
+        this.initializeTurnActions(nextPlayer.id);
     }
 
     /**
@@ -698,6 +722,21 @@ class GameStateManager {
             }
             
             this.emit('cardUsed', { playerId, card, cardType, result });
+            
+            // Emit standardized player action taken event
+            this.emit('playerActionTaken', {
+                playerId: playerId,
+                actionType: 'card',
+                actionData: {
+                    cardId: cardId,
+                    cardType: cardType,
+                    cardName: card.card_name || `${cardType} Card`,
+                    effectResult: result
+                },
+                timestamp: Date.now(),
+                spaceName: this.state.players.find(p => p.id === playerId)?.position,
+                visitType: this.state.players.find(p => p.id === playerId)?.visitType || 'First'
+            });
             
             // 5. Return user-friendly message
             const cardName = card.card_name || `${cardType} Card`;
@@ -1199,6 +1238,194 @@ class GameStateManager {
         } catch (error) {
             console.error('Error in completePlayerTurnWithEffects:', error);
             throw error;
+        }
+    }
+
+    /**
+     * Initialize turn actions for a player based on their current space
+     */
+    initializeTurnActions(playerId) {
+        const player = this.state.players.find(p => p.id === playerId);
+        if (!player) {
+            console.error(`GameStateManager: Player ${playerId} not found for turn initialization`);
+            return;
+        }
+
+        // Check if CSVDatabase is loaded
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+            console.warn('GameStateManager: CSVDatabase not loaded, using minimal turn initialization');
+            this.setState({
+                currentTurn: {
+                    playerId: playerId,
+                    turnNumber: this.state.turnCount,
+                    phase: 'ACTIONS',
+                    requiredActions: [],
+                    completedActions: [],
+                    actionCounts: {
+                        required: 0,
+                        completed: 0
+                    },
+                    canEndTurn: true,
+                    lastActionTimestamp: Date.now()
+                }
+            });
+            return;
+        }
+
+        const requiredActions = [];
+        let requiredCount = 0;
+
+        try {
+            // Check if space requires dice roll
+            if (window.ComponentUtils && window.ComponentUtils.requiresDiceRoll) {
+                const diceRequired = window.ComponentUtils.requiresDiceRoll(
+                    player.position, 
+                    player.visitType || 'First'
+                );
+                if (diceRequired) {
+                    requiredActions.push({ type: 'dice', required: true, completed: false });
+                    requiredCount++;
+                }
+            }
+
+            // Check for available card actions
+            if (window.ComponentUtils && window.ComponentUtils.getCardTypes) {
+                const cardTypes = window.ComponentUtils.getCardTypes(
+                    player.position, 
+                    player.visitType || 'First'
+                );
+                if (cardTypes && cardTypes.length > 0) {
+                    requiredActions.push({ type: 'card', required: true, completed: false, cardTypes });
+                    requiredCount++;
+                }
+            }
+
+            // Check for movement choices (using MovementEngine if available)
+            if (window.MovementEngine) {
+                const movementEngine = window.MovementEngine.getInstance();
+                if (movementEngine) {
+                    const availableMoves = movementEngine.getAvailableMoves(player);
+                    if (availableMoves && availableMoves.length > 1) {
+                        requiredActions.push({ type: 'movement', required: true, completed: false, moves: availableMoves });
+                        requiredCount++;
+                    }
+                }
+            }
+
+        } catch (error) {
+            console.error('Error analyzing space requirements:', error);
+        }
+
+        // Update current turn state
+        this.setState({
+            currentTurn: {
+                playerId: playerId,
+                turnNumber: this.state.turnCount,
+                phase: 'ACTIONS',
+                requiredActions: requiredActions,
+                completedActions: [],
+                actionCounts: {
+                    required: requiredCount,
+                    completed: 0
+                },
+                canEndTurn: requiredCount === 0,
+                lastActionTimestamp: Date.now()
+            }
+        });
+
+        // Emit turn initialization event
+        this.emit('turnActionsInitialized', {
+            playerId: playerId,
+            requiredActions: requiredActions,
+            actionCounts: {
+                required: requiredCount,
+                completed: 0
+            },
+            canEndTurn: requiredCount === 0
+        });
+    }
+
+    /**
+     * Process a completed player action
+     */
+    processPlayerAction(actionData) {
+        const { playerId, actionType, actionDetails } = actionData;
+        
+        if (this.state.currentTurn.playerId !== playerId) {
+            console.warn(`GameStateManager: Action from ${playerId} but current turn is ${this.state.currentTurn.playerId}`);
+            return;
+        }
+
+        // Find the required action and mark it completed
+        const requiredActions = [...this.state.currentTurn.requiredActions];
+        const actionIndex = requiredActions.findIndex(action => 
+            action.type === actionType && !action.completed
+        );
+
+        if (actionIndex === -1) {
+            console.warn(`GameStateManager: Action type ${actionType} not required or already completed`);
+            return;
+        }
+
+        // Mark action as completed
+        requiredActions[actionIndex].completed = true;
+        requiredActions[actionIndex].completedAt = Date.now();
+        requiredActions[actionIndex].details = actionDetails;
+
+        // Add to completed actions log
+        const completedActions = [...this.state.currentTurn.completedActions];
+        completedActions.push({
+            type: actionType,
+            details: actionDetails,
+            timestamp: Date.now()
+        });
+
+        // Recalculate counts
+        const completedCount = requiredActions.filter(action => action.completed).length;
+        const requiredCount = requiredActions.length;
+        const canEndTurn = completedCount >= requiredCount;
+
+        // Update state
+        this.setState({
+            currentTurn: {
+                ...this.state.currentTurn,
+                requiredActions: requiredActions,
+                completedActions: completedActions,
+                actionCounts: {
+                    required: requiredCount,
+                    completed: completedCount
+                },
+                canEndTurn: canEndTurn,
+                lastActionTimestamp: Date.now()
+            }
+        });
+
+        // Emit action completion event
+        this.emit('actionCompleted', {
+            playerId: playerId,
+            actionType: actionType,
+            actionDetails: actionDetails,
+            actionCounts: {
+                required: requiredCount,
+                completed: completedCount
+            },
+            canEndTurn: canEndTurn
+        });
+    }
+
+    /**
+     * Handle player action taken events
+     */
+    handlePlayerAction(eventData) {
+        try {
+            this.processPlayerAction({
+                playerId: eventData.playerId,
+                actionType: eventData.actionType,
+                actionDetails: eventData.actionData
+            });
+        } catch (error) {
+            console.error('GameStateManager: Error handling player action:', error);
+            this.handleError(error, 'Player Action Processing');
         }
     }
 
