@@ -10,18 +10,29 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
     const [gameState, gameStateManager] = window.useGameState();
     
     
-    // Initialize game function - now uses GameStateManager directly
-    const initializeGame = (players, settings = {}) => {
-        if (gameStateManager) {
-            gameStateManager.initializeGame(players, settings);
-        }
-    };
-    
-    // Initialize systems only once
-    useEffect(() => {
-        window.FixedGameInitializer = { initializeGame };
+    // Initialize game function - STABILIZED with useCallback
+    const initializeGame = React.useCallback((players, settings = {}) => {
+        console.log('🚀 initializeGame called with players:', players);
+        console.log('🔍 gameStateManager availability:', gameStateManager ? 'AVAILABLE' : 'NULL/UNDEFINED');
         
-        // Initialize MovementEngine once
+        if (gameStateManager) {
+            console.log('✅ Calling gameStateManager.initializeGame...');
+            gameStateManager.initializeGame(players, settings);
+            console.log('✅ gameStateManager.initializeGame completed');
+        } else {
+            console.error('❌ GameStateManager not available - cannot initialize game');
+            alert('Game initialization failed: GameStateManager not ready. Please try again.');
+        }
+    }, [gameStateManager]);
+    
+    // Initialize systems - OPTIMIZED to prevent dependency loops
+    useEffect(() => {
+        // Only set global reference if gameStateManager is available
+        if (gameStateManager) {
+            window.FixedGameInitializer = { initializeGame };
+        }
+        
+        // Initialize MovementEngine once when gameStateManager becomes available
         if (gameStateManager && window.MovementEngine) {
             try {
                 const movementEngine = window.movementEngine || (window.MovementEngine?.getInstance && window.MovementEngine.getInstance());
@@ -32,7 +43,7 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
                 console.error('Error initializing MovementEngine:', error);
             }
         }
-    }, []); // Run only once
+    }, [gameStateManager]); // Only depend on gameStateManager, not initializeGame
     
     // Handle errors
     if (error) {
@@ -46,10 +57,23 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
     
     // Handle loading
     if (!loaded) {
-        return React.createElement(LoadingScreen);
+        return React.createElement('div', { className: 'loading-screen' }, 'Loading game data...');
+    }
+    
+    // Handle gameStateManager not available yet
+    if (!gameStateManager) {
+        return React.createElement('div', { className: 'loading-screen' }, 'Loading game system...');
     }
     
     const showPlayerSetup = gameState.gamePhase === 'SETUP' || gameState.players.length === 0;
+    
+    // Debug current game state
+    console.log('🎮 FixedApp render - Current gameState:', {
+        gamePhase: gameState.gamePhase,
+        playersLength: gameState.players?.length || 0,
+        showPlayerSetup: showPlayerSetup,
+        gameStateManager: gameStateManager ? 'AVAILABLE' : 'NULL'
+    });
     
     
     // Main application
@@ -58,16 +82,19 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
             showPlayerSetup 
                 ? React.createElement(FixedPlayerSetup, { onInitializeGame: initializeGame })
                 : React.createElement(GameInterface, { 
-                    gameState: gameState
+                    gameState: gameState,
+                    gameStateManager: gameStateManager
                 })
         )
     );
 }
 
 // Game interface component - Using actual game components
-const GameInterface = React.memo(({ gameState }) => {
-    const { useState, useEffect } = React;
-    const [gameUIState, setGameUIState] = useState({
+const GameInterface = React.memo(({ gameState, gameStateManager }) => {
+    const { useState, useEffect, useRef } = React;
+    
+    // STABILIZED UI STATE - Use useRef for non-reactive state to prevent re-renders
+    const gameUIStateRef = useRef({
         showingDiceResult: false,
         diceResult: null,
         availableMoves: [],
@@ -76,63 +103,71 @@ const GameInterface = React.memo(({ gameState }) => {
         selectedSpaceData: null
     });
     
+    // Only use useState for state that actually needs to trigger re-renders
+    const [forceRender, setForceRender] = useState(0);
+    
+    // Helper to update UI state and trigger re-render only when needed - STABILIZED
+    const updateGameUIState = React.useCallback((updater) => {
+        const currentState = gameUIStateRef.current;
+        const newState = typeof updater === 'function' ? updater(currentState) : updater;
+        gameUIStateRef.current = { ...currentState, ...newState };
+        setForceRender(prev => prev + 1);
+    }, []); // Empty dependency array since it only uses refs and setters
+    
     
     
     // Get current player by ID lookup
     const currentPlayer = gameState.players?.find(p => p.id === gameState.currentPlayer);
     
-    // Close space explorer modal
-    const closeSpaceExplorer = () => {
-        setGameUIState(prev => ({
-            ...prev,
+    // Close space explorer modal - STABILIZED
+    const closeSpaceExplorer = React.useCallback(() => {
+        updateGameUIState({
             showSpaceExplorer: false,
             selectedSpaceData: null
-        }));
-    };
+        });
+    }, [updateGameUIState]);
     
     useEffect(() => {
         const handleSpaceSelected = (data) => {
-            setGameUIState(prev => ({
-                ...prev,
+            updateGameUIState({
                 showSpaceExplorer: true,
                 selectedSpaceData: data
-            }));
+            });
         };
 
         const handleKeyDown = (event) => {
-            if (event.key === 'Escape' && gameUIState.showSpaceExplorer) {
+            if (event.key === 'Escape' && gameUIStateRef.current.showSpaceExplorer) {
                 closeSpaceExplorer();
             }
         };
 
-        if (window.GameStateManager) {
-            window.GameStateManager.on('spaceSelected', handleSpaceSelected);
+        if (gameStateManager) {
+            gameStateManager.on('spaceSelected', handleSpaceSelected);
         }
 
-        if (gameUIState.showSpaceExplorer) {
+        if (gameUIStateRef.current.showSpaceExplorer) {
             document.addEventListener('keydown', handleKeyDown);
         }
 
         return () => {
-            if (window.GameStateManager) {
-                window.GameStateManager.off('spaceSelected', handleSpaceSelected);
+            if (gameStateManager) {
+                gameStateManager.off('spaceSelected', handleSpaceSelected);
             }
-            if (gameUIState.showSpaceExplorer) {
+            if (gameUIStateRef.current.showSpaceExplorer) {
                 document.removeEventListener('keydown', handleKeyDown);
             }
         };
-    }, [gameUIState.showSpaceExplorer]);
+    }, [forceRender, updateGameUIState, closeSpaceExplorer, gameStateManager]); // Added gameStateManager to dependencies
     
-    // Roll dice function
-    const setDiceResult = (diceResult, moves) => {
-        setGameUIState(prev => ({
-            ...prev,
+    // Roll dice function - STABILIZED
+    const setDiceResult = React.useCallback((diceResult, moves) => {
+        updateGameUIState({
             showingDiceResult: true,
             diceResult: diceResult,
             availableMoves: moves || [],
             showingMoves: (moves && moves.length > 0)
-        }));
-    };
+        });
+    }, [updateGameUIState]);
 
     const rollDice = () => {
         if (!window.CSVDatabase?.loaded) {
@@ -164,14 +199,14 @@ const GameInterface = React.memo(({ gameState }) => {
         
         try {
             // Use enhanced GameStateManager for all game logic
-            const allMessages = window.GameStateManager.movePlayerWithEffects(
+            const allMessages = gameStateManager.movePlayerWithEffects(
                 currentPlayer.id, 
                 destination, 
                 'First' // For now, always first visit
             );
             
             // Reset UI state (UI-only concern, stays in FixedApp)
-            setGameUIState({
+            updateGameUIState({
                 showingDiceResult: false,
                 diceResult: null,
                 availableMoves: [],
@@ -261,7 +296,7 @@ const GameInterface = React.memo(({ gameState }) => {
                         )
                     ),
                     // Dice result display
-                    gameUIState.showingDiceResult ? 
+                    gameUIStateRef.current.showingDiceResult ? 
                         React.createElement('div', { 
                             style: { 
                                 background: '#fff3cd',
@@ -272,13 +307,13 @@ const GameInterface = React.memo(({ gameState }) => {
                             }
                         },
                             React.createElement('h4', { style: { margin: '0 0 10px 0' } }, 
-                                `🎲 Rolled: ${gameUIState.diceResult}`
+                                `🎲 Rolled: ${gameUIStateRef.current.diceResult}`
                             ),
-                            gameUIState.showingMoves && gameUIState.availableMoves.length > 0 ? [
+                            gameUIStateRef.current.showingMoves && gameUIStateRef.current.availableMoves.length > 0 ? [
                                 React.createElement('p', { key: 'moves-text', style: { margin: '0 0 10px 0' } }, 
                                     'Available moves:'
                                 ),
-                                ...gameUIState.availableMoves.map((move, index) => 
+                                ...gameUIStateRef.current.availableMoves.map((move, index) => 
                                     React.createElement('button', {
                                         key: move.destination || index,
                                         className: 'btn btn-success',
@@ -295,13 +330,13 @@ const GameInterface = React.memo(({ gameState }) => {
                             className: 'btn btn-primary',
                             style: { padding: '10px 20px' },
                             onClick: rollDice,
-                            disabled: gameUIState.showingDiceResult
+                            disabled: gameUIStateRef.current.showingDiceResult
                         }, '🎲 Roll Dice'),
-                        gameUIState.showingDiceResult ? 
+                        gameUIStateRef.current.showingDiceResult ? 
                             React.createElement('button', { 
                                 className: 'btn btn-secondary',
                                 style: { padding: '10px 20px' },
-                                onClick: () => setGameUIState({
+                                onClick: () => updateGameUIState({
                                     showingDiceResult: false,
                                     diceResult: null,
                                     availableMoves: [],
@@ -417,7 +452,7 @@ const GameInterface = React.memo(({ gameState }) => {
         ),
             
         // Space Explorer Modal
-        gameUIState.showSpaceExplorer && gameUIState.selectedSpaceData && window.SpaceExplorer ? 
+        gameUIStateRef.current.showSpaceExplorer && gameUIStateRef.current.selectedSpaceData && window.SpaceExplorer ? 
             React.createElement('div', {
                 key: 'space-explorer-modal',
                 className: 'modal-backdrop',
@@ -463,24 +498,23 @@ const GameInterface = React.memo(({ gameState }) => {
                         onClick: closeSpaceExplorer
                     }, '×'),
                     React.createElement(window.SpaceDetails, {
-                        spaceName: gameUIState.selectedSpaceData.spaceName,
-                        spaceData: gameUIState.selectedSpaceData.spaceData,
-                        isValidMove: gameUIState.selectedSpaceData.isValidMove,
-                        player: gameUIState.selectedSpaceData.player,
+                        spaceName: gameUIStateRef.current.selectedSpaceData.spaceName,
+                        spaceData: gameUIStateRef.current.selectedSpaceData.spaceData,
+                        isValidMove: gameUIStateRef.current.selectedSpaceData.isValidMove,
+                        player: gameUIStateRef.current.selectedSpaceData.player,
                         onExploreSpace: (spaceName) => {
                             // Handle exploring another space from modal
                             if (window.CSVDatabase?.loaded) {
                                 const spaceData = window.CSVDatabase.spaceContent.find(spaceName, 'First');
                                 if (spaceData) {
-                                    setGameUIState(prev => ({
-                                        ...prev,
+                                    updateGameUIState({
                                         selectedSpaceData: {
                                             spaceName,
                                             spaceData,
                                             isValidMove: false,
                                             player: currentPlayer
                                         }
-                                    }));
+                                    });
                                 }
                             }
                         }
@@ -496,6 +530,26 @@ const GameInterface = React.memo(({ gameState }) => {
                 gameStateManager: window.GameStateManager,
                 show: true
             }) : null
+    );
+}, (prevProps, nextProps) => {
+    // Custom comparison for GameInterface - only re-render if critical game state changes
+    const prevState = prevProps.gameState;
+    const nextState = nextProps.gameState;
+    
+    // Quick identity check for both gameState and gameStateManager
+    if (prevState === nextState && prevProps.gameStateManager === nextProps.gameStateManager) return true;
+    
+    // If either is null/undefined, check if both are
+    if (!prevState || !nextState) return prevState === nextState;
+    
+    // Compare critical state properties that affect UI
+    return (
+        prevState.currentPlayer === nextState.currentPlayer &&
+        prevState.gamePhase === nextState.gamePhase &&
+        prevState.turnCount === nextState.turnCount &&
+        prevState.players?.length === nextState.players?.length &&
+        prevState.gameStatus === nextState.gameStatus &&
+        prevProps.gameStateManager === nextProps.gameStateManager
     );
 });
 

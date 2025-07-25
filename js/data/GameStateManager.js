@@ -74,6 +74,11 @@ class GameStateManager {
         const listener = { callback, context };
         this.listeners.get(eventName).push(listener);
         
+        // Enhanced debugging for event subscription
+        const listenerCount = this.listeners.get(eventName).length;
+        console.log(`🔊 GameStateManager.on - Added listener for '${eventName}'. Total listeners: ${listenerCount}`);
+        console.log(`🔊 Callback function:`, callback.name || 'anonymous', callback);
+        
         this.log(`Listener added for event: ${eventName}`);
         
         // Return unsubscribe function
@@ -84,14 +89,22 @@ class GameStateManager {
      * Unsubscribe from events
      */
     off(eventName, callback) {
-        if (!this.listeners.has(eventName)) return;
+        if (!this.listeners.has(eventName)) {
+            console.log(`🔇 GameStateManager.off - No listeners exist for '${eventName}'`);
+            return;
+        }
         
         const listeners = this.listeners.get(eventName);
         const index = listeners.findIndex(l => l.callback === callback);
         
         if (index !== -1) {
             listeners.splice(index, 1);
+            const remainingCount = listeners.length;
+            console.log(`🔇 GameStateManager.off - Removed listener for '${eventName}'. Remaining listeners: ${remainingCount}`);
+            console.log(`🔇 Removed callback:`, callback.name || 'anonymous', callback);
             this.log(`Listener removed for event: ${eventName}`);
+        } else {
+            console.log(`🔇 GameStateManager.off - Callback not found for '${eventName}'`);
         }
     }
 
@@ -100,6 +113,13 @@ class GameStateManager {
      */
     emit(eventName, data = null) {
         this.log(`Emitting event: ${eventName}`, data);
+        
+        // Enhanced debugging for event emission
+        const listenerCount = this.listeners.has(eventName) ? this.listeners.get(eventName).length : 0;
+        console.log(`📢 GameStateManager.emit - Emitting '${eventName}' to ${listenerCount} listeners`);
+        if (data) {
+            console.log(`📢 Event data:`, data);
+        }
         
         // Add to event history for debugging
         if (this.debug) {
@@ -111,17 +131,23 @@ class GameStateManager {
             });
         }
         
-        if (!this.listeners.has(eventName)) return;
+        if (!this.listeners.has(eventName)) {
+            console.log(`📢 No listeners registered for '${eventName}'`);
+            return;
+        }
         
         const listeners = this.listeners.get(eventName);
-        listeners.forEach(({ callback, context }) => {
+        listeners.forEach(({ callback, context }, index) => {
             try {
+                console.log(`📢 Calling listener #${index + 1} for '${eventName}'`);
                 if (context) {
                     callback.call(context, data);
                 } else {
                     callback(data);
                 }
+                console.log(`📢 Listener #${index + 1} completed successfully`);
             } catch (error) {
+                console.error(`📢 Error in listener #${index + 1} for '${eventName}':`, error);
                 console.error(`Error in event listener for ${eventName}:`, error);
                 this.setState({ error: error.message });
             }
@@ -175,6 +201,38 @@ class GameStateManager {
         return result;
     }
 
+    /**
+     * SYSTEMIC FIX: Immutable player update helper method
+     * Creates new player object and updates players array with new references
+     */
+    updatePlayer(playerId, playerUpdates) {
+        const playerIndex = this.state.players.findIndex(p => p.id === playerId);
+        
+        if (playerIndex === -1) {
+            throw new Error(`Player ${playerId} not found`);
+        }
+
+        const currentPlayer = this.state.players[playerIndex];
+        
+        // Create completely new player object with updates
+        const updatedPlayer = {
+            ...currentPlayer,
+            ...playerUpdates
+        };
+
+        // Create new players array with updated player
+        const players = [
+            ...this.state.players.slice(0, playerIndex),
+            updatedPlayer,
+            ...this.state.players.slice(playerIndex + 1)
+        ];
+
+        // Update state with new players array
+        this.setState({ players });
+        
+        return updatedPlayer;
+    }
+
     getStartingSpace() {
         if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
             return 'OWNER-SCOPE-INITIATION'; // fallback
@@ -194,6 +252,9 @@ class GameStateManager {
      * Initialize new game
      */
     initializeGame(players, settings = {}) {
+        console.log('🎯 GameStateManager.initializeGame called with:', players);
+        console.log('🔄 Current state before initialization:', this.state);
+        
         const newGameState = {
             ...this.getInitialState(),
             gamePhase: 'PLAYING', // Transition from SETUP to PLAYING
@@ -222,8 +283,12 @@ class GameStateManager {
             gameSettings: { ...this.state.gameSettings, ...settings }
         };
         
+        console.log('🎯 New game state to be set:', newGameState);
+        
         // Use setState to ensure proper event emission and state change event
         this.setState(newGameState);
+        
+        console.log('✅ GameStateManager.setState completed. Current state:', this.state);
         
         // Save initial snapshots for all players at their starting positions
         this.state.players.forEach((player) => {
@@ -321,21 +386,22 @@ class GameStateManager {
      * Move player to new space
      */
     movePlayer(playerId, spaceName, visitType = 'First', returnMessage = false) {
-        const players = [...this.state.players];
-        const player = players.find(p => p.id === playerId);
+        const currentPlayer = this.state.players.find(p => p.id === playerId);
         
-        if (!player) {
+        if (!currentPlayer) {
             throw new Error(`Player ${playerId} not found`);
         }
 
-        const previousPosition = player.position;
-        player.position = spaceName;
-        player.visitType = visitType;
-
-        this.setState({ players });
+        const previousPosition = currentPlayer.position;
+        
+        // Use helper method to create new player object
+        const updatedPlayer = this.updatePlayer(playerId, {
+            position: spaceName,
+            visitType: visitType
+        });
         
         this.emit('playerMoved', {
-            player,
+            player: updatedPlayer,
             previousPosition,
             newPosition: spaceName,
             visitType
@@ -351,22 +417,24 @@ class GameStateManager {
      * Update player money
      */
     updatePlayerMoney(playerId, amount, reason = '', returnMessage = false) {
-        const players = [...this.state.players];
-        const player = players.find(p => p.id === playerId);
+        const currentPlayer = this.state.players.find(p => p.id === playerId);
         
-        if (!player) {
+        if (!currentPlayer) {
             throw new Error(`Player ${playerId} not found`);
         }
 
-        const previousAmount = player.money;
-        player.money += amount;
+        const previousAmount = currentPlayer.money || 0;
+        const newAmount = previousAmount + amount;
 
-        this.setState({ players });
+        // Use helper method to create new player object
+        const updatedPlayer = this.updatePlayer(playerId, {
+            money: newAmount
+        });
         
         this.emit('playerMoneyChanged', {
-            player,
+            player: updatedPlayer,
             previousAmount,
-            newAmount: player.money,
+            newAmount,
             change: amount,
             reason
         });
@@ -385,29 +453,19 @@ class GameStateManager {
      * Update player time spent - Explicit immutable implementation
      */
     updatePlayerTime(playerId, amount, reason = '', returnMessage = false) {
-        const playerIndex = this.state.players.findIndex(p => p.id === playerId);
+        const currentPlayer = this.state.players.find(p => p.id === playerId);
         
-        if (playerIndex === -1) {
+        if (!currentPlayer) {
             throw new Error(`Player ${playerId} not found`);
         }
 
-        const currentPlayer = this.state.players[playerIndex];
         const previousAmount = currentPlayer.timeSpent || 0;
+        const newAmount = previousAmount + amount;
         
-        // Create completely new player object
-        const updatedPlayer = {
-            ...currentPlayer,
-            timeSpent: previousAmount + amount
-        };
-        
-        // Create completely new players array
-        const players = [
-            ...this.state.players.slice(0, playerIndex),
-            updatedPlayer,
-            ...this.state.players.slice(playerIndex + 1)
-        ];
-
-        this.setState({ players });
+        // Use helper method to create new player object
+        const updatedPlayer = this.updatePlayer(playerId, {
+            timeSpent: newAmount
+        });
         
         this.emit('playerTimeChanged', {
             player: updatedPlayer,
@@ -433,56 +491,67 @@ class GameStateManager {
      */
     addCardsToPlayer(playerId, cardType, cards, returnMessage = false) {
         
-        const players = [...this.state.players];
-        const player = players.find(p => p.id === playerId);
+        const playerIndex = this.state.players.findIndex(p => p.id === playerId);
         
-        if (!player) {
+        if (playerIndex === -1) {
             console.error(`GameStateManager: Player ${playerId} not found`);
             throw new Error(`Player ${playerId} not found`);
         }
 
-        // Initialize cards object if it doesn't exist
-        if (!player.cards) {
-            player.cards = {};
-        }
-
-        if (!player.cards[cardType]) {
-            player.cards[cardType] = [];
-        }
-
+        const currentPlayer = this.state.players[playerIndex];
         const cardCount = Array.isArray(cards) ? cards.length : 1;
         const cardsToAdd = Array.isArray(cards) ? cards : [cards];
 
-        player.cards[cardType].push(...cardsToAdd);
+        // CARDS DISPLAY FIX: Create completely new player object with new cards reference
+        const updatedPlayer = {
+            ...currentPlayer,
+            cards: {
+                ...(currentPlayer.cards || {}),
+                [cardType]: [
+                    ...(currentPlayer.cards?.[cardType] || []),
+                    ...cardsToAdd
+                ]
+            }
+        };
+
+        // Create new players array with the updated player object
+        const players = [
+            ...this.state.players.slice(0, playerIndex),
+            updatedPlayer,
+            ...this.state.players.slice(playerIndex + 1)
+        ];
         
-        // Apply immediate effects for W, B, I, L cards only
+        // Apply immediate effects for W, B, I, L cards only to the updated player
         // E cards remain in hand for player-controlled usage
         if (cardType !== 'E') {
             cardsToAdd.forEach(card => {
                 // Process Bank card loan amounts
                 if (card.loan_amount) {
                     const loanAmount = parseInt(card.loan_amount) || 0;
-                    player.money = (player.money || 0) + loanAmount;
+                    updatedPlayer.money = (updatedPlayer.money || 0) + loanAmount;
                 }
                 
                 // Process Investment card investment amounts
                 if (card.investment_amount) {
                     const investmentAmount = parseInt(card.investment_amount) || 0;
-                    player.money = (player.money || 0) + investmentAmount;
+                    updatedPlayer.money = (updatedPlayer.money || 0) + investmentAmount;
                 }
                 
                 // Process general money effects
                 if (card.money_effect) {
                     const moneyEffect = parseInt(card.money_effect) || 0;
-                    player.money = (player.money || 0) + moneyEffect;
+                    updatedPlayer.money = (updatedPlayer.money || 0) + moneyEffect;
                 }
                 
                 // Process time effects
                 if (card.time_effect) {
                     const timeEffect = parseInt(card.time_effect) || 0;
-                    player.timeSpent = (player.timeSpent || 0) + timeEffect;
+                    updatedPlayer.timeSpent = (updatedPlayer.timeSpent || 0) + timeEffect;
                 }
             });
+            
+            // Update the players array again with the effects applied
+            players[playerIndex] = updatedPlayer;
         }
         
         // Update player scope if W cards were added
@@ -493,10 +562,10 @@ class GameStateManager {
         this.setState({ players });
         
         this.emit('cardsAddedToPlayer', {
-            player,
+            player: updatedPlayer,
             cardType,
             cards: cardsToAdd,
-            totalCards: player.cards[cardType].length
+            totalCards: updatedPlayer.cards[cardType].length
         });
         
         // NEW: Return user-friendly message if requested
@@ -516,27 +585,26 @@ class GameStateManager {
      * Restore player state to space entry snapshot and apply time penalty (negotiation)
      */
     restorePlayerSnapshot(playerId, timePenalty = null) {
-        const players = [...this.state.players];
-        const player = players.find(p => p.id === playerId);
+        const currentPlayer = this.state.players.find(p => p.id === playerId);
         
-        if (!player) {
+        if (!currentPlayer) {
             console.error(`GameStateManager: Player ${playerId} not found`);
             return;
         }
 
-        if (!player.spaceEntrySnapshot) {
+        if (!currentPlayer.spaceEntrySnapshot) {
             console.warn(`GameStateManager: No snapshot found for player ${playerId}, cannot restore`);
             return;
         }
 
-        const snapshot = player.spaceEntrySnapshot;
+        const snapshot = currentPlayer.spaceEntrySnapshot;
 
         // Get current space time cost for penalty if not provided
         let actualTimePenalty = timePenalty;
         if (actualTimePenalty === null && window.CSVDatabase && window.CSVDatabase.loaded) {
             const currentSpaceData = window.CSVDatabase.spaceEffects.find(
-                player.position, 
-                player.visitType || 'First'
+                currentPlayer.position, 
+                currentPlayer.visitType || 'First'
             );
             if (currentSpaceData && currentSpaceData.Time) {
                 actualTimePenalty = parseInt(currentSpaceData.Time.replace(/\D/g, '')) || 1;
@@ -549,20 +617,19 @@ class GameStateManager {
             actualTimePenalty = 1; // Fallback if CSV not available
         }
 
-        // Restore player state from snapshot
-        player.cards = JSON.parse(JSON.stringify(snapshot.cards));
-        player.money = snapshot.money;
-        player.scope = snapshot.scope ? JSON.parse(JSON.stringify(snapshot.scope)) : null;
-        player.scopeItems = snapshot.scopeItems ? JSON.parse(JSON.stringify(snapshot.scopeItems)) : [];
-        player.scopeTotalCost = snapshot.scopeTotalCost || 0;
-        
-        // Apply time penalty for negotiation (add to current time, don't reset to snapshot time)
-        player.timeSpent = player.timeSpent + actualTimePenalty;
-        
-        this.setState({ players });
+        // Restore player state from snapshot using immutable update
+        const restoredPlayer = this.updatePlayer(playerId, {
+            cards: JSON.parse(JSON.stringify(snapshot.cards)),
+            money: snapshot.money,
+            scope: snapshot.scope ? JSON.parse(JSON.stringify(snapshot.scope)) : null,
+            scopeItems: snapshot.scopeItems ? JSON.parse(JSON.stringify(snapshot.scopeItems)) : [],
+            scopeTotalCost: snapshot.scopeTotalCost || 0,
+            // Apply time penalty for negotiation (add to current time, don't reset to snapshot time)
+            timeSpent: currentPlayer.timeSpent + actualTimePenalty
+        });
         
         this.emit('playerStateRestored', {
-            player,
+            player: restoredPlayer,
             timePenalty: actualTimePenalty,
             reason: 'Negotiation - state restored with time penalty'
         });
@@ -579,26 +646,27 @@ class GameStateManager {
      */
     useCard(playerId, cardType, cardId, card) {
         
-        const players = this.state.players;
-        const player = players.find(p => p.id === playerId);
+        const currentPlayer = this.state.players.find(p => p.id === playerId);
         
-        if (!player) {
+        if (!currentPlayer) {
             console.error(`GameStateManager: Player ${playerId} not found for card usage`);
             return;
         }
         
-        if (!player.cards || !player.cards[cardType]) {
+        if (!currentPlayer.cards || !currentPlayer.cards[cardType]) {
             console.error(`GameStateManager: No ${cardType} cards found for player ${playerId}`);
             return;
         }
         
         // Find and remove the card from hand
-        const cardIndex = player.cards[cardType].findIndex(c => c.card_id === cardId);
+        const cardIndex = currentPlayer.cards[cardType].findIndex(c => c.card_id === cardId);
         if (cardIndex >= 0) {
-            player.cards[cardType].splice(cardIndex, 1);
+            // Create immutable update with card removed
+            const updatedCards = { ...currentPlayer.cards };
+            updatedCards[cardType] = [...currentPlayer.cards[cardType]];
+            updatedCards[cardType].splice(cardIndex, 1);
             
-            // Emit state change
-            this.setState({ players });
+            const updatedPlayer = this.updatePlayer(playerId, { cards: updatedCards });
             this.emit('cardUsed', { playerId, cardType, cardId, card });
         } else {
             console.error(`GameStateManager: Card ${cardId} not found in player ${playerId}'s ${cardType} cards`);
@@ -630,26 +698,29 @@ class GameStateManager {
      * Remove card from player's hand (helper method)
      */
     removeCardFromHand(playerId, cardId) {
-        const players = [...this.state.players];
-        const player = players.find(p => p.id === playerId);
+        const currentPlayer = this.state.players.find(p => p.id === playerId);
         
-        if (!player) {
+        if (!currentPlayer) {
             console.error(`GameStateManager: Player ${playerId} not found for card removal`);
             return false;
         }
         
-        const cardResult = this.findCardInPlayerHand(player, cardId);
+        const cardResult = this.findCardInPlayerHand(currentPlayer, cardId);
         if (!cardResult) {
             console.error(`GameStateManager: Card ${cardId} not found in player ${playerId}'s hand`);
             return false;
         }
         
         const { cardType } = cardResult;
-        const cardIndex = player.cards[cardType].findIndex(c => c.card_id === cardId);
+        const cardIndex = currentPlayer.cards[cardType].findIndex(c => c.card_id === cardId);
         
         if (cardIndex >= 0) {
-            player.cards[cardType].splice(cardIndex, 1);
-            this.setState({ players });
+            // Create immutable update with card removed
+            const updatedCards = { ...currentPlayer.cards };
+            updatedCards[cardType] = [...currentPlayer.cards[cardType]];
+            updatedCards[cardType].splice(cardIndex, 1);
+            
+            this.updatePlayer(playerId, { cards: updatedCards });
             return true;
         }
         
@@ -860,34 +931,50 @@ class GameStateManager {
      * Add work to player scope (additive, not recalculated)
      */
     addWorkToPlayerScope(playerId, workCost, workType, returnMessage = false) {
-        const players = [...this.state.players];
-        const player = players.find(p => p.id === playerId);
+        const currentPlayer = this.state.players.find(p => p.id === playerId);
         
-        if (!player) {
+        if (!currentPlayer) {
             throw new Error(`Player ${playerId} not found`);
         }
         
-        // Initialize scope tracking if needed
-        if (!player.scopeItems) player.scopeItems = [];
-        if (!player.scopeTotalCost) player.scopeTotalCost = 0;
+        // Initialize scope tracking with defaults
+        const currentScopeItems = currentPlayer.scopeItems || [];
+        const currentScopeTotalCost = currentPlayer.scopeTotalCost || 0;
         
-        // Add new work to existing scope
-        const existingItem = player.scopeItems.find(item => item.workType === workType);
-        if (existingItem) {
-            existingItem.cost += workCost;
-            existingItem.count += 1;
+        // Create new scopeItems array with immutable update
+        const existingItemIndex = currentScopeItems.findIndex(item => item.workType === workType);
+        let newScopeItems;
+        
+        if (existingItemIndex !== -1) {
+            // Update existing item immutably
+            newScopeItems = [
+                ...currentScopeItems.slice(0, existingItemIndex),
+                {
+                    ...currentScopeItems[existingItemIndex],
+                    cost: currentScopeItems[existingItemIndex].cost + workCost,
+                    count: currentScopeItems[existingItemIndex].count + 1
+                },
+                ...currentScopeItems.slice(existingItemIndex + 1)
+            ];
         } else {
-            player.scopeItems.push({
-                workType: workType,
-                cost: workCost,
-                count: 1
-            });
+            // Add new item immutably
+            newScopeItems = [
+                ...currentScopeItems,
+                {
+                    workType: workType,
+                    cost: workCost,
+                    count: 1
+                }
+            ];
         }
         
-        player.scopeTotalCost += workCost;
+        // Use helper method to create new player object
+        const updatedPlayer = this.updatePlayer(playerId, {
+            scopeItems: newScopeItems,
+            scopeTotalCost: currentScopeTotalCost + workCost
+        });
         
-        this.setState({ players });
-        this.emit('playerScopeChanged', { player, workCost, workType });
+        this.emit('playerScopeChanged', { player: updatedPlayer, workCost, workType });
         
         if (returnMessage) {
             return `Added $${workCost.toLocaleString()} ${workType} to project scope`;
@@ -906,25 +993,27 @@ class GameStateManager {
      * Force player to discard cards
      */
     forcePlayerDiscard(playerId, cardCount, cardTypeFilter = null) {
-        const players = [...this.state.players];
-        const player = players.find(p => p.id === playerId);
+        const currentPlayer = this.state.players.find(p => p.id === playerId);
         
-        if (!player || !player.cards) {
+        if (!currentPlayer || !currentPlayer.cards) {
             throw new Error(`Player ${playerId} not found or has no cards`);
         }
         
         const discardedCards = [];
         let remainingToDiscard = cardCount;
+        const updatedCards = { ...currentPlayer.cards };
         
         // Get eligible cards for discard
         const cardTypes = cardTypeFilter ? [cardTypeFilter] : ['W', 'B', 'I', 'L', 'E'];
         
         for (const cardType of cardTypes) {
-            const cards = player.cards[cardType] || [];
+            const cards = updatedCards[cardType] || [];
             const toDiscard = Math.min(remainingToDiscard, cards.length);
             
             if (toDiscard > 0) {
-                const discarded = cards.splice(0, toDiscard);
+                // Create immutable copy of cards array
+                updatedCards[cardType] = [...cards];
+                const discarded = updatedCards[cardType].splice(0, toDiscard);
                 discardedCards.push(...discarded);
                 remainingToDiscard -= toDiscard;
             }
@@ -932,8 +1021,8 @@ class GameStateManager {
             if (remainingToDiscard === 0) break;
         }
         
-        this.setState({ players });
-        this.emit('playerCardsDiscarded', { player, discardedCards, cardTypeFilter });
+        const updatedPlayer = this.updatePlayer(playerId, { cards: updatedCards });
+        this.emit('playerCardsDiscarded', { player: updatedPlayer, discardedCards, cardTypeFilter });
         
         const filterText = cardTypeFilter ? ` ${cardTypeFilter}` : '';
         return `Discarded ${discardedCards.length}${filterText} cards`;
@@ -1300,17 +1389,9 @@ class GameStateManager {
                 }
             }
 
-            // Check for movement choices (using MovementEngine if available)
-            if (window.MovementEngine) {
-                const movementEngine = window.MovementEngine.getInstance();
-                if (movementEngine) {
-                    const availableMoves = movementEngine.getAvailableMoves(player);
-                    if (availableMoves && availableMoves.length > 1) {
-                        requiredActions.push({ type: 'movement', required: true, completed: false, moves: availableMoves });
-                        requiredCount++;
-                    }
-                }
-            }
+            // MOVEMENT CORRECTION: Movement handled automatically during End Turn, not as required action
+            // Movement logic exists in handleEndTurn() in TurnControls.js
+            // This prevents the "Actions: 2/3" issue where movement blocks turn completion
 
         } catch (error) {
             console.error('Error analyzing space requirements:', error);

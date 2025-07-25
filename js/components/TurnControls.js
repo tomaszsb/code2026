@@ -159,46 +159,52 @@ function TurnControls({
             }
         }
         
-        // Check if there's a selected move that needs to be executed
-        const movementAction = currentTurn.requiredActions.find(action => action.type === 'movement');
-        if (movementAction && !movementAction.completed && movementAction.moves) {
-            // For now, automatically select the first available move if there's only one
-            // In a full implementation, this would be handled by a movement selection UI
-            const selectedMove = movementAction.moves.length === 1 ? movementAction.moves[0] : null;
-            
-            if (selectedMove) {
-                // Determine correct visit type using MovementEngine
+        // AUTOMATIC MOVEMENT: Execute movement automatically when ending turn
+        try {
+            // Get available moves using MovementEngine
+            const availableMoves = movementEngine.getAvailableMoves(currentPlayer);
+            if (availableMoves && availableMoves.length > 0) {
+                // Select the first available move (most spaces have only one destination)
+                const selectedMove = availableMoves[0];
                 const visitType = movementEngine.getVisitType(currentPlayer, selectedMove);
                 
-                // Execute the move directly through GameStateManager
-                try {
-                    const allMessages = gameStateManager.movePlayerWithEffects(
-                        currentPlayer.id, 
-                        selectedMove, 
-                        visitType
-                    );
-                    
-                    // Emit standardized player action taken event
-                    gameStateManager.emit('playerActionTaken', {
-                        playerId: currentPlayer.id,
-                        actionType: 'movement',
-                        actionData: {
-                            destination: selectedMove,
-                            visitType: visitType,
-                            movementMessages: allMessages
-                        },
-                        timestamp: Date.now(),
-                        spaceName: currentPlayer.position,
-                        visitType: currentPlayer.visitType || 'First'
+                // Execute the move directly through GameStateManager BEFORE ending turn
+                const allMessages = gameStateManager.movePlayerWithEffects(
+                    currentPlayer.id, 
+                    selectedMove, 
+                    visitType
+                );
+                
+                // Emit standardized player action taken event
+                gameStateManager.emit('playerActionTaken', {
+                    playerId: currentPlayer.id,
+                    actionType: 'movement',
+                    actionData: {
+                        destination: selectedMove,
+                        visitType: visitType,
+                        movementMessages: allMessages
+                    },
+                    timestamp: Date.now(),
+                    spaceName: currentPlayer.position,
+                    visitType: currentPlayer.visitType || 'First'
+                });
+                
+                // Allow a brief moment for visual updates to complete before ending turn
+                setTimeout(() => {
+                    gameStateManager.emit('turnEnded', {
+                        playerId: currentPlayer.id
                     });
-                    
-                } catch (error) {
-                    console.error('Error executing player movement:', error);
-                    gameStateManager.handleError(error, 'Player Movement from TurnControls');
-                }
+                }, 50); // Small delay to ensure movement visual update completes
+                
+                return; // Exit early since turn end is handled in setTimeout
             }
+        } catch (error) {
+            console.error('Error executing automatic movement:', error);
+            gameStateManager.handleError(error, 'Automatic Movement from TurnControls');
+            // Continue to end turn even if movement fails
         }
         
+        // Only reach here if no movement was required
         gameStateManager.emit('turnEnded', {
             playerId: currentPlayer.id
         });

@@ -4,6 +4,8 @@
  */
 
 function PlayerResources({ player, onCardSelect, cardsExpanded, onToggleExpanded }) {
+    const { useMemo } = React;
+    
     // Helper function to convert hex to RGB
     const hexToRgb = (hex) => {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -14,8 +16,20 @@ function PlayerResources({ player, onCardSelect, cardsExpanded, onToggleExpanded
         } : null;
     };
     
+    // SCOPE DISPLAY FIX: Use React hooks to track player property changes
+    const playerResources = useMemo(() => {
+        if (!player) return null;
+        
+        return {
+            money: typeof player.money === 'number' ? player.money : 0,
+            timeSpent: typeof player.timeSpent === 'number' ? player.timeSpent : 0,
+            scopeItems: Array.isArray(player.scopeItems) ? player.scopeItems : [],
+            scopeTotalCost: typeof player.scopeTotalCost === 'number' ? player.scopeTotalCost : 0
+        };
+    }, [player?.money, player?.timeSpent, player?.scopeItems, player?.scopeTotalCost]);
+    
     try {
-        if (!player) {
+        if (!player || !playerResources) {
             return React.createElement('div', {
                 className: 'player-resources'
             }, [
@@ -30,11 +44,8 @@ function PlayerResources({ player, onCardSelect, cardsExpanded, onToggleExpanded
             ]);
         }
 
-        // Defensive property access with fallbacks
-        const money = typeof player.money === 'number' ? player.money : 0;
-        const timeSpent = typeof player.timeSpent === 'number' ? player.timeSpent : 0;
-        const scopeItems = Array.isArray(player.scopeItems) ? player.scopeItems : [];
-        const scopeTotalCost = typeof player.scopeTotalCost === 'number' ? player.scopeTotalCost : 0;
+        // Use memoized resources
+        const { money, timeSpent, scopeItems, scopeTotalCost } = playerResources;
 
         // Get player color for background hue
         const playerColor = player.color || '#4285f4'; // Default to blue if no color
@@ -189,4 +200,29 @@ function PlayerResources({ player, onCardSelect, cardsExpanded, onToggleExpanded
     }
 }
 
-window.PlayerResources = PlayerResources;
+// OPTIMIZED MEMOIZATION - Custom comparison to prevent unnecessary re-renders
+const PlayerResourcesMemo = React.memo(PlayerResources, (prevProps, nextProps) => {
+    // Only re-render if player resources actually changed
+    const prevPlayer = prevProps.player;
+    const nextPlayer = nextProps.player;
+    
+    // Quick identity check
+    if (prevPlayer === nextPlayer) return true;
+    
+    // If either is null/undefined, check if both are
+    if (!prevPlayer || !nextPlayer) return prevPlayer === nextPlayer;
+    
+    // Compare critical resource properties
+    return (
+        prevPlayer.id === nextPlayer.id &&
+        prevPlayer.money === nextPlayer.money &&
+        prevPlayer.timeSpent === nextPlayer.timeSpent &&
+        prevPlayer.scopeTotalCost === nextPlayer.scopeTotalCost &&
+        prevPlayer.scopeItems?.length === nextPlayer.scopeItems?.length &&
+        prevProps.cardsExpanded === nextProps.cardsExpanded &&
+        prevProps.onCardSelect === nextProps.onCardSelect &&
+        prevProps.onToggleExpanded === nextProps.onToggleExpanded
+    );
+});
+
+window.PlayerResources = PlayerResourcesMemo;

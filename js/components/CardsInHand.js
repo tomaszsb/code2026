@@ -23,7 +23,7 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
         }
     }, [showCardsModal]);
     
-    // Memoized helper functions to prevent excessive recalculation
+    // CARDS DISPLAY FIX: Enhanced memoization with deeper change detection
     const allCards = useMemo(() => {
         if (!player?.cards || typeof player.cards !== 'object') {
             return [];
@@ -434,4 +434,33 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
     ]);
 }
 
-window.CardsInHand = CardsInHand;
+// OPTIMIZED MEMOIZATION - Custom comparison to prevent unnecessary re-renders
+const CardsInHandMemo = React.memo(CardsInHand, (prevProps, nextProps) => {
+    // Only re-render if player cards actually changed
+    const prevCards = prevProps.player?.cards;
+    const nextCards = nextProps.player?.cards;
+    
+    // Quick identity check
+    if (prevCards === nextCards) return true;
+    
+    // If either is null/undefined, check if both are
+    if (!prevCards || !nextCards) return prevCards === nextCards;
+    
+    // Compare card counts for each type
+    const cardTypes = ['W', 'B', 'I', 'L', 'E'];
+    for (const type of cardTypes) {
+        const prevCount = prevCards[type]?.length || 0;
+        const nextCount = nextCards[type]?.length || 0;
+        if (prevCount !== nextCount) return false;
+    }
+    
+    // Check other props
+    return (
+        prevProps.player?.id === nextProps.player?.id &&
+        prevProps.cardsExpanded === nextProps.cardsExpanded &&
+        prevProps.onCardSelect === nextProps.onCardSelect &&
+        prevProps.onToggleExpanded === nextProps.onToggleExpanded
+    );
+});
+
+window.CardsInHand = CardsInHandMemo;

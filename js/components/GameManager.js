@@ -42,57 +42,77 @@ function GameManager() {
     }, []);
     
     // Utility function to get EffectsEngine instance
-    const getEffectsEngine = () => {
+    const getEffectsEngine = React.useCallback(() => {
         return effectsEngineRef.current;
-    };
+    }, []);
     
-    // Make EffectsEngine accessible globally for debugging and testing
+    // Make EffectsEngine accessible globally for debugging and testing - FIXED DEPENDENCY
     React.useEffect(() => {
         if (effectsEngineRef.current) {
             window.GameManagerEffectsEngine = effectsEngineRef.current;
         }
-    }, [effectsEngineRef.current]);
+    }, []); // Empty dependency array - only run once
     
-    const handleEvent = (handler, eventName) => {
+    // STABLE EVENT HANDLER WRAPPER - Use useCallback to prevent recreation
+    const handleEvent = React.useCallback((handler, eventName) => {
         return (event) => {
             try {
                 handler(event);
             } catch (error) {
                 console.error(`Error in ${eventName} event handler:`, error);
-                gameStateManager.handleError(error, eventName);
+                gameStateManager?.handleError(error, eventName);
             }
         };
-    };
+    }, [gameStateManager]);
 
-    useEventListener('processSpaceEffects', handleEvent(processSpaceEffects, 'processSpaceEffects'));
-    useEventListener('movePlayerToSpace', handleEvent(({ playerId, destination, visitType }) => {
+    // STABILIZED EVENT HANDLERS - Create stable references for all handlers
+    const movePlayerToSpaceHandler = React.useCallback(({ playerId, destination, visitType }) => {
         return gameStateManager.movePlayerWithEffects(playerId, destination, visitType || 'First');
-    }, 'movePlayerToSpace'));
-    useEventListener('processDiceOutcome', handleEvent(processDiceOutcome, 'processDiceOutcome'));
-    useEventListener('processCardAction', handleEvent(processCardAction, 'processCardAction'));
-    useEventListener('executeCardReplacement', handleEvent(executeCardReplacement, 'executeCardReplacement'));
-    useEventListener('clearCardsAddedThisTurn', handleEvent(() => {
+    }, [gameStateManager]);
+    
+    const clearCardsAddedThisTurnHandler = React.useCallback(() => {
         // Obsolete feature - no longer needed in centralized architecture
         console.log('clearCardsAddedThisTurn: Feature obsolete in new architecture');
-    }, 'clearCardsAddedThisTurn'));
+    }, []);
     
-    useEventListener('useCard', handleEvent(({ playerId, cardId }) => {
+    const useCardHandler = React.useCallback(({ playerId, cardId }) => {
         return gameStateManager.usePlayerCard(playerId, cardId);
-    }, 'useCard'));
+    }, [gameStateManager]);
     
-    useEventListener('timeChanged', handleEvent(({ playerId, amount, source }) => {
+    const timeChangedHandler = React.useCallback(({ playerId, amount, source }) => {
         return gameStateManager.updatePlayerTime(playerId, amount, source || 'game_event', true);
-    }, 'timeChanged'));
+    }, [gameStateManager]);
     
-    useEventListener('moneyChanged', handleEvent(({ playerId, amount, source }) => {
+    const moneyChangedHandler = React.useCallback(({ playerId, amount, source }) => {
         return gameStateManager.updatePlayerMoney(playerId, amount, source || 'game_event', true);
-    }, 'moneyChanged'));
+    }, [gameStateManager]);
+
+    // STABILIZED EVENT LISTENER SUBSCRIPTIONS - All handlers wrapped with stable handleEvent
+    const wrappedProcessSpaceEffects = React.useCallback(handleEvent(processSpaceEffects, 'processSpaceEffects'), [handleEvent, processSpaceEffects]);
+    const wrappedMovePlayerToSpace = React.useCallback(handleEvent(movePlayerToSpaceHandler, 'movePlayerToSpace'), [handleEvent, movePlayerToSpaceHandler]);
+    const wrappedProcessDiceOutcome = React.useCallback(handleEvent(processDiceOutcome, 'processDiceOutcome'), [handleEvent, processDiceOutcome]);
+    const wrappedProcessCardAction = React.useCallback(handleEvent(processCardAction, 'processCardAction'), [handleEvent, processCardAction]);
+    const wrappedExecuteCardReplacement = React.useCallback(handleEvent(executeCardReplacement, 'executeCardReplacement'), [handleEvent, executeCardReplacement]);
+    const wrappedClearCardsAddedThisTurn = React.useCallback(handleEvent(clearCardsAddedThisTurnHandler, 'clearCardsAddedThisTurn'), [handleEvent, clearCardsAddedThisTurnHandler]);
+    const wrappedUseCard = React.useCallback(handleEvent(useCardHandler, 'useCard'), [handleEvent, useCardHandler]);
+    const wrappedTimeChanged = React.useCallback(handleEvent(timeChangedHandler, 'timeChanged'), [handleEvent, timeChangedHandler]);
+    const wrappedMoneyChanged = React.useCallback(handleEvent(moneyChangedHandler, 'moneyChanged'), [handleEvent, moneyChangedHandler]);
+
+    useEventListener('processSpaceEffects', wrappedProcessSpaceEffects);
+    useEventListener('movePlayerToSpace', wrappedMovePlayerToSpace);
+    useEventListener('processDiceOutcome', wrappedProcessDiceOutcome);
+    useEventListener('processCardAction', wrappedProcessCardAction);
+    useEventListener('executeCardReplacement', wrappedExecuteCardReplacement);
+    useEventListener('clearCardsAddedThisTurn', wrappedClearCardsAddedThisTurn);
+    useEventListener('useCard', wrappedUseCard);
+    useEventListener('timeChanged', wrappedTimeChanged);
+    useEventListener('moneyChanged', wrappedMoneyChanged);
     
     
     /**
-     * Process space effects when player lands on space
+     * Process space effects when player lands on space - STABILIZED
      */
-    function processSpaceEffects(playerId, spaceData) {
+    const processSpaceEffects = React.useCallback((playerId, spaceData) => {
         // Process time cost
         if (spaceData.Time) {
             const timeValue = parseInt(spaceData.Time.replace(/\D/g, '')) || 0;
@@ -131,12 +151,12 @@ function GameManager() {
                 spaceData: spaceData
             });
         }
-    }
+    }, [gameStateManager, showMovementOptions]);
     
     /**
-     * Process card actions (Draw, Replace, Remove, etc.)
+     * Process card actions (Draw, Replace, Remove, etc.) - STABILIZED
      */
-    function processCardAction(playerId, cardType, actionText) {
+    const processCardAction = React.useCallback((playerId, cardType, actionText) => {
         
         const action = ComponentUtils.parseCardAction(actionText);
         
@@ -165,12 +185,12 @@ function GameManager() {
                     action: action.text 
                 });
         }
-    }
+    }, [gameStateManager, drawCardsForPlayer, replaceCardsForPlayer, removeCardsFromPlayer]);
     
     /**
-     * Draw random cards for player
+     * Draw random cards for player - STABILIZED
      */
-    function drawCardsForPlayer(playerId, cardType, amount) {
+    const drawCardsForPlayer = React.useCallback((playerId, cardType, amount) => {
         
         if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
             console.error('GameManager: CSVDatabase not loaded for card drawing');
@@ -201,12 +221,12 @@ function GameManager() {
             cards: drawnCards,
             amount: drawnCards.length
         });
-    }
+    }, [gameStateManager]);
     
     /**
-     * Replace cards in player hand - triggers modal for card selection
+     * Replace cards in player hand - triggers modal for card selection - STABILIZED
      */
-    function replaceCardsForPlayer(playerId, cardType, amount) {
+    const replaceCardsForPlayer = React.useCallback((playerId, cardType, amount) => {
         const players = gameState.players;
         const player = players.find(p => p.id === playerId);
         
@@ -253,12 +273,12 @@ function GameManager() {
             playerCards: player.cards,
             playerName: player.name
         });
-    }
+    }, [gameState.players, gameStateManager, drawCardsForPlayer]);
     
     /**
-     * Execute card replacement with specific card indices
+     * Execute card replacement with specific card indices - STABILIZED
      */
-    function executeCardReplacement(playerId, cardType, cardIndices) {
+    const executeCardReplacement = React.useCallback((playerId, cardType, cardIndices) => {
         const players = [...gameState.players];
         const player = players.find(p => p.id === playerId);
         
@@ -295,12 +315,12 @@ function GameManager() {
                 );
             }
         }
-    }
+    }, [gameState.players, gameStateManager, drawCardsForPlayer]);
     
     /**
-     * Remove cards from player hand
+     * Remove cards from player hand - STABILIZED
      */
-    function removeCardsFromPlayer(playerId, cardType, amount) {
+    const removeCardsFromPlayer = React.useCallback((playerId, cardType, amount) => {
         const players = [...gameState.players];
         const player = players.find(p => p.id === playerId);
         
@@ -319,12 +339,12 @@ function GameManager() {
                 amount: removeCount
             });
         }
-    }
+    }, [gameState.players, gameStateManager]);
     
     /**
-     * Process dice roll outcomes from CSV data
+     * Process dice roll outcomes from CSV data - STABILIZED
      */
-    function processDiceOutcome(playerId, outcome, cardType, spaceName, visitType) {
+    const processDiceOutcome = React.useCallback((playerId, outcome, cardType, spaceName, visitType) => {
         
         if (!outcome || outcome === 'No change') {
             return;
@@ -389,12 +409,12 @@ function GameManager() {
             spaceName,
             visitType
         });
-    }
+    }, [gameStateManager, processCardAction, gameState.players]);
     
     /**
-     * Show movement options from space data
+     * Show movement options from space data - STABILIZED
      */
-    function showMovementOptions(playerId, spaceData) {
+    const showMovementOptions = React.useCallback((playerId, spaceData) => {
         // Delegate to GameInitializer if available, otherwise use local logic
         if (window.GameInitializer && window.GameInitializer.showMovementOptions) {
             window.GameInitializer.showMovementOptions(playerId, spaceData);
@@ -414,7 +434,7 @@ function GameManager() {
                 });
             }
         }
-    }
+    }, [gameStateManager]);
     
     
     
