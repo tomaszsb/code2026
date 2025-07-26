@@ -12,12 +12,24 @@ Single-page web app using vanilla HTML/CSS/JavaScript with React (via CDN). Play
 
 ## Essential Commands
 ```bash
-# Development server
-python -m http.server 8000
+# RELIABLE STARTUP MACRO (RECOMMENDED)
+./start-servers.sh                                 # Robust startup with status checks & cleanup
+./stop-servers.sh                                  # Clean shutdown of all servers
+
+# LEGACY COMMANDS (backup options)
+./startup.sh                                       # Starts servers + opens dashboards automatically
+npm run full-start                                 # Alternative with browser opening
+npm run dev-all                                    # Starts both servers without opening browsers
+
+# Manual controls
+./start-bridge.sh                                  # AI Bridge Server only (port 3001)
+python3 -m http.server 8000                       # Game server only (port 8000)  
+./open-dashboards.sh                               # Open both dashboards in browser
 
 # Testing URLs
-http://localhost:8000/                              # Main game (FixedApp)
-http://localhost:8000/?debug=true&logLevel=debug     # Debug mode
+http://localhost:3001/                             # AI Bridge Dashboard  
+http://localhost:8000/                             # Main game (FixedApp)
+http://localhost:8000/?debug=true&logLevel=debug   # Debug mode
 
 # Card Testing (after game initialization)
 window.giveCardToPlayer(playerId, 'W001')           # Add Work Card to player

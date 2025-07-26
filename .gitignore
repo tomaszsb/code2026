@@ -1,0 +1,16 @@
+# AI Communication Bridge - DO NOT COMMIT TO GAME REPO
+.server/
+
+# AI Task Files (Gemini's approach)
+CURRENT_TASK.md
+GEMINI.md
+NEXT_SESSION_PROMPT.md
+
+# Temporary communication files
+*.json
+!data/*.csv
+!js/**/*.json
+
+# Development only
+.env
+logs/

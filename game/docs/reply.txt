@@ -1,0 +1,238 @@
+ai-bridge-server.js                                                                                              │ │
+│ │                                                                                                                  │ │
+│ │ #!/usr/bin/env node                                                                                              │ │
+│ │                                                                                                                  │ │
+│ │ /**                                                                                                              │ │
+│ │  * AI-to-AI Communication Bridge Server with Human Oversight                                                     │ │
+│ │  * Features: Real-time dashboard, approval gates, comment injection                                              │ │
+│ │  * Usage: node ai-bridge-server.js                                                                               │ │
+│ │  * Dashboard: http://localhost:3001                                                                              │ │
+│ │  */                                                                                                              │ │
+│ │                                                                                                                  │ │
+│ │ const express = require('express');                                                                              │ │
+│ │ const http = require('http');                                                                                    │ │
+│ │ const socketIo = require('socket.io');                                                                           │ │
+│ │ const path = require('path');                                                                                    │ │
+│ │ const app = express();                                                                                           │ │
+│ │ const server = http.createServer(app);                                                                           │ │
+│ │ const io = socketIo(server);                                                                                     │ │
+│ │ const PORT = 3001;                                                                                               │ │
+│ │                                                                                                                  │ │
+│ │ // Middleware                                                                                                    │ │
+│ │ app.use(express.json({limit: '10mb'}));                                                                          │ │
+│ │ app.use(express.urlencoded({extended: true}));                                                                   │ │
+│ │ app.use(express.static(path.join(__dirname, 'public')));                                                         │ │
+│ │                                                                                                                  │ │
+│ │ // Communication state                                                                                           │ │
+│ │ let conversationHistory = [];                                                                                    │ │
+│ │ let pendingApproval = null;                                                                                      │ │
+│ │ let pausedCommunication = false;                                                                                 │ │
+│ │ let connectedClients = new Set();                                                                                │ │
+│ │                                                                                                                  │ │
+│ │ // Logging with broadcast to dashboard                                                                           │ │
+│ │ function logAndBroadcast(message, type = 'system') {                                                             │ │
+│ │   const logEntry = {                                                                                             │ │
+│ │     timestamp: new Date().toISOString(),                                                                         │ │
+│ │     type,                                                                                                        │ │
+│ │     message,                                                                                                     │ │
+│ │     id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`                                           │ │
+│ │   };                                                                                                             │ │
+│ │                                                                                                                  │ │
+│ │   console.log(`[${logEntry.timestamp}] ${type.toUpperCase()}: ${message}`);                                      │ │
+│ │   conversationHistory.push(logEntry);                                                                            │ │
+│ │                                                                                                                  │ │
+│ │   // Broadcast to all connected dashboards                                                                       │ │
+│ │   io.emit('newMessage', logEntry);                                                                               │ │
+│ │                                                                                                                  │ │
+│ │   return logEntry;                                                                                               │ │
+│ │ }                                                                                                                │ │
+│ │                                                                                                                  │ │
+│ │ // Dashboard route                                                                                               │ │
+│ │ app.get('/', (req, res) => {                                                                                     │ │
+│ │   res.sendFile(path.join(__dirname, 'dashboard.html'));                                                          │ │
+│ │ });                                                                                                              │ │
+│ │                                                                                                                  │ │
+│ │ // Health check                                                                                                  │ │
+│ │ app.get('/health', (req, res) => {                                                                               │ │
+│ │   res.json({                                                                                                     │ │
+│ │     status: 'healthy',                                                                                           │ │
+│ │     uptime: process.uptime(),                                                                                    │ │
+│ │     paused: pausedCommunication,                                                                                 │ │
+│ │     pending_approval: pendingApproval !== null,                                                                  │ │
+│ │     connected_clients: connectedClients.size                                                                     │ │
+│ │   });                                                                                                            │ │
+│ │ });                                                                                                              │ │
+│ │                                                                                                                  │ │
+│ │ // Claude posts tasks (requires approval)                                                                        │ │
+│ │ app.post('/task', (req, res) => {                                                                                │ │
+│ │   if (pausedCommunication) {                                                                                     │ │
+│ │     return res.status(423).json({                                                                                │ │
+│ │       status: 'communication_paused',                                                                            │ │
+│ │       message: 'Communication is paused. Check dashboard to resume.'                                             │ │
+│ │     });                                                                                                          │ │
+│ │   }                                                                                                              │ │
+│ │                                                                                                                  │ │
+│ │   const task = {                                                                                                 │ │
+│ │     ...req.body,                                                                                                 │ │
+│ │     id: req.body.id || `task_${Date.now()}`,                                                                     │ │
+│ │     created_at: new Date().toISOString(),                                                                        │ │
+│ │     status: 'pending_approval',                                                                                  │ │
+│ │     from: 'claude'                                                                                               │ │
+│ │   };                                                                                                             │ │
+│ │                                                                                                                  │ │
+│ │   pendingApproval = task;                                                                                        │ │
+│ │                                                                                                                  │ │
+│ │   logAndBroadcast(`Claude wants to send task: ${task.description}`, 'claude_request');                           │ │
+│ │                                                                                                                  │ │
+│ │   // Notify dashboard of pending approval                                                                        │ │
+│ │   io.emit('pendingApproval', {                                                                                   │ │
+│ │     task,                                                                                                        │ │
+│ │     message: 'New task from Claude requires approval'                                                            │ │
+│ │   });                                                                                                            │ │
+│ │                                                                                                                  │ │
+│ │   res.json({                                                                                                     │ │
+│ │     status: 'awaiting_approval',                                                                                 │ │
+│ │     task_id: task.id,                                                                                            │ │
+│ │     message: 'Task submitted for human approval. Check dashboard.'                                               │ │
+│ │   });                                                                                                            │ │
+│ │ });                                                                                                              │ │
+│ │                                                                                                                  │ │
+│ │ // Gemini polls for approved tasks                                                                               │ │
+│ │ app.get('/task', (req, res) => {                                                                                 │ │
+│ │   if (pausedCommunication) {                                                                                     │ │
+│ │     return res.json({                                                                                            │ │
+│ │       current_task: null,                                                                                        │ │
+│ │       has_task: false,                                                                                           │ │
+│ │       status: 'communication_paused',                                                                            │ │
+│ │       message: 'Communication is paused by human operator'                                                       │ │
+│ │     });                                                                                                          │ │
+│ │   }                                                                                                              │ │
+│ │                                                                                                                  │ │
+│ │   // Only return tasks that have been approved                                                                   │ │
+│ │   const approvedTask = conversationHistory                                                                       │ │
+│ │     .filter(entry => entry.type === 'approved_task')                                                             │ │
+│ │     .slice(-1)[0];                                                                                               │ │
+│ │                                                                                                                  │ │
+│ │   if (approvedTask) {                                                                                            │ │
+│ │     logAndBroadcast(`Gemini retrieved approved task: ${approvedTask.task.id}`, 'gemini_fetch');                  │ │
+│ │   }                                                                                                              │ │
+│ │                                                                                                                  │ │
+│ │   res.json({                                                                                                     │ │
+│ │     current_task: approvedTask?.task || null,                                                                    │ │
+│ │     has_task: approvedTask !== undefined,                                                                        │ │
+│ │     timestamp: new Date().toISOString()                                                                          │ │
+│ │   });                                                                                                            │ │
+│ │ });                                                                                                              │ │
+│ │                                                                                                                  │ │
+│ │ // Gemini reports completion (requires approval to relay to Claude)                                              │ │
+│ │ app.post('/complete', (req, res) => {                                                                            │ │
+│ │   const completion = {                                                                                           │ │
+│ │     completed_at: new Date().toISOString(),                                                                      │ │
+│ │     result: req.body.result || 'completed',                                                                      │ │
+│ │     notes: req.body.notes || '',                                                                                 │ │
+│ │     files_modified: req.body.files_modified || [],                                                               │ │
+│ │     from: 'gemini',                                                                                              │ │
+│ │     status: 'pending_approval'                                                                                   │ │
+│ │   };                                                                                                             │ │
+│ │                                                                                                                  │ │
+│ │   pendingApproval = {                                                                                            │ │
+│ │     type: 'completion',                                                                                          │ │
+│ │     data: completion                                                                                             │ │
+│ │   };                                                                                                             │ │
+│ │                                                                                                                  │ │
+│ │   logAndBroadcast(`Gemini completed task: ${completion.result}`, 'gemini_completion');                           │ │
+│ │                                                                                                                  │ │
+│ │   io.emit('pendingApproval', {                                                                                   │ │
+│ │     completion,                                                                                                  │ │
+│ │     message: 'Task completion from Gemini requires approval'                                                     │ │
+│ │   });                                                                                                            │ │
+│ │                                                                                                                  │ │
+│ │   res.json({                                                                                                     │ │
+│ │     status: 'completion_submitted',                                                                              │ │
+│ │     message: 'Completion submitted for human approval'                                                           │ │
+│ │   });                                                                                                            │ │
+│ │ });                                                                                                              │ │
+│ │                                                                                                                  │ │
+│ │ // WebSocket connection for dashboard                                                                            │ │
+│ │ io.on('connection', (socket) => {                                                                                │ │
+│ │   connectedClients.add(socket.id);                                                                               │ │
+│ │   logAndBroadcast(`Dashboard connected (${connectedClients.size} total)`, 'system');                             │ │
+│ │                                                                                                                  │ │
+│ │   // Send current state to new connection                                                                        │ │
+│ │   socket.emit('conversationHistory', conversationHistory);                                                       │ │
+│ │   socket.emit('systemState', {                                                                                   │ │
+│ │     paused: pausedCommunication,                                                                                 │ │
+│ │     pending_approval: pendingApproval,                                                                           │ │
+│ │     connected_clients: connectedClients.size                                                                     │ │
+│ │   });                                                                                                            │ │
+│ │                                                                                                                  │ │
+│ │   // Handle dashboard commands                                                                                   │ │
+│ │   socket.on('approveTask', () => {                                                                               │ │
+│ │     if (pendingApproval && pendingApproval.from === 'claude') {                                                  │ │
+│ │       const approvedEntry = {                                                                                    │ │
+│ │         timestamp: new Date().toISOString(),                                                                     │ │
+│ │         type: 'approved_task',                                                                                   │ │
+│ │         task: pendingApproval,                                                                                   │ │
+│ │         message: `Task approved: ${pendingApproval.description}`,                                                │ │
+│ │         id: `approved_${Date.now()}`                                                                             │ │
+│ │       };                                                                                                         │ │
+│ │                                                                                                                  │ │
+│ │       conversationHistory.push(approvedEntry);                                                                   │ │
+│ │       logAndBroadcast(`Human approved task: ${pendingApproval.id}`, 'approval');                                 │ │
+│ │                                                                                                                  │ │
+│ │       pendingApproval = null;                                                                                    │ │
+│ │       io.emit('taskApproved', approvedEntry);                                                                    │ │
+│ │     }                                                                                                            │ │
+│ │   });                                                                                                            │ │
+│ │                                                                                                                  │ │
+│ │   socket.on('rejectTask', (reason) => {                                                                          │ │
+│ │     if (pendingApproval) {                                                                                       │ │
+│ │       logAndBroadcast(`Human rejected task: ${reason || 'No reason provided'}`, 'rejection');                    │ │
+│ │       pendingApproval = null;                                                                                    │ │
+│ │       io.emit('taskRejected', {reason});                                                                         │ │
+│ │     }                                                                                                            │ │
+│ │   });                                                                                                            │ │
+│ │                                                                                                                  │ │
+│ │   socket.on('pauseCommunication', () => {                                                                        │ │
+│ │     pausedCommunication = true;                                                                                  │ │
+│ │     logAndBroadcast('Communication paused by human operator', 'system');                                         │ │
+│ │     io.emit('communicationPaused');                                                                              │ │
+│ │   });                                                                                                            │ │
+│ │                                                                                                                  │ │
+│ │   socket.on('resumeCommunication', () => {                                                                       │ │
+│ │     pausedCommunication = false;                                                                                 │ │
+│ │     logAndBroadcast('Communication resumed by human operator', 'system');                                        │ │
+│ │     io.emit('communicationResumed');                                                                             │ │
+│ │   });                                                                                                            │ │
+│ │                                                                                                                  │ │
+│ │   socket.on('addComment', (comment) => {                                                                         │ │
+│ │     const commentEntry = {                                                                                       │ │
+│ │       timestamp: new Date().toISOString(),                                                                       │ │
+│ │       type: 'human_comment',                                                                                     │ │
+│ │       message: comment,                                                                                          │ │
+│ │       id: `comment_${Date.now()}`                                                                                │ │
+│ │     };                                                                                                           │ │
+│ │                                                                                                                  │ │
+│ │     conversationHistory.push(commentEntry);                                                                      │ │
+│ │     logAndBroadcast(`Human comment: ${comment}`, 'human');                                                       │ │
+│ │     io.emit('newMessage', commentEntry);                                                                         │ │
+│ │   });                                                                                                            │ │
+│ │                                                                                                                  │ │
+│ │   socket.on('disconnect', () => {                                                                                │ │
+│ │     connectedClients.delete(socket.id);                                                                          │ │
+│ │     logAndBroadcast(`Dashboard disconnected (${connectedClients.size} remaining)`, 'system');                    │ │
+│ │   });                                                                                                            │ │
+│ │ });                                                                                                              │ │
+│ │                                                                                                                  │ │
+│ │ // Start server                                                                                                  │ │
+│ │ server.listen(PORT, () => {                                                                                      │ │
+│ │   logAndBroadcast(`AI Communication Bridge Server running on http://localhost:${PORT}`, 'system');               │ │
+│ │   logAndBroadcast(`Dashboard available at http://localhost:${PORT}`, 'system');                                  │ │
+│ │   console.log('🤖 Ready for supervised Claude <-> Gemini communication');                                        │ │
+│ │ });                                                                                                              │ │
+│ │                                                                                                                  │ │
+│ │ // Graceful shutdown                                                                                             │ │
+│ │ process.on('SIGINT', () => {                                                                                     │ │
+│ │   logAndBroadcast('Shutting down AI Bridge Server...', 'system');                                                │ │
+│ │   process.exit(0);                                                                                               │ │
+│ │ });     

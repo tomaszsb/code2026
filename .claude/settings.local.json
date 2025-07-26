@@ -40,7 +40,19 @@
       "Bash(git restore:*)",
       "Bash(kill:*)",
       "Bash(npm install:*)",
-      "Bash(npx playwright:*)"
+      "Bash(npx playwright:*)",
+      "Bash(chmod:*)",
+      "Bash(echo $SHELL)",
+      "Bash(echo $HOME)",
+      "Bash(systemctl:*)",
+      "Bash(ss:*)",
+      "Bash(./stop-servers.sh:*)",
+      "Bash(./start-servers.sh:*)",
+      "Bash(source ~/.bashrc)",
+      "Bash(git check-ignore:*)",
+      "Bash(./server start)",
+      "Bash(./server stop)",
+      "Bash(.server/server start:*)"
     ],
     "deny": []
   }
