@@ -1,3 +1,15 @@
+
+# 🚨 NEW MESSAGE ALERT - AUTO-GENERATED
+
+**URGENT: You have a new message from gemini!**
+
+Received: 7/26/2025, 1:13:00 AM
+Content preview: Hello Claude! This is Gemini, and I'm testing our new file-based communication. It seems to be worki...
+
+**Action:** Check your inbox immediately and respond to this message.
+
+---
+
 # CLAUDE.md - Essential Development Reference
 
 **Project Management Board Game - Clean Architecture**
@@ -12,22 +24,18 @@ Single-page web app using vanilla HTML/CSS/JavaScript with React (via CDN). Play
 
 ## Essential Commands
 ```bash
-# RELIABLE STARTUP MACRO (RECOMMENDED)
-./start-servers.sh                                 # Robust startup with status checks & cleanup
-./stop-servers.sh                                  # Clean shutdown of all servers
+# 🚀 SINGLE COMMAND STARTUP (RECOMMENDED)
+./start-ai-control.sh                              # Complete AI Control Center - starts hybrid bridge + opens dashboard
 
-# LEGACY COMMANDS (backup options)
-./startup.sh                                       # Starts servers + opens dashboards automatically
-npm run full-start                                 # Alternative with browser opening
-npm run dev-all                                    # Starts both servers without opening browsers
+# 🤖 AI AUTOMATION (Individual control)
+./smart_claude.sh                                  # Start Claude with auto-trigger  
+./smart_gemini.sh                                  # Start Gemini with auto-trigger
 
-# Manual controls
-./start-bridge.sh                                  # AI Bridge Server only (port 3001)
-python3 -m http.server 8000                       # Game server only (port 8000)  
-./open-dashboards.sh                               # Open both dashboards in browser
+# 🎮 GAME SERVER (Manual start if needed)
+python3 -m http.server 8000                       # Game server only (port 8000)
 
-# Testing URLs
-http://localhost:3001/                             # AI Bridge Dashboard  
+# 📊 DASHBOARD URLs
+http://localhost:3003/                             # AI Control Dashboard (Hybrid Bridge)
 http://localhost:8000/                             # Main game (FixedApp)
 http://localhost:8000/?debug=true&logLevel=debug   # Debug mode
 
@@ -54,7 +62,13 @@ git pull origin main                                # Pull latest changes
 
 ### Key Files
 ```
-# Core Systems - CENTRALIZED ACTION TRACKING ARCHITECTURE
+# AI Control System - v5.0 UNIFIED ARCHITECTURE
+start-ai-control.sh                 # SINGLE COMMAND startup for complete system
+.server/hybrid-ai-bridge.js         # Hybrid AI Bridge server (port 3003)
+simple-auto-responder.js            # Simple file-based auto-response system
+smart_claude.sh / smart_gemini.sh   # Simplified AI startup scripts
+
+# Core Game Systems - CENTRALIZED ACTION TRACKING
 js/data/GameStateManager.js         # SINGLE SOURCE OF TRUTH for all action tracking
 js/data/CSVDatabase.js              # Unified CSV query system
 js/utils/CardUtils.js               # Centralized card configurations & utilities
@@ -253,11 +267,15 @@ gameState.players?.find()  // Defensive
 - ✅ **Clean CSV Architecture** - 7-file structure, specialized engines
 - ✅ **Production Code Quality** - All syntax/reference errors resolved
 
-### Key Features - CENTRALIZED ARCHITECTURE
-- **Centralized Action Tracking**: GameStateManager owns all turn logic
-- **Standardized Events**: playerActionTaken unifies dice/card/movement actions
-- **Pure Presentation**: UI components read state, emit events only
-- **Real-time Updates**: Action counter updates synchronously via central brain
+### Key Features - UNIFIED AI CONTROL SYSTEM v5.0
+- **Single Command Startup**: `./start-ai-control.sh` launches complete system
+- **Hybrid AI Bridge**: Port 3003 dashboard with comprehensive AI control
+- **Simple Auto-Responder**: Reliable file-based communication with instant responses
+- **Smart Scripts**: Simplified `smart_claude.sh` and `smart_gemini.sh` for auto-responses
+- **Built-in Documentation**: Command dictionary with 6 organized categories
+- **Clean Architecture**: Consolidated codebase, removed 20+ deprecated files
+- **Real-time Dashboard**: Monitor conversations, send messages, control approvals
+- **Game Integration**: Board game on port 8000, AI system on port 3003
 - **CSV-driven content**: All game data from unified CSV API
 - **Interactive board**: Snake layout, 27 spaces, click-to-explore
 - **Card system**: Phase-restricted E cards, immediate W/B/I/L effects

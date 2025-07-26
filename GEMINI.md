@@ -1,5 +1,8 @@
-Project Hub NYC PM Game (Version 4.8)
-Last Updated: July 25, 2025
+Project Hub NYC PM Game (Version 5.0) 🚀
+Last Updated: July 26, 2025
+
+## 🎉 NEW IN v5.0: UNIFIED AI CONTROL SYSTEM
+**Major Infrastructure Enhancement:** Complete AI collaboration system implemented with single-command startup and comprehensive dashboard interface.
 
 1. Project Charter & Vision
 1.1. Game Concept: A 27-space digital board game simulating the 6 major phases of an NYC construction project. Players navigate the board making decisions that impact their Time, Money, and Scope.
@@ -10,7 +13,9 @@ Last Updated: July 25, 2025
 
 2. Current Project State
 2.1. Implemented Features
-NEW (v4.8): Major Architectural Refactor - Centralized Action Tracking. The entire system for tracking player actions has been refactored. The GameStateManager is now the single source of truth, eliminating numerous race conditions. UI components like TurnControls.js have been dramatically simplified. The action counter is now fully functional.
+✅ **v5.0 AI Control System**: Complete unified AI collaboration interface with single-command startup, hybrid bridge on port 3003, and comprehensive dashboard controls.
+✅ **v4.8 Centralized Action Tracking**: GameStateManager as single source of truth, eliminated race conditions, simplified UI components, functional action counter.
+✅ **Clean Architecture**: Removed 20+ deprecated files, consolidated command structure, fresh mailbox state.
 
 2.2. Known Issues & Master "Punch List"
 NEW: Player Movement Post-Turn Bug: After all required actions are complete and the "End Turn" button is clicked, the player's token does not move to the selected space.
@@ -18,11 +23,12 @@ NEW: Cards Not Appearing in Hand Bug: When a player draws cards, the UI in the "
 NEW: TypeError: Cannot read properties of null (reading 'emit') - Occurs after Start Game button click, preventing UI transition.
 Environmental Bug (Workaround Found): The browser console enters a loop when the "Enter" key is used. The current workaround is to use the browser's "Snippets" tool for testing.
 
-3. Project Assets
+3. Project Assets & AI Control System
 Repository: https://github.com/tomaszsb/code2026
-Final Commit of Session: d20fad3 (This will be updated by Claude)
-Tech: React (CDN), JavaScript (ES6 Modules), CSS, Papa Parse.
-Run locally: python3 -m http.server 8000
+Tech: React (CDN), JavaScript (ES6 Modules), CSS, Papa Parse + Hybrid AI Bridge
+🚀 AI Control: ./start-ai-control.sh (Single command startup)
+📊 AI Dashboard: http://localhost:3003/ (Complete control interface)
+🎮 Game: python3 -m http.server 8000 (or via dashboard controls)
 
 4. Workflow & Session Management
 4.1. Mutual Synchronization Protocol (v3.1)
@@ -37,14 +43,17 @@ Run locally: python3 -m http.server 8000
 6. Document Management Directive
 At the end of every successful work session, I must provide a new, complete, and updated version of this entire Project Hub document.
 
-7. Active Development Plan
-Objective: Formally conclude the session to secure the successful architectural refactor.
-Status: COMPLETE.
-Next Action: Begin the next session by addressing the "TypeError: Cannot read properties of null (reading 'emit')" noted in the Punch List (Section 2.2).
+7. Active Development Plan - v5.0
+**Previous Objective:** AI Control System Implementation
+**Status:** ✅ COMPLETE
+**Current Phase:** Ready for AI collaboration testing and game bug resolution
+**AI System:** Fully operational - use `./start-ai-control.sh` → Dashboard → "🚀 Start Both AIs"
+**Next Priority:** Collaborative debugging of game issues using new AI control system
 
 8. Version Log
-v4.8 (July 23, 2025): Landmark Architectural Refactor. After a prolonged debugging session, the entire action-tracking system was successfully refactored. All action-counting logic was centralized into the GameStateManager. This fixed a cascade of bugs related to the action counter. Two new bugs related to post-turn movement and card UI updates were identified and logged.
-v4.9 (July 25, 2025): Extensive React State Management Debugging. Addressed persistent "Maximum update depth exceeded" errors through comprehensive fixes to `useGameState` hook (deep equality, stable references, `useEffect` dependency management). Implemented loading gates and prop passing for `GameStateManager` availability. Unresolved: `TypeError: Cannot read properties of null (reading 'emit')` persists.
+v4.8 (July 23, 2025): Landmark Architectural Refactor. Centralized action-tracking system in GameStateManager, fixed action counter bugs.
+v4.9 (July 25, 2025): React State Management Debugging. Fixed re-render loops, improved hook stability.
+**v5.0 (July 26, 2025): 🚀 AI Control System Complete.** Implemented unified AI collaboration interface with single-command startup (`./start-ai-control.sh`), hybrid bridge server (port 3003), comprehensive dashboard controls, built-in command dictionary, and clean architecture. Added reliable simple auto-responder system (`simple-auto-responder.js`) for instant dashboard communication. Simplified smart scripts for automatic AI responses. Removed 20+ deprecated files. All mailboxes cleared for fresh start. **System fully operational with working auto-responses.**
 
 9. Core Principles & Lessons Learned
 9.1. Start with a complete, single-file document.
@@ -82,3 +91,10 @@ v4.9 (July 25, 2025): Extensive React State Management Debugging. Addressed pers
 9.33. NEW (v4.9): Global vs. Prop References. Mixing global `window` object access with prop-based dependency injection in React components leads to timing issues and `null` reference errors. Components should consistently rely on props for external dependencies.
 9.34. NEW (v4.9): Iterative Debugging is Essential, but Isolation is Key. When targeted fixes fail, drastic isolation steps (like simplifying components) are necessary to pinpoint the root cause of persistent issues.
 9.35. NEW (v4.9): User Feedback is Invaluable. Detailed symptom descriptions and console output from the user are critical for diagnosing complex, interconnected issues.
+9.36. NEW (v5.0): Consolidation Over Confusion. Multiple similar systems create confusion. One unified interface beats many specialized ones.
+9.37. NEW (v5.0): Built-in Documentation is Essential. Users need command references readily available, not scattered across files.
+9.38. NEW (v5.0): Clean Slate Approach. Starting fresh with cleaned mailboxes and removed deprecated files prevents legacy confusion.
+9.39. NEW (v5.0): Single Command Startup. Complex multi-step processes should be reduced to one simple command when possible.
+9.40. NEW (v5.0): Simple Solutions Beat Complex Ones. The reliable auto-responder system replaced complex piping/trigger architecture.
+9.41. NEW (v5.0): File-Based Communication is Reliable. Direct file monitoring with immediate responses beats complex inter-process communication.
+9.42. NEW (v5.0): Shared Auto-Responder Works. One auto-responder handling both Claude and Gemini messages is simpler than separate systems.

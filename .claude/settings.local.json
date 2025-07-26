@@ -52,7 +52,27 @@
       "Bash(git check-ignore:*)",
       "Bash(./server start)",
       "Bash(./server stop)",
-      "Bash(.server/server start:*)"
+      "Bash(.server/server start:*)",
+      "Bash(.server/server stop:*)",
+      "Bash(touch:*)",
+      "Bash(./.server/stop-servers.sh:*)",
+      "Bash(./.server/start-servers.sh:*)",
+      "Bash(pgrep:*)",
+      "Bash(./.server/stop-enhanced-servers.sh:*)",
+      "Bash(./.server/start-with-auto-responder.sh:*)",
+      "Bash(./.server/stop-all-enhanced-servers.sh:*)",
+      "Bash(./.server/start-with-cli-integration.sh:*)",
+      "Bash(./.server/start-simple.sh:*)",
+      "Bash(./.server/stop-simple.sh:*)",
+      "WebFetch(domain:agentcommunicationprotocol.dev)",
+      "WebFetch(domain:agentprotocol.ai)",
+      "WebFetch(domain:research.ibm.com)",
+      "Bash(./.server/start-hybrid.sh:*)",
+      "Bash(./stop-hybrid.sh:*)",
+      "Bash(./start-full-automation.sh:*)",
+      "Bash(echo:*)",
+      "Bash(./test-piping.sh)",
+      "Bash(./start-ai-control.sh:*)"
     ],
     "deny": []
   }
