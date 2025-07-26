@@ -13,10 +13,12 @@ bridge.log
 
 # AI Task Files (Gemini's approach)
 CURRENT_TASK.md
-GEMINI.md
+GEMINI*.md
 NEXT_SESSION_PROMPT.md
 AI_CONTROL_README.md
 *_CHECK_INBOX.md
+*_CHECK_NOW.md
+*_URGENT_MESSAGE.md
 
 # AI Message Files
 *MESSAGE*.txt
