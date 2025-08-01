@@ -3,9 +3,6 @@
  * Shows detailed space information and allows exploration
  */
 
-// React hooks
-const { useState, useEffect } = React;
-
 // Helper function to get phase color
 function getPhaseColor(phase) {
     const phaseColors = {

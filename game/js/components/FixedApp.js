@@ -4,7 +4,7 @@
 
 function FixedApp({ debugMode = false, logLevel = 'info' }) {
     const { useState, useEffect } = React;
-    const { loaded, error } = useCSVData();
+    const { loaded, error } = window.useCSVData();
     
     // Use working useGameState hook pattern (same as other components)
     const [gameState, gameStateManager] = window.useGameState();
@@ -77,7 +77,7 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
     
     
     // Main application
-    return React.createElement(ErrorBoundary, null,
+    return React.createElement(window.ErrorBoundary, null,
         React.createElement('div', { className: 'app' },
             showPlayerSetup 
                 ? React.createElement(FixedPlayerSetup, { onInitializeGame: initializeGame })
@@ -651,79 +651,7 @@ const FixedPlayerSetup = React.memo(({ onInitializeGame }) => {
     );
 });
 
-// Error boundary component
-class ErrorBoundary extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = { hasError: false, error: null, errorInfo: null };
-    }
 
-    static getDerivedStateFromError(error) {
-        return { hasError: true };
-    }
-
-    componentDidCatch(error, errorInfo) {
-        console.error('ErrorBoundary caught an error:', error);
-        console.error('Error info:', errorInfo);
-        this.setState({
-            error: error,
-            errorInfo: errorInfo
-        });
-    }
-
-    render() {
-        if (this.state.hasError) {
-            return React.createElement('div', 
-                { style: { padding: '20px', background: '#ffe6e6', border: '1px solid #ff9999', borderRadius: '8px', margin: '20px' } },
-                React.createElement('h2', { style: { color: '#cc0000' } }, 'React Error Caught'),
-                React.createElement('p', null, 'Error: ' + (this.state.error?.message || 'Unknown error')),
-                React.createElement('pre', { style: { fontSize: '12px', background: '#f5f5f5', padding: '10px' } }, 
-                    this.state.error?.stack || 'No stack trace'
-                ),
-                React.createElement('button', { 
-                    onClick: () => {
-                        this.setState({ hasError: false, error: null, errorInfo: null });
-                    },
-                    style: { padding: '10px 20px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }
-                }, 'Try Again')
-            );
-        }
-
-        return this.props.children;
-    }
-}
-
-// CSV data loading hook
-function useCSVData() {
-    const { useState, useEffect } = React;
-    const [loaded, setLoaded] = useState(false);
-    const [error, setError] = useState(null);
-    
-    useEffect(() => {
-        if (window.CSVDatabase && window.CSVDatabase.loaded) {
-            setLoaded(true);
-        } else {
-            const checkLoading = setInterval(() => {
-                if (window.CSVDatabase && window.CSVDatabase.loaded) {
-                    setLoaded(true);
-                    clearInterval(checkLoading);
-                }
-            }, 100);
-            
-            // Timeout after 10 seconds
-            setTimeout(() => {
-                if (!loaded) {
-                    setError('Failed to load game data');
-                    clearInterval(checkLoading);
-                }
-            }, 10000);
-            
-            return () => clearInterval(checkLoading);
-        }
-    }, []);
-    
-    return { loaded, error };
-}
 
 // Export components
 window.FixedApp = FixedApp;

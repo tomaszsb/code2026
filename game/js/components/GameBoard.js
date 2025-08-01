@@ -6,7 +6,7 @@
 
 function GameBoard() {
     const { useState, useEffect, useCallback } = React;
-    const [gameState, gameStateManager] = useGameState();
+    const [gameState, gameStateManager] = window.useGameState();
     const [selectedSpace, setSelectedSpace] = useState(null);
     const [availableMoves, setAvailableMoves] = useState([]);
     const [boardState, setBoardState] = useState({
@@ -21,6 +21,10 @@ function GameBoard() {
     
     // Update available moves when current player or position changes
     useEffect(() => {
+        if (!gameStateManager) {
+            return; // Do nothing if the manager isn't ready
+        }
+        
         if (currentPlayer && window.CSVDatabase && window.CSVDatabase.loaded) {
             const currentSpaceData = window.CSVDatabase.spaceContent.find(
                 currentPlayer.position, 
@@ -28,7 +32,7 @@ function GameBoard() {
             );
             
             if (currentSpaceData) {
-                const moves = ComponentUtils.getNextSpaces(currentPlayer.position, currentPlayer.visitType || 'First');
+                const moves = window.ComponentUtils.getNextSpaces(currentPlayer.position, currentPlayer.visitType || 'First');
                 setAvailableMoves(moves);
                 
                 // Update board state
@@ -43,10 +47,11 @@ function GameBoard() {
                 });
             }
         }
-    }, [currentPlayer?.position, currentPlayer?.visitType, currentPlayer?.id]);
+    }, [gameStateManager, currentPlayer?.position, currentPlayer?.visitType, currentPlayer?.id]);
     
     // Handle space selection - only updates Space Explorer, never moves player
     const handleSpaceClick = useCallback((spaceName) => {
+        if (!gameStateManager) return;
         if (!window.CSVDatabase || !window.CSVDatabase.loaded) return;
         
         const spaceData = window.CSVDatabase.spaceContent.find(spaceName, 'First');
@@ -69,6 +74,7 @@ function GameBoard() {
     
     // Handle player move with CSV-driven logic
     const handleMovePlayer = useCallback((spaceName, visitType = 'First') => {
+        if (!gameStateManager) return;
         if (!currentPlayer || !window.CSVDatabase || !window.CSVDatabase.loaded) return;
         
         // Get space data to determine effects
@@ -89,6 +95,8 @@ function GameBoard() {
     
     // Process space effects based on CSV data
     const processSpaceEffects = (spaceData, player) => {
+        if (!gameStateManager) return;
+        
         // Time cost
         if (spaceData.Time) {
             const timeValue = parseInt(spaceData.Time) || 0;
@@ -103,7 +111,7 @@ function GameBoard() {
         
         // Fee cost
         if (spaceData.Fee) {
-            const feeValue = ComponentUtils.parseFeeAmount(spaceData.Fee);
+            const feeValue = window.ComponentUtils.parseFeeAmount(spaceData.Fee);
             if (feeValue > 0) {
                 gameStateManager.updatePlayerMoney(player.id, -feeValue, `Fee at ${spaceData.space_name}`);
             }
@@ -125,6 +133,8 @@ function GameBoard() {
     
     // Process individual card effect
     const processCardEffect = (effectText, cardType, player) => {
+        if (!gameStateManager) return;
+        
         gameStateManager.emit('cardEffectTriggered', {
             effect: effectText,
             cardType: cardType,

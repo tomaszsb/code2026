@@ -74,11 +74,6 @@ class GameStateManager {
         const listener = { callback, context };
         this.listeners.get(eventName).push(listener);
         
-        // Enhanced debugging for event subscription
-        const listenerCount = this.listeners.get(eventName).length;
-        console.log(`🔊 GameStateManager.on - Added listener for '${eventName}'. Total listeners: ${listenerCount}`);
-        console.log(`🔊 Callback function:`, callback.name || 'anonymous', callback);
-        
         this.log(`Listener added for event: ${eventName}`);
         
         // Return unsubscribe function
@@ -90,7 +85,6 @@ class GameStateManager {
      */
     off(eventName, callback) {
         if (!this.listeners.has(eventName)) {
-            console.log(`🔇 GameStateManager.off - No listeners exist for '${eventName}'`);
             return;
         }
         
@@ -99,12 +93,7 @@ class GameStateManager {
         
         if (index !== -1) {
             listeners.splice(index, 1);
-            const remainingCount = listeners.length;
-            console.log(`🔇 GameStateManager.off - Removed listener for '${eventName}'. Remaining listeners: ${remainingCount}`);
-            console.log(`🔇 Removed callback:`, callback.name || 'anonymous', callback);
             this.log(`Listener removed for event: ${eventName}`);
-        } else {
-            console.log(`🔇 GameStateManager.off - Callback not found for '${eventName}'`);
         }
     }
 
@@ -113,13 +102,6 @@ class GameStateManager {
      */
     emit(eventName, data = null) {
         this.log(`Emitting event: ${eventName}`, data);
-        
-        // Enhanced debugging for event emission
-        const listenerCount = this.listeners.has(eventName) ? this.listeners.get(eventName).length : 0;
-        console.log(`📢 GameStateManager.emit - Emitting '${eventName}' to ${listenerCount} listeners`);
-        if (data) {
-            console.log(`📢 Event data:`, data);
-        }
         
         // Add to event history for debugging
         if (this.debug) {
@@ -132,22 +114,18 @@ class GameStateManager {
         }
         
         if (!this.listeners.has(eventName)) {
-            console.log(`📢 No listeners registered for '${eventName}'`);
             return;
         }
         
         const listeners = this.listeners.get(eventName);
         listeners.forEach(({ callback, context }, index) => {
             try {
-                console.log(`📢 Calling listener #${index + 1} for '${eventName}'`);
                 if (context) {
                     callback.call(context, data);
                 } else {
                     callback(data);
                 }
-                console.log(`📢 Listener #${index + 1} completed successfully`);
             } catch (error) {
-                console.error(`📢 Error in listener #${index + 1} for '${eventName}':`, error);
                 console.error(`Error in event listener for ${eventName}:`, error);
                 this.setState({ error: error.message });
             }
@@ -252,8 +230,6 @@ class GameStateManager {
      * Initialize new game
      */
     initializeGame(players, settings = {}) {
-        console.log('🎯 GameStateManager.initializeGame called with:', players);
-        console.log('🔄 Current state before initialization:', this.state);
         
         const newGameState = {
             ...this.getInitialState(),
@@ -283,12 +259,8 @@ class GameStateManager {
             gameSettings: { ...this.state.gameSettings, ...settings }
         };
         
-        console.log('🎯 New game state to be set:', newGameState);
-        
         // Use setState to ensure proper event emission and state change event
         this.setState(newGameState);
-        
-        console.log('✅ GameStateManager.setState completed. Current state:', this.state);
         
         // Save initial snapshots for all players at their starting positions
         this.state.players.forEach((player) => {

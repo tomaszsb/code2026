@@ -1,13 +1,3 @@
-
-# 🚨 NEW MESSAGE ALERT - AUTO-GENERATED
-
-**URGENT: You have a new message from gemini!**
-
-Received: 7/26/2025, 1:13:00 AM
-Content preview: Hello Claude! This is Gemini, and I'm testing our new file-based communication. It seems to be worki...
-
-**Action:** Check your inbox immediately and respond to this message.
-
 ---
 
 # CLAUDE.md - Essential Development Reference
@@ -24,18 +14,10 @@ Single-page web app using vanilla HTML/CSS/JavaScript with React (via CDN). Play
 
 ## Essential Commands
 ```bash
-# 🚀 SINGLE COMMAND STARTUP (RECOMMENDED)
-./start-ai-control.sh                              # Complete AI Control Center - starts hybrid bridge + opens dashboard
-
-# 🤖 AI AUTOMATION (Individual control)
-./smart_claude.sh                                  # Start Claude with auto-trigger  
-./smart_gemini.sh                                  # Start Gemini with auto-trigger
-
 # 🎮 GAME SERVER (Manual start if needed)
 python3 -m http.server 8000                       # Game server only (port 8000)
 
-# 📊 DASHBOARD URLs
-http://localhost:3003/                             # AI Control Dashboard (Hybrid Bridge)
+# 📊 GAME URLs
 http://localhost:8000/                             # Main game (FixedApp)
 http://localhost:8000/?debug=true&logLevel=debug   # Debug mode
 
@@ -62,12 +44,6 @@ git pull origin main                                # Pull latest changes
 
 ### Key Files
 ```
-# AI Control System - v5.0 UNIFIED ARCHITECTURE
-start-ai-control.sh                 # SINGLE COMMAND startup for complete system
-.server/hybrid-ai-bridge.js         # Hybrid AI Bridge server (port 3003)
-simple-auto-responder.js            # Simple file-based auto-response system
-smart_claude.sh / smart_gemini.sh   # Simplified AI startup scripts
-
 # Core Game Systems - CENTRALIZED ACTION TRACKING
 js/data/GameStateManager.js         # SINGLE SOURCE OF TRUTH for all action tracking
 js/data/CSVDatabase.js              # Unified CSV query system
@@ -106,7 +82,7 @@ js/components/CardsInHand.js        # Card grid display (140 lines)
 # Data Files - Clean CSV Architecture with Dice Integration
 data/cards.csv                      # Card properties and effects (unchanged)
 data/MOVEMENT.csv                   # Space-to-space connections
-data/DICE_OUTCOMES.csv              # Dice roll destinations  
+data/DICE_OUTCOMES.csv              # Dice roll destinations
 data/SPACE_EFFECTS.csv              # Card/time/money effects with conditions + dice references
 data/DICE_EFFECTS.csv               # Dice-based card drawing amounts (1-6 outcomes)
 data/SPACE_CONTENT.csv              # UI display text and story content
@@ -232,7 +208,7 @@ gameState.players?.find()  // Defensive
 3. GameStateManager
 4. Shared utilities (CardUtils.js)
 5. New engines (MovementEngine.js, EffectsEngine.js, ContentEngine.js)
-6. Component utilities  
+6. Component utilities
 7. Manager components
 8. UI components (GameBoard, SpaceExplorer, RulesModal)
 9. Panel components (PlayerStatusPanel, ActionPanel)
@@ -249,14 +225,6 @@ gameState.players?.find()  // Defensive
 - ✅ **ACTION COUNTER FUNCTIONAL** - Real-time updates from centralized brain
 - ✅ **Player Lookup Refactor Complete** - All unsafe array indexing eliminated
 
-### React State Management Debugging - SESSION COMPLETE
-- ✅ **INFINITE RE-RENDER LOOP RESOLVED** - Fixed "Maximum update depth exceeded" error
-- ✅ **useGameState Hook Stabilized** - Implemented deep equality comparison and fixed useEffect dependencies
-- ✅ **Event Listener Race Conditions Fixed** - Removed premature cleanup and dependency issues
-- ✅ **GameStateManager Reference Consistency** - Fixed global vs hook reference timing issues
-- ✅ **Component Prop Architecture** - GameInterface now uses stable gameStateManager prop
-- ⚠️ **CURRENT UNRESOLVED ISSUE** - TypeError: Cannot read properties of null (reading 'emit') after Start Game button click
-
 ### Files Modified in Session
 - `js/utils/ComponentUtils.js` - Fixed useGameState hook with deep equality and stable references
 - `js/components/FixedApp.js` - Added gameStateManager loading gate and prop passing to GameInterface
@@ -267,15 +235,6 @@ gameState.players?.find()  // Defensive
 - ✅ **Clean CSV Architecture** - 7-file structure, specialized engines
 - ✅ **Production Code Quality** - All syntax/reference errors resolved
 
-### Key Features - UNIFIED AI CONTROL SYSTEM v5.0
-- **Single Command Startup**: `./start-ai-control.sh` launches complete system
-- **Hybrid AI Bridge**: Port 3003 dashboard with comprehensive AI control
-- **Simple Auto-Responder**: Reliable file-based communication with instant responses
-- **Smart Scripts**: Simplified `smart_claude.sh` and `smart_gemini.sh` for auto-responses
-- **Built-in Documentation**: Command dictionary with 6 organized categories
-- **Clean Architecture**: Consolidated codebase, removed 20+ deprecated files
-- **Real-time Dashboard**: Monitor conversations, send messages, control approvals
-- **Game Integration**: Board game on port 8000, AI system on port 3003
 - **CSV-driven content**: All game data from unified CSV API
 - **Interactive board**: Snake layout, 27 spaces, click-to-explore
 - **Card system**: Phase-restricted E cards, immediate W/B/I/L effects
@@ -297,7 +256,7 @@ Complete refactor from fragmented action tracking to centralized GameStateManage
 1. **GameStateManager Enhancement**:
    - Added `currentTurn` object to state model
    - Implemented `initializeTurnActions(playerId)` method
-   - Added `processPlayerAction(actionData)` processing engine  
+   - Added `processPlayerAction(actionData)` processing engine
    - Created `handlePlayerAction(eventData)` event handler
 
 2. **Standardized Event System**:
@@ -343,7 +302,7 @@ For detailed information see:
 
 ### CSV Files (Clean Architecture)
 - ✅ **MOVEMENT.csv**: Space-to-space connections (54 entries)
-- ✅ **SPACE_EFFECTS.csv**: Card/time/money effects with conditions (120 entries)  
+- ✅ **SPACE_EFFECTS.csv**: Card/time/money effects with conditions (120 entries)
 - ✅ **SPACE_CONTENT.csv**: UI display text and story content (54 entries)
 - ✅ **DICE_OUTCOMES.csv**: Dice roll destination mapping (18 entries)
 - ✅ **DICE_EFFECTS.csv**: Dice-based card/money effects (33 entries)

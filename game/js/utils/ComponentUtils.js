@@ -11,44 +11,34 @@ const { useState, useEffect, useCallback, useRef } = React;
  * Prevents unnecessary re-renders from new object references with identical content
  */
 function areStatesEqual(state1, state2) {
-    console.log('areStatesEqual - START: state1 =', state1, 'state2 =', state2);
-    
     // Quick reference equality check
     if (state1 === state2) {
-        console.log('areStatesEqual - Early Return (Reference Equality): true');
         return true;
     }
     
     // Handle null/undefined cases
     if (state1 == null || state2 == null) {
-        const result = state1 === state2;
-        console.log('areStatesEqual - Early Return (Null/Undefined):', result);
-        return result;
+        return state1 === state2;
     }
     
     // Type check
     if (typeof state1 !== typeof state2) {
-        console.log('areStatesEqual - Early Return (Type Mismatch): false');
         return false;
     }
     
     // Handle primitives
     if (typeof state1 !== 'object') {
-        const result = state1 === state2;
-        console.log('areStatesEqual - Primitive Comparison:', result);
-        return result;
+        return state1 === state2;
     }
     
     // Handle arrays
     if (Array.isArray(state1) !== Array.isArray(state2)) return false;
     if (Array.isArray(state1)) {
         if (state1.length !== state2.length) {
-            console.log('areStatesEqual - Array Length Mismatch: false');
             return false;
         }
         for (let i = 0; i < state1.length; i++) {
             if (!areStatesEqual(state1[i], state2[i])) {
-                console.log(`areStatesEqual - Array Element Mismatch at index ${i}: false`);
                 return false;
             }
         }
@@ -60,22 +50,18 @@ function areStatesEqual(state1, state2) {
     const keys2 = Object.keys(state2);
     
     if (keys1.length !== keys2.length) {
-        console.log('areStatesEqual - Object Key Length Mismatch: false');
         return false;
     }
     
     for (const key of keys1) {
         if (!keys2.includes(key)) {
-            console.log(`areStatesEqual - Object Key Missing: ${key}: false`);
             return false;
         }
         if (!areStatesEqual(state1[key], state2[key])) {
-            console.log(`areStatesEqual - Object Value Mismatch for key ${key}: false`);
             return false;
         }
     }
     
-    console.log('areStatesEqual - END: All checks passed, result: true');
     return true;
 }
 
@@ -110,15 +96,8 @@ function useGameState() {
     
     // STABLE handleStateChange with useCallback at top level - FIXED RULES OF HOOKS
     const handleStateChange = useCallback(() => {
-        // Increment call counter
-        handleStateChangeCallCountRef.current++;
-        
-        console.group(`🔍 handleStateChange - Call #${handleStateChangeCallCountRef.current} at ${new Date().toISOString()}`);
-        
         const currentGameStateManager = gameStateManagerRef.current;
         if (!currentGameStateManager) {
-            console.error('🚨 handleStateChange called but GameStateManager not available');
-            console.groupEnd();
             return;
         }
         
@@ -126,29 +105,11 @@ function useGameState() {
         
         // Use functional setState to avoid gameState dependency
         setGameState(prevState => {
-            // Enhanced logging with JSON stringification and error handling
-            try {
-                console.log('📊 PREVIOUS gameState (JSON):');
-                console.log(JSON.stringify(prevState, null, 2));
-                console.log('📊 NEW State from GameStateManager (JSON):');
-                console.log(JSON.stringify(newState, null, 2));
-            } catch (error) {
-                console.warn('⚠️ JSON.stringify failed:', error.message);
-                console.log('📊 PREVIOUS gameState (raw):', prevState);
-                console.log('📊 NEW State (raw):', newState);
-            }
-            
-            console.log('🔄 Calling areStatesEqual...');
             const areContentEqual = areStatesEqual(prevState, newState);
-            console.log(`✅ areStatesEqual result: ${areContentEqual}`);
             
             if (!areContentEqual) {
-                console.error('🚨 UPDATING to newState - This will trigger re-render!');
-                console.groupEnd();
                 return newState;
             } else {
-                console.info('✋ State content is identical, keeping prevState.');
-                console.groupEnd();
                 return prevState;
             }
         });
@@ -160,28 +121,19 @@ function useGameState() {
         
         // If GameStateManager is not available, skip subscription
         if (!window.GameStateManager) {
-            console.log('⚠️ GameStateManager not available during useEffect');
             return;
         }
         
         // GameStateManager is available - perform one-time subscription
         const currentGameStateManager = gameStateManagerRef.current;
         
-        console.log('🔄 useGameState useEffect - Setting up event listeners ONCE. Current gameState:', gameState);
-        
         // Subscribe to events - ONLY ONCE
         const unsubscribe1 = currentGameStateManager.on('stateChanged', handleStateChange);
         const unsubscribe2 = currentGameStateManager.on('gameInitialized', handleStateChange);
         
-        console.log('✅ Event listeners established - will remain active until component unmounts');
-        
         return () => {
-            console.log('🧹 useGameState useEffect cleanup - Component unmounting, unsubscribing from events');
-            console.log('🧹 unsubscribe1:', unsubscribe1);
-            console.log('🧹 unsubscribe2:', unsubscribe2);
             unsubscribe1?.();
             unsubscribe2?.();
-            console.log('🧹 useGameState useEffect cleanup completed');
         };
     }, []); // Run only once on mount - no dependencies to prevent re-runs
     
