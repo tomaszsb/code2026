@@ -519,6 +519,13 @@ class MovementEngine {
      */
     getSpaceData(spaceName, visitType = 'First') {
         if (!this.validateDatabaseAccess()) return null;
+        
+        // Double safety check - ensure database is still loaded after validation
+        if (!window.CSVDatabase?.loaded) {
+            this.log('Database no longer loaded after validation');
+            return null;
+        }
+        
         // Use movement data for space connections - it contains destination_1, destination_2, etc.
         return window.CSVDatabase.movement.find(spaceName, visitType);
     }

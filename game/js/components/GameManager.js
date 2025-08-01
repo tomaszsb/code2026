@@ -97,6 +97,29 @@ function GameManager() {
     const wrappedUseCard = React.useCallback(handleEvent(useCardHandler, 'useCard'), [handleEvent, useCardHandler]);
     const wrappedTimeChanged = React.useCallback(handleEvent(timeChangedHandler, 'timeChanged'), [handleEvent, timeChangedHandler]);
     const wrappedMoneyChanged = React.useCallback(handleEvent(moneyChangedHandler, 'moneyChanged'), [handleEvent, moneyChangedHandler]);
+    
+    // Consolidated dice processing handler
+    const processDiceRollComplete = React.useCallback(({ playerId, spaceName, visitType, rollValue }) => {
+        try {
+            if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+                throw new Error('CSVDatabase not loaded yet');
+            }
+            
+            const diceConfig = window.CSVDatabase.diceOutcomes.find(spaceName, visitType);
+            if (diceConfig) {
+                // Get the destination space for the specific dice roll
+                const destination = diceConfig[`roll_${rollValue}`];
+                if (destination) {
+                    // Move player to the destination space - emit for GameInitializer to handle movement
+                    gameStateManager.emit('movePlayerRequest', { playerId, spaceName: destination, visitType: 'First' });
+                }
+            }
+        } catch (error) {
+            gameStateManager.handleError(error, 'Dice Roll Complete');
+        }
+    }, [gameStateManager]);
+    
+    const wrappedProcessDiceRollComplete = React.useCallback(handleEvent(processDiceRollComplete, 'diceRollComplete'), [handleEvent, processDiceRollComplete]);
 
     useEventListener('processSpaceEffects', wrappedProcessSpaceEffects);
     useEventListener('movePlayerToSpace', wrappedMovePlayerToSpace);
@@ -107,6 +130,9 @@ function GameManager() {
     useEventListener('useCard', wrappedUseCard);
     useEventListener('timeChanged', wrappedTimeChanged);
     useEventListener('moneyChanged', wrappedMoneyChanged);
+    
+    // Consolidated dice processing - handle all dice roll completions
+    useEventListener('diceRollComplete', wrappedProcessDiceRollComplete);
     
     
     /**
@@ -412,29 +438,16 @@ function GameManager() {
     }, [gameStateManager, processCardAction, gameState.players]);
     
     /**
-     * Show movement options from space data - STABILIZED
+     * Show movement options from space data - Delegate to GameInitializer
      */
     const showMovementOptions = React.useCallback((playerId, spaceData) => {
-        // Delegate to GameInitializer if available, otherwise use local logic
+        // Always delegate to GameInitializer - it's the authoritative source
         if (window.GameInitializer && window.GameInitializer.showMovementOptions) {
             window.GameInitializer.showMovementOptions(playerId, spaceData);
         } else {
-            const nextSpaces = ComponentUtils.getNextSpaces(spaceData.space_name, spaceData.visit_type || 'First');
-            
-            if (nextSpaces.length === 0) {
-                // No movement options - end turn
-                gameStateManager.emit('noMovementOptions', { playerId, spaceData });
-            } else {
-                // Let player choose their next move regardless of number of options
-                // This prevents auto-movement and gives player control
-                gameStateManager.emit('availableMovesUpdated', {
-                    playerId,
-                    availableMoves: nextSpaces,
-                    spaceData
-                });
-            }
+            console.error('GameManager: GameInitializer.showMovementOptions not available');
         }
-    }, [gameStateManager]);
+    }, []);
     
     
     
@@ -445,58 +458,60 @@ function GameManager() {
 // Export component
 window.GameManager = GameManager;
 
-// Debug functions - Available immediately when script loads
-window.giveCardToPlayer = (cardId, playerId) => {
-    if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
-        console.error('CSVDatabase not loaded. Cannot give card.');
-        return;
-    }
-    
-    if (!window.GameStateManager) {
-        console.error('GameStateManager not available. Cannot give card.');
-        return;
-    }
-    
-    // Use correct CSVDatabase API - cards.find() with filter object
-    const card = window.CSVDatabase.cards.find({ card_id: cardId });
-    if (card) {
-        // Determine card type and add to player
-        window.GameStateManager.addCardsToPlayer(playerId, card.card_type, [card]);
-        console.log(`Successfully gave card "${cardId}" (${card.card_name}) to ${playerId}.`);
-    } else {
-        console.error(`Card with ID "${cardId}" not found in CSVDatabase.`);
-    }
-};
+// Debug functions - Only available in debug mode
+if (window.debugMode) {
+    window.giveCardToPlayer = (cardId, playerId) => {
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+            console.error('CSVDatabase not loaded. Cannot give card.');
+            return;
+        }
+        
+        if (!window.GameStateManager) {
+            console.error('GameStateManager not available. Cannot give card.');
+            return;
+        }
+        
+        // Use correct CSVDatabase API - cards.find() with filter object
+        const card = window.CSVDatabase.cards.find({ card_id: cardId });
+        if (card) {
+            // Determine card type and add to player
+            window.GameStateManager.addCardsToPlayer(playerId, card.card_type, [card]);
+            console.log(`Successfully gave card "${cardId}" (${card.card_name}) to ${playerId}.`);
+        } else {
+            console.error(`Card with ID "${cardId}" not found in CSVDatabase.`);
+        }
+    };
 
-// Debug function to inspect live GameStateManager state
-window.showGameState = () => {
-    if (!window.GameStateManager) {
-        console.error('GameStateManager not available');
-        return;
-    }
-    console.log('=== Live GameStateManager State ===');
-    console.log(window.GameStateManager.state);
-    
-    // Also show player details for convenience
-    if (window.GameStateManager.state.players) {
-        console.log('=== Player Details ===');
-        window.GameStateManager.state.players.forEach((player, index) => {
-            console.log(`Player ${index}:`, {
-                id: player.id,
-                name: player.name,
-                space: player.space,
-                money: player.money,
-                timeSpent: player.timeSpent,
-                cardCounts: {
-                    W: player.cards.W?.length || 0,
-                    B: player.cards.B?.length || 0,
-                    I: player.cards.I?.length || 0,
-                    L: player.cards.L?.length || 0,
-                    E: player.cards.E?.length || 0
-                }
+    // Debug function to inspect live GameStateManager state
+    window.showGameState = () => {
+        if (!window.GameStateManager) {
+            console.error('GameStateManager not available');
+            return;
+        }
+        console.log('=== Live GameStateManager State ===');
+        console.log(window.GameStateManager.state);
+        
+        // Also show player details for convenience
+        if (window.GameStateManager.state.players) {
+            console.log('=== Player Details ===');
+            window.GameStateManager.state.players.forEach((player, index) => {
+                console.log(`Player ${index}:`, {
+                    id: player.id,
+                    name: player.name,
+                    space: player.space,
+                    money: player.money,
+                    timeSpent: player.timeSpent,
+                    cardCounts: {
+                        W: player.cards.W?.length || 0,
+                        B: player.cards.B?.length || 0,
+                        I: player.cards.I?.length || 0,
+                        L: player.cards.L?.length || 0,
+                        E: player.cards.E?.length || 0
+                    }
+                });
             });
-        });
-    }
-    
-    return window.GameStateManager.state;
-};
+        }
+        
+        return window.GameStateManager.state;
+    };
+}

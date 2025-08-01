@@ -44,8 +44,7 @@ function GameInitializer() {
                     movementEngine.applySpaceEffects(player, currentSpaceData, visitType || 'First');
                 }
             } else {
-                // Emit fallback event for GameManager to handle
-                gameStateManager.emit('processSpaceEffectsFallback', { playerId, spaceData });
+                console.warn('GameInitializer: MovementEngine not available for space effects processing');
             }
             
         } catch (error) {
@@ -53,22 +52,7 @@ function GameInitializer() {
         }
     });
     
-    // Handle dice roll outcomes
-    useEventListener('diceRollComplete', ({ playerId, spaceName, visitType, rollValue }) => {
-        try {
-            const diceConfig = window.CSVDatabase.diceOutcomes.find(spaceName, visitType);
-            if (diceConfig) {
-                // Get the destination space for the specific dice roll
-                const destination = diceConfig[`roll_${rollValue}`];
-                if (destination) {
-                    // Move player to the destination space
-                    gameStateManager.emit('movePlayerToSpace', { playerId, destination, visitType: 'First' });
-                }
-            }
-        } catch (error) {
-            gameStateManager.handleError(error, 'Dice Roll');
-        }
-    });
+    // Note: diceRollComplete processing moved to GameManager for consolidation
     
     // Handle space re-entry (for rediscovering actions after negotiation)
     useEventListener('spaceReentry', ({ playerId, spaceName, visitType }) => {
@@ -80,10 +64,10 @@ function GameInitializer() {
                 return;
             }
             
-            // Get space data and emit for GameManager to re-process space effects
+            // Get space data and emit for space effects processing
             const spaceData = window.CSVDatabase.spaceContent.find(spaceName, visitType);
             if (spaceData) {
-                gameStateManager.emit('processSpaceEffectsFallback', { playerId, spaceData });
+                gameStateManager.emit('processSpaceEffects', playerId, spaceData);
             } else {
                 console.error(`GameInitializer: Space data not found for ${spaceName}/${visitType}`);
             }
