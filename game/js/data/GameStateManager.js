@@ -551,7 +551,9 @@ class GameStateManager {
         
         // Update player scope if W cards were added
         if (cardType === 'W') {
-            this.updatePlayerScope(playerId, players);
+            const { scopeItems, scopeTotalCost } = this.calculatePlayerScope(updatedPlayer.cards.W);
+            updatedPlayer.scopeItems = scopeItems;
+            updatedPlayer.scopeTotalCost = scopeTotalCost;
         }
 
         console.log(`🎯 DEBUG: About to setState with new players array. Old length=${this.state.players.length}, New length=${players.length}`);

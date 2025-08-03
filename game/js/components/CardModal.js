@@ -54,7 +54,7 @@ function CardModal({ selectedCard, isVisible, onClose }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 999999,
             animation: 'fadeIn 0.3s ease-out'
         }
     }, [
@@ -143,10 +143,14 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                         ]),
                         
                         // Card content area - now uses CardModalContent component
-                        React.createElement(window.CardModalContent, {
+                        window.CardModalContent ? React.createElement(window.CardModalContent, {
+                            key: 'card-modal-content',
                             selectedCard,
                             cardFlipped: false
-                        }),
+                        }) : React.createElement('div', {
+                            key: 'fallback-content',
+                            style: { padding: '20px', color: 'red' }
+                        }, 'CardModalContent not loaded'),
                         
                         // Card footer
                         React.createElement('div', {
@@ -176,10 +180,14 @@ function CardModal({ selectedCard, isVisible, onClose }) {
                             borderRadius: '20px'
                         }
                     }, [
-                        React.createElement(window.CardModalContent, {
+                        window.CardModalContent ? React.createElement(window.CardModalContent, {
+                            key: 'card-modal-content-flipped',
                             selectedCard,
                             cardFlipped: true
-                        })
+                        }) : React.createElement('div', {
+                            key: 'fallback-content-flipped',
+                            style: { padding: '20px', color: 'red' }
+                        }, 'CardModalContent not loaded')
                     ])
                 ])
             ]),

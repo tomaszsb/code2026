@@ -317,7 +317,7 @@ function GameManager({ gameState, gameStateManager }) {
     /**
      * Process dice roll outcomes from CSV data - STABILIZED
      */
-    const processDiceOutcome = React.useCallback((playerId, outcome, cardType, spaceName, visitType) => {
+    const processDiceOutcome = React.useCallback(({ playerId, outcome, cardType, spaceName, visitType }) => {
         if (!gameStateManager) {
             return;
         }
@@ -332,10 +332,10 @@ function GameManager({ gameState, gameStateManager }) {
             const effectiveCardType = cardType || ComponentUtils.parseCardTypeFromOutcome(outcome);
             
             if (effectiveCardType) {
-                processCardAction(playerId, effectiveCardType, outcome);
+                processCardAction({ playerId, cardType: effectiveCardType, action: outcome });
             } else {
                 // If no specific card type, default to drawing any type of card
-                processCardAction(playerId, 'W', outcome);
+                processCardAction({ playerId, cardType: 'W', action: outcome });
             }
         }
         // Check if outcome is a movement instruction
