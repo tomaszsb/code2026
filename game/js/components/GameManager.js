@@ -4,8 +4,7 @@
  * NO UI - pure logic component
  */
 
-function GameManager() {
-    const [gameState, gameStateManager] = useGameState();
+function GameManager({ gameState, gameStateManager }) {
     
     // Initialize EffectsEngine instance - persistent for component lifetime
     const effectsEngineRef = React.useRef(null);
@@ -65,80 +64,16 @@ function GameManager() {
         };
     }, [gameStateManager]);
 
-    // STABILIZED EVENT HANDLERS - Create stable references for all handlers
-    const movePlayerToSpaceHandler = React.useCallback(({ playerId, destination, visitType }) => {
-        return gameStateManager.movePlayerWithEffects(playerId, destination, visitType || 'First');
-    }, [gameStateManager]);
-    
-    const clearCardsAddedThisTurnHandler = React.useCallback(() => {
-        // Obsolete feature - no longer needed in centralized architecture
-        console.log('clearCardsAddedThisTurn: Feature obsolete in new architecture');
-    }, []);
-    
-    const useCardHandler = React.useCallback(({ playerId, cardId }) => {
-        return gameStateManager.usePlayerCard(playerId, cardId);
-    }, [gameStateManager]);
-    
-    const timeChangedHandler = React.useCallback(({ playerId, amount, source }) => {
-        return gameStateManager.updatePlayerTime(playerId, amount, source || 'game_event', true);
-    }, [gameStateManager]);
-    
-    const moneyChangedHandler = React.useCallback(({ playerId, amount, source }) => {
-        return gameStateManager.updatePlayerMoney(playerId, amount, source || 'game_event', true);
-    }, [gameStateManager]);
-
-    // STABILIZED EVENT LISTENER SUBSCRIPTIONS - All handlers wrapped with stable handleEvent
-    const wrappedProcessSpaceEffects = React.useCallback(handleEvent(processSpaceEffects, 'processSpaceEffects'), [handleEvent, processSpaceEffects]);
-    const wrappedMovePlayerToSpace = React.useCallback(handleEvent(movePlayerToSpaceHandler, 'movePlayerToSpace'), [handleEvent, movePlayerToSpaceHandler]);
-    const wrappedProcessDiceOutcome = React.useCallback(handleEvent(processDiceOutcome, 'processDiceOutcome'), [handleEvent, processDiceOutcome]);
-    const wrappedProcessCardAction = React.useCallback(handleEvent(processCardAction, 'processCardAction'), [handleEvent, processCardAction]);
-    const wrappedExecuteCardReplacement = React.useCallback(handleEvent(executeCardReplacement, 'executeCardReplacement'), [handleEvent, executeCardReplacement]);
-    const wrappedClearCardsAddedThisTurn = React.useCallback(handleEvent(clearCardsAddedThisTurnHandler, 'clearCardsAddedThisTurn'), [handleEvent, clearCardsAddedThisTurnHandler]);
-    const wrappedUseCard = React.useCallback(handleEvent(useCardHandler, 'useCard'), [handleEvent, useCardHandler]);
-    const wrappedTimeChanged = React.useCallback(handleEvent(timeChangedHandler, 'timeChanged'), [handleEvent, timeChangedHandler]);
-    const wrappedMoneyChanged = React.useCallback(handleEvent(moneyChangedHandler, 'moneyChanged'), [handleEvent, moneyChangedHandler]);
-    
-    // Consolidated dice processing handler
-    const processDiceRollComplete = React.useCallback(({ playerId, spaceName, visitType, rollValue }) => {
-        try {
-            if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
-                throw new Error('CSVDatabase not loaded yet');
-            }
-            
-            const diceConfig = window.CSVDatabase.diceOutcomes.find(spaceName, visitType);
-            if (diceConfig) {
-                // Get the destination space for the specific dice roll
-                const destination = diceConfig[`roll_${rollValue}`];
-                if (destination) {
-                    // Move player to the destination space - emit for GameInitializer to handle movement
-                    gameStateManager.emit('movePlayerRequest', { playerId, spaceName: destination, visitType: 'First' });
-                }
-            }
-        } catch (error) {
-            gameStateManager.handleError(error, 'Dice Roll Complete');
-        }
-    }, [gameStateManager]);
-    
-    const wrappedProcessDiceRollComplete = React.useCallback(handleEvent(processDiceRollComplete, 'diceRollComplete'), [handleEvent, processDiceRollComplete]);
-
-    useEventListener('processSpaceEffects', wrappedProcessSpaceEffects);
-    useEventListener('movePlayerToSpace', wrappedMovePlayerToSpace);
-    useEventListener('processDiceOutcome', wrappedProcessDiceOutcome);
-    useEventListener('processCardAction', wrappedProcessCardAction);
-    useEventListener('executeCardReplacement', wrappedExecuteCardReplacement);
-    useEventListener('clearCardsAddedThisTurn', wrappedClearCardsAddedThisTurn);
-    useEventListener('useCard', wrappedUseCard);
-    useEventListener('timeChanged', wrappedTimeChanged);
-    useEventListener('moneyChanged', wrappedMoneyChanged);
-    
-    // Consolidated dice processing - handle all dice roll completions
-    useEventListener('diceRollComplete', wrappedProcessDiceRollComplete);
-    
+    // === HANDLER DEFINITIONS - All handlers defined first ===
     
     /**
      * Process space effects when player lands on space - STABILIZED
      */
     const processSpaceEffects = React.useCallback((playerId, spaceData) => {
+        if (!gameStateManager) {
+            return;
+        }
+        
         // Process time cost
         if (spaceData.Time) {
             const timeValue = parseInt(spaceData.Time.replace(/\D/g, '')) || 0;
@@ -177,30 +112,38 @@ function GameManager() {
                 spaceData: spaceData
             });
         }
-    }, [gameStateManager, showMovementOptions]);
+    }, [gameStateManager]);
     
     /**
      * Process card actions (Draw, Replace, Remove, etc.) - STABILIZED
      */
-    const processCardAction = React.useCallback((playerId, cardType, actionText) => {
-        
-        const action = ComponentUtils.parseCardAction(actionText);
-        
-        if (!action) {
+    const processCardAction = React.useCallback(({ playerId, cardType, action }) => {
+        if (!gameStateManager) {
+            console.log('🎯 GAMEMANAGER DEBUG: gameStateManager not available, skipping processCardAction');
             return;
         }
         
-        switch (action.type) {
+        const actionText = action; // Maintain compatibility with the rest of the function
+        console.log('🎯 GAMEMANAGER DEBUG: processCardAction called with:', { playerId, cardType, actionText });
+        
+        const parsedAction = ComponentUtils.parseCardAction(actionText);
+        console.log('🎯 GAMEMANAGER DEBUG: Parsed action:', parsedAction);
+        
+        if (!parsedAction) {
+            return;
+        }
+        
+        switch (parsedAction.type) {
             case 'draw':
-                drawCardsForPlayer(playerId, cardType, action.amount);
+                drawCardsForPlayer(playerId, cardType, parsedAction.amount);
                 break;
                 
             case 'replace':
-                replaceCardsForPlayer(playerId, cardType, action.amount);
+                replaceCardsForPlayer(playerId, cardType, parsedAction.amount);
                 break;
                 
             case 'remove':
-                removeCardsFromPlayer(playerId, cardType, action.amount);
+                removeCardsFromPlayer(playerId, cardType, parsedAction.amount);
                 break;
                 
             default:
@@ -208,10 +151,10 @@ function GameManager() {
                 gameStateManager.emit('customCardAction', { 
                     playerId, 
                     cardType, 
-                    action: action.text 
+                    action: parsedAction.text 
                 });
         }
-    }, [gameStateManager, drawCardsForPlayer, replaceCardsForPlayer, removeCardsFromPlayer]);
+    }, [gameStateManager]);
     
     /**
      * Draw random cards for player - STABILIZED
@@ -305,6 +248,10 @@ function GameManager() {
      * Execute card replacement with specific card indices - STABILIZED
      */
     const executeCardReplacement = React.useCallback((playerId, cardType, cardIndices) => {
+        if (!gameStateManager) {
+            return;
+        }
+        
         const players = [...gameState.players];
         const player = players.find(p => p.id === playerId);
         
@@ -371,6 +318,9 @@ function GameManager() {
      * Process dice roll outcomes from CSV data - STABILIZED
      */
     const processDiceOutcome = React.useCallback((playerId, outcome, cardType, spaceName, visitType) => {
+        if (!gameStateManager) {
+            return;
+        }
         
         if (!outcome || outcome === 'No change') {
             return;
@@ -435,7 +385,7 @@ function GameManager() {
             spaceName,
             visitType
         });
-    }, [gameStateManager, processCardAction, gameState.players]);
+    }, [gameStateManager]);
     
     /**
      * Show movement options from space data - Delegate to GameInitializer
@@ -448,6 +398,93 @@ function GameManager() {
             console.error('GameManager: GameInitializer.showMovementOptions not available');
         }
     }, []);
+
+    // STABILIZED EVENT HANDLERS - Create stable references for all handlers
+    const movePlayerToSpaceHandler = React.useCallback(({ playerId, destination, visitType }) => {
+        if (!gameStateManager) {
+            return;
+        }
+        return gameStateManager.movePlayerWithEffects(playerId, destination, visitType || 'First');
+    }, [gameStateManager]);
+    
+    const clearCardsAddedThisTurnHandler = React.useCallback(() => {
+        // Obsolete feature - no longer needed in centralized architecture
+        console.log('clearCardsAddedThisTurn: Feature obsolete in new architecture');
+    }, []);
+    
+    const useCardHandler = React.useCallback(({ playerId, cardId }) => {
+        if (!gameStateManager) {
+            return;
+        }
+        return gameStateManager.usePlayerCard(playerId, cardId);
+    }, [gameStateManager]);
+    
+    const timeChangedHandler = React.useCallback(({ playerId, amount, source }) => {
+        if (!gameStateManager) {
+            return;
+        }
+        return gameStateManager.updatePlayerTime(playerId, amount, source || 'game_event', true);
+    }, [gameStateManager]);
+    
+    const moneyChangedHandler = React.useCallback(({ playerId, amount, source }) => {
+        if (!gameStateManager) {
+            return;
+        }
+        return gameStateManager.updatePlayerMoney(playerId, amount, source || 'game_event', true);
+    }, [gameStateManager]);
+
+    // === SIMPLIFIED WRAPPERS - Remove incorrect useCallback wrapping ===
+    const wrappedProcessSpaceEffects = handleEvent(processSpaceEffects, 'processSpaceEffects');
+    const wrappedMovePlayerToSpace = handleEvent(movePlayerToSpaceHandler, 'movePlayerToSpace');
+    const wrappedProcessDiceOutcome = handleEvent(processDiceOutcome, 'processDiceOutcome');
+    const wrappedProcessCardAction = handleEvent(processCardAction, 'processCardAction');
+    const wrappedExecuteCardReplacement = handleEvent(executeCardReplacement, 'executeCardReplacement');
+    const wrappedClearCardsAddedThisTurn = handleEvent(clearCardsAddedThisTurnHandler, 'clearCardsAddedThisTurn');
+    const wrappedUseCard = handleEvent(useCardHandler, 'useCard');
+    const wrappedTimeChanged = handleEvent(timeChangedHandler, 'timeChanged');
+    const wrappedMoneyChanged = handleEvent(moneyChangedHandler, 'moneyChanged');
+    
+    // Consolidated dice processing handler
+    const processDiceRollComplete = React.useCallback(({ playerId, spaceName, visitType, rollValue }) => {
+        if (!gameStateManager) {
+            return;
+        }
+        
+        try {
+            if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+                throw new Error('CSVDatabase not loaded yet');
+            }
+            
+            const diceConfig = window.CSVDatabase.diceOutcomes.find(spaceName, visitType);
+            if (diceConfig) {
+                // Get the destination space for the specific dice roll
+                const destination = diceConfig[`roll_${rollValue}`];
+                if (destination) {
+                    // Move player to the destination space - emit for GameInitializer to handle movement
+                    gameStateManager.emit('movePlayerRequest', { playerId, spaceName: destination, visitType: 'First' });
+                }
+            }
+        } catch (error) {
+            gameStateManager.handleError(error, 'Dice Roll Complete');
+        }
+    }, [gameStateManager]);
+    
+    const wrappedProcessDiceRollComplete = React.useCallback(handleEvent(processDiceRollComplete, 'diceRollComplete'), [handleEvent, processDiceRollComplete]);
+
+    useEventListener('processSpaceEffects', wrappedProcessSpaceEffects);
+    useEventListener('movePlayerToSpace', wrappedMovePlayerToSpace);
+    useEventListener('processDiceOutcome', wrappedProcessDiceOutcome);
+    useEventListener('processCardAction', wrappedProcessCardAction);
+    useEventListener('executeCardReplacement', wrappedExecuteCardReplacement);
+    useEventListener('clearCardsAddedThisTurn', wrappedClearCardsAddedThisTurn);
+    useEventListener('useCard', wrappedUseCard);
+    useEventListener('timeChanged', wrappedTimeChanged);
+    useEventListener('moneyChanged', wrappedMoneyChanged);
+    
+    // Consolidated dice processing - handle all dice roll completions
+    useEventListener('diceRollComplete', wrappedProcessDiceRollComplete);
+    
+    
     
     
     
@@ -458,60 +495,59 @@ function GameManager() {
 // Export component
 window.GameManager = GameManager;
 
-// Debug functions - Only available in debug mode
-if (window.debugMode) {
-    window.giveCardToPlayer = (cardId, playerId) => {
-        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
-            console.error('CSVDatabase not loaded. Cannot give card.');
-            return;
-        }
-        
-        if (!window.GameStateManager) {
-            console.error('GameStateManager not available. Cannot give card.');
-            return;
-        }
-        
-        // Use correct CSVDatabase API - cards.find() with filter object
-        const card = window.CSVDatabase.cards.find({ card_id: cardId });
-        if (card) {
-            // Determine card type and add to player
-            window.GameStateManager.addCardsToPlayer(playerId, card.card_type, [card]);
-            console.log(`Successfully gave card "${cardId}" (${card.card_name}) to ${playerId}.`);
-        } else {
-            console.error(`Card with ID "${cardId}" not found in CSVDatabase.`);
-        }
-    };
+// Debug functions - UNCONDITIONAL CREATION FOR DIAGNOSTIC PURPOSES
+window.giveCardToPlayer = (playerId, cardId) => {
+    console.log(`DEBUG: giveCardToPlayer called with playerId=${playerId}, cardId=${cardId}`);
 
-    // Debug function to inspect live GameStateManager state
-    window.showGameState = () => {
-        if (!window.GameStateManager) {
-            console.error('GameStateManager not available');
-            return;
-        }
-        console.log('=== Live GameStateManager State ===');
-        console.log(window.GameStateManager.state);
-        
-        // Also show player details for convenience
-        if (window.GameStateManager.state.players) {
-            console.log('=== Player Details ===');
-            window.GameStateManager.state.players.forEach((player, index) => {
-                console.log(`Player ${index}:`, {
-                    id: player.id,
-                    name: player.name,
-                    space: player.space,
-                    money: player.money,
-                    timeSpent: player.timeSpent,
-                    cardCounts: {
-                        W: player.cards.W?.length || 0,
-                        B: player.cards.B?.length || 0,
-                        I: player.cards.I?.length || 0,
-                        L: player.cards.L?.length || 0,
-                        E: player.cards.E?.length || 0
-                    }
-                });
+    if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+        console.error('CSVDatabase not loaded. Cannot give card.');
+        return;
+    }
+
+    if (!window.GameStateManager) {
+        console.error('GameStateManager not available. Cannot give card.');
+        return;
+    }
+
+    const card = window.CSVDatabase.cards.find({ card_id: cardId });
+    console.log(`DEBUG: Found card:`, card);
+
+    if (card) {
+        console.log(`DEBUG: About to call addCardsToPlayer with type=${card.card_type}`);
+        window.GameStateManager.addCardsToPlayer(playerId, card.card_type, [card]);
+        console.log(`Successfully gave card "${cardId}" (${card.card_name}) to ${playerId}.`);
+    } else {
+        console.error(`Card with ID "${cardId}" not found in CSVDatabase.`);
+    }
+};
+
+window.showGameState = () => {
+    if (!window.GameStateManager) {
+        console.error('GameStateManager not available');
+        return;
+    }
+    console.log('=== Live GameStateManager State ===');
+    console.log(window.GameStateManager.state);
+
+    if (window.GameStateManager.state.players) {
+        console.log('=== Player Details ===');
+        window.GameStateManager.state.players.forEach((player, index) => {
+            console.log(`Player ${index}:`, {
+                id: player.id,
+                name: player.name,
+                space: player.space,
+                money: player.money,
+                timeSpent: player.timeSpent,
+                cardCounts: {
+                    W: player.cards.W?.length || 0,
+                    B: player.cards.B?.length || 0,
+                    I: player.cards.I?.length || 0,
+                    L: player.cards.L?.length || 0,
+                    E: player.cards.E?.length || 0
+                }
             });
-        }
-        
-        return window.GameStateManager.state;
-    };
-}
+        });
+    }
+
+    return window.GameStateManager.state;
+};

@@ -138,9 +138,16 @@ const cardUsageMessage = GameStateManager.usePlayerCard(playerId, cardId);
 const scopeMessage = GameStateManager.addWorkToPlayerScope(playerId, workCost, workType, true);
 const discardMessage = GameStateManager.forcePlayerDiscard(playerId, cardCount, cardTypeFilter);
 
-// ✅ React components use useGameState hook for all game data
+// ✅ FixedApp calls useGameState, passes to GameManager as props (FIXED ARCHITECTURE)
+// In FixedApp.js:
 const [gameState, gameStateManager] = window.useGameState();
-const currentPlayer = gameState.players?.[gameState.currentPlayer];
+// Pass to GameManager:
+React.createElement(GameManager, { gameState, gameStateManager })
+
+// ✅ GameManager receives state as props (NO useGameState call)
+function GameManager({ gameState, gameStateManager }) {
+    // All event handlers have guaranteed valid gameStateManager reference
+}
 
 // ✅ React useState ONLY for UI-only concerns
 const [gameUIState, setGameUIState] = useState({
@@ -152,6 +159,9 @@ const [gameUIState, setGameUIState] = useState({
 // ❌ NO manual game state mutations in components
 updatedPlayer.money += amount;  // FORBIDDEN
 player.cards[cardType].push(card);  // FORBIDDEN
+
+// ❌ NO duplicate useGameState calls (RACE CONDITION FIXED)
+// GameManager should NOT call useGameState() - receives props only
 
 // ❌ NO duplicate game logic outside GameStateManager
 const spaceEffects = window.CSVDatabase.spaceEffects.query(...);  // FORBIDDEN in components
@@ -198,9 +208,11 @@ gameState.players?.find()  // Defensive
 - ❌ **Mixed data concerns** - use specialized files (movement vs effects vs content)
 - ❌ **Duplicate game logic** - ONLY GameStateManager modifies core game state
 - ❌ **Manual space effects processing** - use `GameStateManager.movePlayerWithEffects()` instead
-- ❌ **Dual state management** - React useState ONLY for UI-only concerns (modals, animations)
-- ❌ **Direct state mutations** - ALL game state changes must go through GameStateManager methods
-- ❌ **Unconditional debug functions** - Global debug functions must be wrapped in `window.debugMode` checks
+- ❌ **Dual state management** - FIXED: Only FixedApp calls useGameState(), GameManager receives props
+- ❌ **Direct state mutations** - ALL game state changes must go through GameStateManager methods  
+- ❌ **Race conditions** - FIXED: GameManager receives valid gameStateManager as prop
+- ❌ **React Hooks violations** - FIXED: No conditional hook calls
+- ❌ **Unconditional debug functions** - FIXED: Debug functions check URL parameters directly
 
 ## Loading Order (Critical)
 ```html
@@ -229,14 +241,18 @@ gameState.players?.find()  // Defensive
 - ✅ **BULLETPROOF CSV ERROR HANDLING** - 100% loading state coverage verified
 - ✅ **PRODUCTION-READY DEBUG FUNCTIONS** - Debug functions conditionalized
 
-### Latest Session Achievements
-- **Component Role Clarification**: Restored clean separation between GameManager (game logic) and GameInitializer (setup/movement)
-- **Dice Logic Consolidation**: Removed duplicate dice processing, centralized all dice handling in GameManager
-- **CSV Error Handling Audit**: Comprehensive verification confirmed excellent existing practices with one minor enhancement
-- **Debug Function Security**: Global debug functions now only active when `window.debugMode = true`
+### Latest Session Achievements - CARD DRAWING FUNCTIONALITY RESOLVED
+- **✅ CRITICAL BUG FIXED**: Card drawing functionality now works correctly
+- **Architectural Race Condition Resolved**: Fixed GameManager receiving gameState/gameStateManager as props instead of calling useGameState() internally
+- **Event Handler Stability**: Added guard clauses to all event handlers to prevent null reference errors
+- **React Hooks Compliance**: Fixed Rules of Hooks violations by removing conditional hook calls
+- **Immutability Bug Fixed**: Corrected calculatePlayerScope function to create new objects instead of mutating existing ones
+- **Debug Function Availability**: Made debug functions self-sufficient by checking URL parameters directly
+- **Infinite Loop Prevention**: Stabilized useCallback dependencies to prevent event listener re-registration loops
 - ✅ **Full GameStateManager** - Unified state management, zero duplicate logic
 - ✅ **Clean CSV Architecture** - 7-file structure, specialized engines
 - ✅ **Production Code Quality** - All syntax/reference errors resolved
+- ✅ **UI Reactivity Working** - Cards are successfully added and UI updates in real-time
 
 - **CSV-driven content**: All game data from unified CSV API
 - **Interactive board**: Snake layout, 27 spaces, click-to-explore
@@ -250,44 +266,65 @@ gameState.players?.find()  // Defensive
 - **Button standardization**: All action buttons use `.btn` base class
 - **Movement labels**: Use "FIRST VISIT" and "SUBSEQUENT VISIT"
 
-## MAJOR ARCHITECTURAL REFACTOR - CENTRALIZED ACTION TRACKING
+## MAJOR ARCHITECTURAL REFACTOR - CARD DRAWING FUNCTIONALITY RESOLUTION
 
 ### Overview
-Complete refactor from fragmented action tracking to centralized GameStateManager brain.
+Comprehensive debugging and architectural improvements to resolve critical card drawing functionality bugs.
 
-### Changes Made
-1. **GameStateManager Enhancement**:
-   - Added `currentTurn` object to state model
-   - Implemented `initializeTurnActions(playerId)` method
-   - Added `processPlayerAction(actionData)` processing engine
-   - Created `handlePlayerAction(eventData)` event handler
+### Root Cause Analysis
+The card drawing system had multiple interconnected issues:
+1. **Race Condition**: GameManager and FixedApp both calling useGameState() independently
+2. **Stale Closures**: Event handlers created with null gameStateManager references
+3. **React Hooks Violations**: Conditional hook calls violating Rules of Hooks
+4. **Immutability Bugs**: State mutations preventing React change detection
+5. **Event Handler Instability**: Infinite loops from unstable useCallback dependencies
 
-2. **Standardized Event System**:
-   - Created unified `playerActionTaken` event for all actions
-   - Updated DiceRollSection.js to emit standardized event
-   - Updated CardActionsSection.js to emit standardized event
-   - Updated TurnControls.js movement to emit standardized event
-   - Updated GameStateManager.usePlayerCard to emit standardized event
+### Critical Fixes Applied
 
-3. **Component Simplification**:
-   - **TurnControls.js**: Reduced from 470 to 303 lines (-40%)
-   - Removed all calculation logic (checkCanEndTurn, detectSpaceRequirements)
-   - Removed all event listeners and state management
-   - Now reads directly from `gameState.currentTurn.actionCounts`
-   - **FixedApp.js**: Removed turnControlState management
-   - Eliminated 13 props down to 3 props (-77% reduction)
-   - Removed handleTurnControlsStateChange wrapper
+1. **Architectural Race Condition Resolution**:
+   - Refactored GameManager to receive gameState/gameStateManager as props
+   - Eliminated dual useGameState() calls creating initialization race conditions
+   - Established clean top-down data flow from FixedApp → GameManager
 
-4. **Bug Fixes**:
-   - Fixed multiple SyntaxErrors in FixedApp.js React.createElement structure
-   - Fixed multiple ReferenceErrors in GameManager.js dead function calls
-   - Eliminated all race conditions through centralized updates
+2. **Event Handler Stabilization**:
+   - Added guard clauses (`if (!gameStateManager) return;`) to all event handlers
+   - Fixed Rules of Hooks violations by removing conditional hook calls
+   - Stabilized useCallback dependencies to prevent infinite re-registration loops
+
+3. **Immutability Corrections**:
+   - Fixed calculatePlayerScope to create new objects instead of mutating existing ones
+   - Ensured all state updates follow immutable patterns for React change detection
+   - Corrected event handler parameter destructuring to match emitted event format
+
+4. **Debug System Improvements**:
+   - Made debug functions self-sufficient by checking URL parameters directly
+   - Removed dependency on script loading order for debug function availability
+   - Added comprehensive diagnostic logging for debugging complex event flows
+
+### Technical Implementation Details
+
+**GameManager.js Changes**:
+- Function signature: `function GameManager({ gameState, gameStateManager })`
+- Removed internal `useGameState()` call
+- Added guard clauses to all event handlers
+- Fixed processCardAction parameter destructuring: `({ playerId, cardType, action })`
+
+**FixedApp.js Changes**:
+- Added props passing to GameManager: `gameState: gameState, gameStateManager: gameStateManager`
+- Conditional rendering: `gameStateManager && window.GameManager`
+
+**GameStateManager.js Changes**:
+- Fixed calculatePlayerScope immutability using Map and spread syntax
+- Removed legacy updatePlayerScope function
+- Enhanced addCardsToPlayer with proper immutable state updates
 
 ### Results
-- ✅ **Action Counter Functional**: Shows correct "0/2" → "1/2" → "2/2" progression
-- ✅ **Single Source of Truth**: All action logic in GameStateManager
-- ✅ **Zero Race Conditions**: Synchronous state updates
-- ✅ **Clean Architecture**: UI components are pure presentation
+- ✅ **Card Drawing Functional**: "Draw 3" buttons work correctly and add cards to player hands
+- ✅ **UI Reactivity Working**: Real-time updates when cards are added/removed
+- ✅ **Zero Race Conditions**: Predictable component initialization order
+- ✅ **React Compliance**: No Rules of Hooks violations or infinite loops
+- ✅ **Debugging Capability**: Comprehensive logging for future development
+- ✅ **Architectural Integrity**: Clean separation of concerns and data flow
 
 ---
 

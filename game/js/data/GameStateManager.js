@@ -462,8 +462,10 @@ class GameStateManager {
      * Add cards to player hand
      */
     addCardsToPlayer(playerId, cardType, cards, returnMessage = false) {
+        console.log(`🎯 DEBUG: addCardsToPlayer called with playerId=${playerId}, cardType=${cardType}, cards=`, cards);
         
         const playerIndex = this.state.players.findIndex(p => p.id === playerId);
+        console.log(`🎯 DEBUG: Found player at index ${playerIndex}`);
         
         if (playerIndex === -1) {
             console.error(`GameStateManager: Player ${playerId} not found`);
@@ -471,27 +473,48 @@ class GameStateManager {
         }
 
         const currentPlayer = this.state.players[playerIndex];
-        const cardCount = Array.isArray(cards) ? cards.length : 1;
         const cardsToAdd = Array.isArray(cards) ? cards : [cards];
 
-        // CARDS DISPLAY FIX: Create completely new player object with new cards reference
+        // --- Start of Immutable Update Logic ---
+
+        // 1. Calculate all potential changes first
+        let newMoney = currentPlayer.money || 0;
+        let newTimeSpent = currentPlayer.timeSpent || 0;
+
+        if (cardType !== 'E') {
+            cardsToAdd.forEach(card => {
+                newMoney += parseInt(card.loan_amount || 0);
+                newMoney += parseInt(card.investment_amount || 0);
+                newMoney += parseInt(card.money_effect || 0);
+                newTimeSpent += parseInt(card.time_effect || 0);
+            });
+        }
+
+        const newCardsForType = [...(currentPlayer.cards?.[cardType] || []), ...cardsToAdd];
+        const allWCards = cardType === 'W' ? newCardsForType : (currentPlayer.cards?.W || []);
+        const { scopeItems, scopeTotalCost } = this.calculatePlayerScope(allWCards);
+
+        // 2. Create the single, new, updated player object
         const updatedPlayer = {
             ...currentPlayer,
+            money: newMoney,
+            timeSpent: newTimeSpent,
             cards: {
-                ...(currentPlayer.cards || {}),
-                [cardType]: [
-                    ...(currentPlayer.cards?.[cardType] || []),
-                    ...cardsToAdd
-                ]
-            }
+                ...currentPlayer.cards,
+                [cardType]: newCardsForType
+            },
+            scopeItems: scopeItems,
+            scopeTotalCost: scopeTotalCost
         };
 
-        // Create new players array with the updated player object
+        // 3. Create the new players array
         const players = [
             ...this.state.players.slice(0, playerIndex),
             updatedPlayer,
             ...this.state.players.slice(playerIndex + 1)
         ];
+
+        // --- End of Immutable Update Logic ---
         
         // Apply immediate effects for W, B, I, L cards only to the updated player
         // E cards remain in hand for player-controlled usage
@@ -531,7 +554,14 @@ class GameStateManager {
             this.updatePlayerScope(playerId, players);
         }
 
+        console.log(`🎯 DEBUG: About to setState with new players array. Old length=${this.state.players.length}, New length=${players.length}`);
+        console.log(`🎯 DEBUG: Player before update:`, this.state.players[playerIndex]);
+        console.log(`🎯 DEBUG: Player after update:`, updatedPlayer);
+        
         this.setState({ players });
+        
+        console.log(`🎯 DEBUG: setState completed. New state players length=${this.state.players.length}`);
+        console.log(`🎯 DEBUG: Updated player in new state:`, this.state.players[playerIndex]);
         
         this.emit('cardsAddedToPlayer', {
             player: updatedPlayer,
@@ -1001,49 +1031,41 @@ class GameStateManager {
     }
 
     /**
-     * Update player scope based on W cards (legacy method for compatibility)
+     * Calculate player scope based on W cards. PURE IMMUTABLE FUNCTION.
+     * @returns {{scopeItems: Array, scopeTotalCost: number}}
      */
-    updatePlayerScope(playerId, players = null) {
-        const playerArray = players || [...this.state.players];
-        const player = playerArray.find(p => p.id === playerId);
-        
-        if (!player) return;
-        
-        // Calculate scope based on W cards
-        const wCards = player.cards?.W || [];
-        const scopeItems = [];
+    calculatePlayerScope(wCards = []) {
         let totalCost = 0;
-        
+        const scopeMap = new Map();
+
         wCards.forEach(card => {
             const workType = card.work_type_restriction || 'General Construction';
             const workCost = parseInt(card.work_cost) || 0;
-            
-            // Find existing scope item with same work type
-            const existingItem = scopeItems.find(item => item.workType === workType);
+            totalCost += workCost;
+
+            const existingItem = scopeMap.get(workType);
             if (existingItem) {
-                existingItem.cost += workCost;
-                existingItem.count += 1;
+                // Create a new object instead of mutating
+                scopeMap.set(workType, {
+                    ...existingItem,
+                    cost: existingItem.cost + workCost,
+                    count: existingItem.count + 1
+                });
             } else {
-                scopeItems.push({
+                scopeMap.set(workType, {
                     workType: workType,
                     cost: workCost,
                     count: 1
                 });
             }
-            
-            totalCost += workCost;
         });
-        
-        // Store scope items and total cost on player
-        player.scopeItems = scopeItems;
-        player.scopeTotalCost = totalCost;
-        
-        
-        // If players array was not passed in, update state
-        if (!players) {
-            this.setState({ players: playerArray });
-        }
+
+        // Convert map back to array of objects
+        const scopeItems = Array.from(scopeMap.values());
+        return { scopeItems, scopeTotalCost: totalCost };
     }
+
+    // updatePlayerScope removed - replaced by calculatePlayerScope for immutable operations
 
     /**
      * Enable/disable debug mode

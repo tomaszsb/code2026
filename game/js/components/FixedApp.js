@@ -83,14 +83,15 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
                 ? React.createElement(FixedPlayerSetup, { onInitializeGame: initializeGame })
                 : React.createElement(GameInterface, { 
                     gameState: gameState,
-                    gameStateManager: gameStateManager
+                    gameStateManager: gameStateManager,
+                    debugMode: debugMode
                 })
         )
     );
 }
 
 // Game interface component - Using actual game components
-const GameInterface = React.memo(({ gameState, gameStateManager }) => {
+const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) => {
     const { useState, useEffect, useRef } = React;
     
     // STABILIZED UI STATE - Use useRef for non-reactive state to prevent re-renders
@@ -390,7 +391,12 @@ const GameInterface = React.memo(({ gameState, gameStateManager }) => {
         }
     },
         // Hidden GameManager component to handle game logic events
-        window.GameManager ? React.createElement(window.GameManager, { key: 'game-manager' }) : null,
+        // Pass state and manager down as props to eliminate race condition
+        gameStateManager && window.GameManager ? React.createElement(window.GameManager, {
+            key: 'game-manager',
+            gameState: gameState,
+            gameStateManager: gameStateManager
+        }) : null,
         
         // Hidden GameSaveManager component for save/load functionality
         window.GameSaveManager ? React.createElement(window.GameSaveManager, { 
@@ -543,11 +549,12 @@ const GameInterface = React.memo(({ gameState, gameStateManager }) => {
     if (!prevState || !nextState) return prevState === nextState;
     
     // Compare critical state properties that affect UI
+    // CRITICAL FIX: Also check for player object reference changes.
     return (
         prevState.currentPlayer === nextState.currentPlayer &&
         prevState.gamePhase === nextState.gamePhase &&
         prevState.turnCount === nextState.turnCount &&
-        prevState.players?.length === nextState.players?.length &&
+        prevState.players === nextState.players && // Check if the players array itself is the same object
         prevState.gameStatus === nextState.gameStatus &&
         prevProps.gameStateManager === nextProps.gameStateManager
     );

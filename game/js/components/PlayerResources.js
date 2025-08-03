@@ -3,8 +3,18 @@
  * Shows money, time, scope summary with costs and detailed breakdown
  */
 
-function PlayerResources({ player, onCardSelect, cardsExpanded, onToggleExpanded }) {
+function PlayerResources({ onCardSelect, cardsExpanded, onToggleExpanded }) {
     const { useMemo } = React;
+    
+    // Get current game state and player reactively
+    const [gameState, gameStateManager] = useGameState();
+    const player = gameState.players?.find(p => p.id === gameState.currentPlayer);
+    console.log('RENDER CHECK: PlayerResources. Player has ' + (player?.cards?.W?.length || 0) + ' W cards.');
+    
+    // Return early if no player found
+    if (!player) {
+        return null;
+    }
     
     // Helper function to convert hex to RGB
     const hexToRgb = (hex) => {

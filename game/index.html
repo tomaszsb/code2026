@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Management Board Game</title>
+    
+    
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     
     <!-- CSS Framework -->
@@ -139,14 +141,20 @@
         const { StrictMode } = React;
         const { createRoot } = ReactDOM;
         
-        // Debug mode from URL parameters
+        // --- START: Consolidated Debug Logic ---
         const urlParams = new URLSearchParams(window.location.search);
-        const debugMode = urlParams.get('debug') === 'true';
+        const debugModeEnabled = urlParams.get('debug') === 'true';
         const logLevel = urlParams.get('logLevel') || 'info';
         
-        if (debugMode) {
+        // Set debug mode on the window object so it's globally accessible BEFORE other components load
+        if (debugModeEnabled) {
+            window.debugMode = true;
+        }
+        // --- END: Consolidated Debug Logic ---
+        
+        if (debugModeEnabled && window.CSVDatabase) {
             window.CSVDatabase.debug = true;
-            console.log('Debug mode enabled');
+            console.log('Debug mode enabled - CSVDatabase debug activated');
         }
 
         // Create React root and render app
@@ -154,7 +162,7 @@
         
         // Clean rendering approach
         function renderApp() {
-            root.render(React.createElement(FixedApp, { debugMode, logLevel }));
+            root.render(React.createElement(FixedApp, { debugMode: debugModeEnabled, logLevel }));
         }
         
         // Initial render

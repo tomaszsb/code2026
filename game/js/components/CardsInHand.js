@@ -4,6 +4,7 @@
  */
 
 function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) {
+    console.log('RENDER CHECK: CardsInHand. Player prop has ' + (player?.cards?.W?.length || 0) + ' W cards.');
     const { useMemo, useState, useEffect } = React;
     const [showCardsModal, setShowCardsModal] = useState(false);
     

@@ -13,6 +13,7 @@ function PlayerStatusPanel({ debugMode = false }) {
     });
 
     const currentPlayer = gameState.players?.find(p => p.id === gameState.currentPlayer);
+    console.log('RENDER CHECK: PlayerStatusPanel. Player has ' + (currentPlayer?.cards?.W?.length || 0) + ' W cards.');
     
     // Debug logging for current player
     useEffect(() => {
@@ -70,7 +71,6 @@ function PlayerStatusPanel({ debugMode = false }) {
         // Player Resources
         ...(window.PlayerResources ? [React.createElement(PlayerResources, {
             key: 'resources',
-            player: currentPlayer,
             onCardSelect: handleCardSelect,
             cardsExpanded: panelState.cardsExpanded,
             onToggleExpanded: toggleCardsExpanded
