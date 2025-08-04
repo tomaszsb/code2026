@@ -1,91 +1,13 @@
----
-
 # CLAUDE.md - Essential Development Reference
 
 **Project Management Board Game - Clean Architecture**
-
-## Latest Session Achievements - DICE UI RESET & MULTIPLAYER FLOW IMPROVEMENTS COMPLETE
-- **✅ DICE UI STATE RESET**: Fixed dice roll UI persistence across turn changes in multiplayer games
-- **✅ TURN TRANSITION CLEANUP**: Implemented proper UI state reset when turns advance to new players
-- **✅ EVENT-DRIVEN UI MANAGEMENT**: Added `turnAdvanced` event listeners for consistent state management
-- **✅ MULTIPLAYER EXPERIENCE ENHANCED**: Eliminated stale dice results and moves from previous players
-- **✅ TEST FILE CLEANUP**: Removed 8 obsolete debugging files, keeping only 3 focused test files
-
-## Technical Fixes Applied This Session
-
-### Dice UI Reset Implementation - Multiplayer Turn Flow Enhancement
-
-#### Problem Identified
-In multiplayer games, dice roll UI state (dice results, available moves, action states) was persisting across turn changes, causing stale displays for new players. When Player 1 rolled dice and ended their turn, Player 2 would see Player 1's dice results and available moves instead of a clean UI state.
-
-#### Root Cause Analysis
-The issue stemmed from UI state management in two key components:
-1. **FixedApp.js**: Stored dice UI state in `gameUIStateRef.current` without turn change listeners
-2. **ActionPanel.js**: Maintained dice-related state in `actionState` without turn transition cleanup
-3. **Event Gap**: Neither component listened to the existing `turnAdvanced` event from GameStateManager
-
-#### Solution Implemented
-
-**1. FixedApp.js Enhancement** (`FixedApp.js:149-157`):
-```javascript
-const handleTurnAdvanced = ({ previousPlayer, currentPlayer }) => {
-    updateGameUIState({
-        showingDiceResult: false,
-        diceResult: null,
-        availableMoves: [],
-        showingMoves: false
-    });
-};
-gameStateManager.on('turnAdvanced', handleTurnAdvanced);
-```
-
-**2. ActionPanel.js Enhancement** (`ActionPanel.js:157-172`):
-```javascript
-useEventListener('turnAdvanced', ({ previousPlayer, currentPlayer: newCurrentPlayer }) => {
-    setActionState(prev => ({
-        ...prev,
-        hasRolled: false,
-        rolling: false,
-        showDiceRoll: false,
-        diceRollValue: null,
-        diceOutcome: null,
-        pendingAction: null,
-        actionsCompleted: [],
-        hasMoved: false,
-        canEndTurn: false,
-        turnPhase: 'WAITING'
-    }));
-});
-```
-
-**3. Event Integration**:
-- Leveraged existing `GameStateManager.endTurn()` → `turnAdvanced` event flow
-- No changes needed to GameStateManager - event was already properly emitted
-- Clean integration with existing turn management system
-
-#### Technical Benefits
-- **Clean Turn Transitions**: Each player sees fresh UI state appropriate for their turn
-- **Event-Driven Architecture**: Proper decoupling between game state and UI state management  
-- **Multiplayer Consistency**: Eliminates confusion from stale UI elements
-- **Zero Performance Impact**: Minimal overhead from event listeners
-- **Maintainable Code**: Clear separation of concerns between components
-
-#### Verification
-- Created comprehensive test: `test-dice-ui-reset.html`
-- Verified dice results clear when turns advance
-- Confirmed available moves reset properly
-- Tested action state cleanup works correctly
-
-### Additional Session Fixes
-- **Test File Maintenance**: Removed 8 obsolete debugging files, retained 3 focused test files
-- **Documentation Accuracy**: Updated Key Files section with current architecture and accurate line counts
 
 ## Project Summary
 Single-page web app using vanilla HTML/CSS/JavaScript with React (via CDN). Players navigate project phases from initiation to completion.
 
 ## Repository
 - **GitHub**: https://github.com/tomaszsb/code2026
-- **Owner**: tomaszsb@gmail.com
+- **Owner**: tomaszsb@gmail.com  
 - **Branch**: main
 
 ## Essential Commands
@@ -303,33 +225,7 @@ gameState.players?.find()  // Defensive
 10. Main App
 ```
 
-## Current Status
-
-### Game Features - PRODUCTION READY
-- **CSV-driven content**: All game data from unified CSV API
-- **Interactive board**: Snake layout, 27 spaces, click-to-explore
-- **Card system**: Phase-restricted E cards, immediate W/B/I/L effects
-- **Modal system**: Cards in Hand, SpaceExplorer, Rules with keyboard support
-- **Event-driven**: Components communicate via GameStateManager events
-- **Defensive programming**: Safe database access, null safety throughout
-
-### Architecture State - MULTIPLAYER FLOW PERFECTED
-- ✅ **CENTRALIZED ACTION TRACKING** - GameStateManager is single source of truth
-- ✅ **DICE UI STATE MANAGEMENT** - Proper reset on turn transitions
-- ✅ **EVENT-DRIVEN UI CLEANUP** - turnAdvanced listeners in FixedApp/ActionPanel
-- ✅ **MULTIPLAYER CONSISTENCY** - Clean UI state for each player's turn
-- ✅ **ZERO RACE CONDITIONS** - Synchronous centralized state updates
-- ✅ **ZERO STALE UI ELEMENTS** - Dice results and moves properly cleared
-- ✅ **BULLETPROOF CSV ERROR HANDLING** - 100% loading state coverage verified
-- ✅ **PRODUCTION-READY DEBUG FUNCTIONS** - Debug functions conditionalized
-- ✅ **TEST FILE ORGANIZATION** - Only 3 focused test files remain
-
-### CSS Architecture
-- **Unified design system**: `unified-design.css` contains authoritative styles
-- **Button standardization**: All action buttons use `.btn` base class
-- **Movement labels**: Use "FIRST VISIT" and "SUBSEQUENT VISIT"
-
-## Key Architectural Patterns
+## Architecture Patterns
 
 ### Event-Driven UI Management
 - **turnAdvanced Event**: UI components listen for turn changes to reset state
@@ -342,32 +238,14 @@ gameState.players?.find()  // Defensive
 - **GameStateManager.js**: Single source of truth for all game state modifications
 - **DiceRollSection.js**: Stateless dice component, state managed by parents
 
+## CSS Architecture
+- **Unified design system**: `unified-design.css` contains authoritative styles
+- **Button standardization**: All action buttons use `.btn` base class
+- **Movement labels**: Use "FIRST VISIT" and "SUBSEQUENT VISIT"
+
 ---
 
-## Documentation Structure
+**For detailed development history see DEVELOPMENT.md**  
+**For verification procedures see VERIFICATION_PLAN.md**
 
-**CLAUDE.md contains ONLY essential development guidelines.**
-
-For detailed information see:
-- `DEVELOPMENT.md` - Phase tracking, patterns, debugging, detailed examples
-- Git commit history - Change log with reasoning
-
-**Architecture: Clean CSV architecture, specialized engines, complete legacy removal, single data access pattern.**
-
-## Data Architecture
-
-### CSV Files (Clean Architecture)
-- ✅ **MOVEMENT.csv**: Space-to-space connections (54 entries)
-- ✅ **SPACE_EFFECTS.csv**: Card/time/money effects with conditions (120 entries)
-- ✅ **SPACE_CONTENT.csv**: UI display text and story content (54 entries)
-- ✅ **DICE_OUTCOMES.csv**: Dice roll destination mapping (18 entries)
-- ✅ **DICE_EFFECTS.csv**: Dice-based card/money effects (33 entries)
-- ✅ **GAME_CONFIG.csv**: Metadata, phases, game configuration (27 entries)
-- ✅ **cards.csv**: Card properties and effects (405 entries)
-
-### JavaScript Engines
-- ✅ **MovementEngine.js**: Movement logic with audit trails (20KB)
-- ✅ **EffectsEngine.js**: Card/time/money effects processor (18KB)
-- ✅ **ContentEngine.js**: UI content and configuration manager (12KB)
-- ✅ **CSVDatabase.js**: Unified API with null safety
-- ✅ **CardUtils.js**: Centralized card configurations
+**Architecture: Clean CSV architecture, specialized engines, single source of truth state management.**
