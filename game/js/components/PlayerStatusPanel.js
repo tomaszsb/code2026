@@ -64,8 +64,7 @@ function PlayerStatusPanel({ debugMode = false }) {
         ...(window.PlayerHeader ? [React.createElement(PlayerHeader, {
             key: 'player-header',
             player: currentPlayer,
-            currentPlayerIndex: gameState.currentPlayer,
-            totalPlayers: gameState.players.length
+            turnCount: gameState.turnCount
         })] : []),
         
         // Player Resources

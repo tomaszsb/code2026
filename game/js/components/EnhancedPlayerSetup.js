@@ -3,7 +3,7 @@
  * Beautiful setup experience with player customization
  */
 
-function EnhancedPlayerSetup() {
+function EnhancedPlayerSetup({ gameStateManager }) {
     const { useState, useEffect } = React;
     const [players, setPlayers] = useState([
         { 
@@ -14,11 +14,10 @@ function EnhancedPlayerSetup() {
         }
     ]);
     const [gameSettings, setGameSettings] = useState({
-        maxPlayers: 4,
+        maxPlayers: 4, // Fixed maximum - no longer user-configurable
         winCondition: 'FIRST_TO_FINISH',
         difficulty: 'normal'
     });
-    const [gameState, gameStateManager] = useGameState();
     const [isStarting, setIsStarting] = useState(false);
     
     // Available colors for players
@@ -38,37 +37,110 @@ function EnhancedPlayerSetup() {
     
     // Add player
     const addPlayer = () => {
-        if (players.length < gameSettings.maxPlayers) {
-            const usedColors = players.map(p => p.color);
-            const availableColor = availableColors.find(c => !usedColors.includes(c.color));
-            
-            setPlayers([...players, {
-                id: Date.now(),
-                name: `Player ${players.length + 1}`,
-                color: availableColor ? availableColor.color : availableColors[0].color,
-                avatar: availableAvatars[players.length % availableAvatars.length]
-            }]);
-        }
+        setPlayers(currentPlayers => {
+            if (currentPlayers.length < gameSettings.maxPlayers) {
+                // Find available color
+                const usedColors = currentPlayers.map(p => p.color);
+                const availableColor = availableColors.find(c => !usedColors.includes(c.color));
+                
+                // Check if there are available colors
+                if (!availableColor) {
+                    alert(`Cannot add more players. All ${availableColors.length} available colors are already in use.`);
+                    console.log('No available colors for new player:', { usedColors, availableColorsCount: availableColors.length });
+                    return currentPlayers;
+                }
+                
+                // Find available avatar
+                const usedAvatars = currentPlayers.map(p => p.avatar);
+                const availableAvatar = availableAvatars.find(a => !usedAvatars.includes(a));
+                
+                // Check if there are available avatars
+                if (!availableAvatar) {
+                    alert(`Cannot add more players. All ${availableAvatars.length} available avatars are already in use.`);
+                    console.log('No available avatars for new player:', { usedAvatars, availableAvatarsCount: availableAvatars.length });
+                    return currentPlayers;
+                }
+                
+                return [...currentPlayers, {
+                    id: Date.now(),
+                    name: `Player ${currentPlayers.length + 1}`,
+                    color: availableColor.color,
+                    avatar: availableAvatar
+                }];
+            }
+            return currentPlayers;
+        });
     };
     
     // Remove player
     const removePlayer = (playerId) => {
-        if (players.length > 1) {
-            setPlayers(players.filter(p => p.id !== playerId));
-        }
+        setPlayers(currentPlayers => {
+            if (currentPlayers.length > 1) {
+                return currentPlayers.filter(p => p.id !== playerId);
+            }
+            return currentPlayers;
+        });
     };
     
     // Update player property
     const updatePlayer = (playerId, property, value) => {
-        setPlayers(players.map(player => 
-            player.id === playerId 
-                ? { ...player, [property]: value }
-                : player
-        ));
+        console.log('updatePlayer called:', { playerId, property, value });
+        
+        // Special handling for color and avatar properties to enforce uniqueness
+        if (property === 'color' || property === 'avatar') {
+            setPlayers(currentPlayers => {
+                // Check if the value is already taken by another player
+                const valueAlreadyTaken = currentPlayers.some(player => 
+                    player.id !== playerId && player[property] === value
+                );
+                
+                if (valueAlreadyTaken) {
+                    if (property === 'color') {
+                        // Find the color name for better user feedback
+                        const colorOption = availableColors.find(c => c.color === value);
+                        const colorName = colorOption ? colorOption.name : value;
+                        alert(`The ${colorName} color is already taken by another player. Please choose a different color.`);
+                        console.log('Color conflict detected:', { playerId, attemptedColor: value, colorName });
+                    } else if (property === 'avatar') {
+                        alert(`This avatar (${value}) is already taken by another player. Please choose a different avatar.`);
+                        console.log('Avatar conflict detected:', { playerId, attemptedAvatar: value });
+                    }
+                    return currentPlayers; // Return unchanged state
+                }
+                
+                // Value is available, proceed with update
+                const updatedPlayers = currentPlayers.map(player => 
+                    player.id === playerId 
+                        ? { ...player, [property]: value }
+                        : player
+                );
+                const updatedPlayer = updatedPlayers.find(p => p.id === playerId);
+                console.log('Player state updated:', { playerId: playerId, updatedPlayer: updatedPlayer });
+                return updatedPlayers;
+            });
+        } else {
+            // For other properties, proceed as normal
+            setPlayers(currentPlayers => {
+                const updatedPlayers = currentPlayers.map(player => 
+                    player.id === playerId 
+                        ? { ...player, [property]: value }
+                        : player
+                );
+                const updatedPlayer = updatedPlayers.find(p => p.id === playerId);
+                console.log('Player state updated:', { playerId: playerId, updatedPlayer: updatedPlayer });
+                return updatedPlayers;
+            });
+        }
     };
     
     // Start game with enhanced loading
     const startGame = async () => {
+        // Guard clause: ensure gameStateManager is available
+        if (!gameStateManager) {
+            alert('Game system not ready. Please try again.');
+            return;
+        }
+        
         const validPlayers = players.filter(p => p.name.trim());
         if (validPlayers.length === 0) {
             if (window.AccessibilityUtils) {
@@ -87,16 +159,11 @@ function EnhancedPlayerSetup() {
         });
         
         try {
-            // Simulate setup time for dramatic effect
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
             // Update progress
             gameStateManager.emit('loadingProgress', {
                 progress: 50,
                 message: 'Setting up players...'
             });
-            
-            await new Promise(resolve => setTimeout(resolve, 500));
             
             // Prepare players with full data
             const playersWithData = validPlayers.map((player, index) => ({
@@ -116,8 +183,6 @@ function EnhancedPlayerSetup() {
                 progress: 100,
                 message: 'Starting game...'
             });
-            
-            await new Promise(resolve => setTimeout(resolve, 300));
             
             if (gameStateManager && gameStateManager.initializeGame) {
                 gameStateManager.initializeGame(playersWithData, gameSettings);
@@ -222,6 +287,16 @@ function EnhancedPlayerSetup() {
                     }
                 }, '👥 Players'),
                 
+                // Players Left countdown
+                React.createElement('p', {
+                    style: {
+                        color: '#6c757d',
+                        fontSize: '1rem',
+                        margin: '0 0 1.5rem 0',
+                        fontStyle: 'italic'
+                    }
+                }, `${players.length}/${gameSettings.maxPlayers} players added${players.length < gameSettings.maxPlayers ? ` • You can add ${gameSettings.maxPlayers - players.length} more player${gameSettings.maxPlayers - players.length === 1 ? '' : 's'}` : ' • Maximum reached'}`),
+                
                 // Player list
                 React.createElement('div', {
                     className: 'players-list',
@@ -231,8 +306,9 @@ function EnhancedPlayerSetup() {
                         marginBottom: '1.5rem'
                     }
                 },
-                    players.map(player =>
-                        React.createElement('div', {
+                    players.map(player => {
+                        console.log('Rendering player card:', { playerId: player.id, renderedColor: player.color });
+                        return React.createElement('div', {
                             key: player.id,
                             className: 'player-card',
                             style: {
@@ -307,24 +383,29 @@ function EnhancedPlayerSetup() {
                                 
                                 // Color picker
                                 React.createElement('div', {
-                                    className: 'color-picker',
+                                    className: 'color-picker-container',
                                     style: {
                                         display: 'flex',
                                         gap: '0.5rem',
                                         flexWrap: 'wrap'
                                     }
                                 },
-                                    availableColors.map(colorOption =>
-                                        React.createElement('button', {
+                                    availableColors.map(colorOption => {
+                                        const isSelected = player.color === colorOption.color;
+                                        console.log('Color option comparison:', { playerColor: player.color, optionColor: colorOption.color, isSelected: isSelected });
+                                        return React.createElement('button', {
                                             key: colorOption.color,
                                             className: 'color-option',
-                                            onClick: () => updatePlayer(player.id, 'color', colorOption.color),
+                                            onClick: () => {
+                                                console.log('Color button clicked:', { playerId: player.id, property: 'color', value: colorOption.color });
+                                                updatePlayer(player.id, 'color', colorOption.color);
+                                            },
                                             style: {
                                                 width: '30px',
                                                 height: '30px',
                                                 borderRadius: '50%',
                                                 backgroundColor: colorOption.color,
-                                                border: player.color === colorOption.color ? 
+                                                border: isSelected ? 
                                                     '3px solid #2c5530' : '2px solid #e9ecef',
                                                 cursor: 'pointer',
                                                 transition: 'all 0.3s ease',
@@ -332,8 +413,8 @@ function EnhancedPlayerSetup() {
                                             },
                                             title: colorOption.name,
                                             'aria-label': `Select ${colorOption.name} color`
-                                        })
-                                    )
+                                        });
+                                    })
                                 )
                             ),
                             
@@ -363,8 +444,8 @@ function EnhancedPlayerSetup() {
                                 },
                                 title: 'Remove player'
                             }, '×')
-                        )
-                    )
+                        );
+                    })
                 ),
                 
                 // Add player button
@@ -428,37 +509,6 @@ function EnhancedPlayerSetup() {
                         gap: '1rem'
                     }
                 },
-                    React.createElement('div', {},
-                        React.createElement('label', {
-                            style: { 
-                                display: 'block', 
-                                marginBottom: '0.5rem',
-                                fontWeight: 'bold',
-                                color: '#495057'
-                            }
-                        }, 'Max Players'),
-                        React.createElement('select', {
-                            value: gameSettings.maxPlayers,
-                            onChange: (e) => setGameSettings({
-                                ...gameSettings,
-                                maxPlayers: parseInt(e.target.value)
-                            }),
-                            style: {
-                                width: '100%',
-                                padding: '0.75rem',
-                                border: '2px solid #e9ecef',
-                                borderRadius: '8px',
-                                fontSize: '1rem'
-                            }
-                        },
-                            [2, 3, 4].map(num =>
-                                React.createElement('option', {
-                                    key: num,
-                                    value: num
-                                }, `${num} Players`)
-                            )
-                        )
-                    ),
                     
                     React.createElement('div', {},
                         React.createElement('label', {

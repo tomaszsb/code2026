@@ -80,7 +80,10 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
     return React.createElement(window.ErrorBoundary, null,
         React.createElement('div', { className: 'app' },
             showPlayerSetup 
-                ? React.createElement(FixedPlayerSetup, { onInitializeGame: initializeGame })
+                ? React.createElement(EnhancedPlayerSetup, { 
+                    onInitializeGame: initializeGame,
+                    gameStateManager: gameStateManager 
+                })
                 : React.createElement(GameInterface, { 
                     gameState: gameState,
                     gameStateManager: gameStateManager,
@@ -560,107 +563,9 @@ const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) =>
     );
 });
 
-// Simple player setup component that works with the fixed app
-const FixedPlayerSetup = React.memo(({ onInitializeGame }) => {
-    const { useState } = React;
-    const [players, setPlayers] = useState([
-        {
-            id: 1,
-            name: 'Player 1',
-            color: '#007bff',
-            avatar: '👤',
-            money: 0
-        }
-    ]);
-    
-    const startGame = () => {
-        const validPlayers = players.filter(p => p.name.trim());
-        if (validPlayers.length === 0) {
-            alert('Please add at least one player');
-            return;
-        }
-        
-        onInitializeGame(validPlayers);
-    };
-    
-    return React.createElement('div', {
-        className: 'enhanced-player-setup',
-        style: { 
-            padding: '20px',
-            maxWidth: '600px',
-            margin: '0 auto',
-            background: '#f8f9fa',
-            borderRadius: '8px'
-        }
-    },
-        React.createElement('h2', { style: { textAlign: 'center', marginBottom: '30px' } }, 
-            '🎯 Project Management Game Setup'
-        ),
-        React.createElement('div', { className: 'players-section' },
-            React.createElement('h3', null, 'Players'),
-            ...players.map((player, index) =>
-                React.createElement('div', { 
-                    key: player.id,
-                    style: { 
-                        display: 'flex', 
-                        gap: '10px', 
-                        marginBottom: '15px',
-                        padding: '15px',
-                        background: '#fff',
-                        borderRadius: '8px',
-                        border: '1px solid #ddd'
-                    }
-                },
-                    React.createElement('input', {
-                        type: 'text',
-                        placeholder: `Player ${index + 1} Name`,
-                        value: player.name,
-                        onChange: (e) => {
-                            const newPlayers = [...players];
-                            newPlayers[index].name = e.target.value;
-                            setPlayers(newPlayers);
-                        },
-                        style: { 
-                            flex: 1,
-                            padding: '8px',
-                            border: '1px solid #ccc',
-                            borderRadius: '4px'
-                        }
-                    }),
-                    React.createElement('input', {
-                        type: 'color',
-                        value: player.color,
-                        onChange: (e) => {
-                            const newPlayers = [...players];
-                            newPlayers[index].color = e.target.value;
-                            setPlayers(newPlayers);
-                        },
-                        style: { width: '50px' }
-                    })
-                )
-            ),
-            React.createElement('div', { style: { textAlign: 'center', marginTop: '30px' } },
-                React.createElement('button', {
-                    onClick: startGame,
-                    className: 'btn btn-primary',
-                    style: { 
-                        padding: '12px 24px',
-                        fontSize: '16px',
-                        background: '#007bff',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                    }
-                }, '🚀 Start Game')
-            )
-        )
-    );
-});
 
 
 
 // Export components
 window.FixedApp = FixedApp;
-window.FixedPlayerSetup = FixedPlayerSetup;
 window.GameInterface = GameInterface;
