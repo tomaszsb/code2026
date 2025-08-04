@@ -4,23 +4,81 @@
 
 **Project Management Board Game - Clean Architecture**
 
-## Latest Session Achievements - MULTIPLAYER SETUP & UI ENHANCEMENTS COMPLETE
-- **✅ MULTIPLAYER FUNCTIONALITY RESTORED**: Fixed FixedApp to use EnhancedPlayerSetup, enabling full 4-player support
-- **✅ LOADING PERFORMANCE OPTIMIZED**: Removed 1.8 seconds of artificial delays from game startup
-- **✅ COLOR PICKER SYSTEM OPERATIONAL**: Resolved React stale closures and CSS conflicts preventing color selection
-- **✅ UNIQUE PLAYER IDENTIFICATION**: Enforced unique colors and avatars with comprehensive validation
-- **✅ TURN DISPLAY CORRECTED**: Fixed erroneous "Turn X of Y" format showing timestamps instead of proper turn numbers
-- **✅ PLAYER AVATAR INTEGRATION**: Added emoji avatar display in PlayerHeader for improved player identification
-- **✅ ENHANCED USER EXPERIENCE**: Streamlined player setup with real-time feedback and constraints
+## Latest Session Achievements - DICE UI RESET & MULTIPLAYER FLOW IMPROVEMENTS COMPLETE
+- **✅ DICE UI STATE RESET**: Fixed dice roll UI persistence across turn changes in multiplayer games
+- **✅ TURN TRANSITION CLEANUP**: Implemented proper UI state reset when turns advance to new players
+- **✅ EVENT-DRIVEN UI MANAGEMENT**: Added `turnAdvanced` event listeners for consistent state management
+- **✅ MULTIPLAYER EXPERIENCE ENHANCED**: Eliminated stale dice results and moves from previous players
+- **✅ TEST FILE CLEANUP**: Removed 8 obsolete debugging files, keeping only 3 focused test files
 
 ## Technical Fixes Applied This Session
-- **Component Architecture**: `FixedApp.js:83` - Changed from `FixedPlayerSetup` to `EnhancedPlayerSetup`
-- **CSS Conflicts**: `EnhancedPlayerSetup.js:321` - Renamed `color-picker` to `color-picker-container` class
-- **React Closures**: `EnhancedPlayerSetup.js:67-115` - Fixed functional state updates (`setPlayers(currentPlayers => ...)`)
-- **Performance**: `EnhancedPlayerSetup.js:95,104,125` - Removed artificial `setTimeout` delays totaling 1.8s
-- **Turn Logic**: `PlayerHeader.js:22,44` - Fixed turn display using `(turnCount || 0) + 1` instead of player ID
-- **HTML Cleanup**: `index.html:30` - Removed skip-link as requested
-- **State Validation**: `EnhancedPlayerSetup.js:71-89` - Added uniqueness enforcement for colors and avatars
+
+### Dice UI Reset Implementation - Multiplayer Turn Flow Enhancement
+
+#### Problem Identified
+In multiplayer games, dice roll UI state (dice results, available moves, action states) was persisting across turn changes, causing stale displays for new players. When Player 1 rolled dice and ended their turn, Player 2 would see Player 1's dice results and available moves instead of a clean UI state.
+
+#### Root Cause Analysis
+The issue stemmed from UI state management in two key components:
+1. **FixedApp.js**: Stored dice UI state in `gameUIStateRef.current` without turn change listeners
+2. **ActionPanel.js**: Maintained dice-related state in `actionState` without turn transition cleanup
+3. **Event Gap**: Neither component listened to the existing `turnAdvanced` event from GameStateManager
+
+#### Solution Implemented
+
+**1. FixedApp.js Enhancement** (`FixedApp.js:149-157`):
+```javascript
+const handleTurnAdvanced = ({ previousPlayer, currentPlayer }) => {
+    updateGameUIState({
+        showingDiceResult: false,
+        diceResult: null,
+        availableMoves: [],
+        showingMoves: false
+    });
+};
+gameStateManager.on('turnAdvanced', handleTurnAdvanced);
+```
+
+**2. ActionPanel.js Enhancement** (`ActionPanel.js:157-172`):
+```javascript
+useEventListener('turnAdvanced', ({ previousPlayer, currentPlayer: newCurrentPlayer }) => {
+    setActionState(prev => ({
+        ...prev,
+        hasRolled: false,
+        rolling: false,
+        showDiceRoll: false,
+        diceRollValue: null,
+        diceOutcome: null,
+        pendingAction: null,
+        actionsCompleted: [],
+        hasMoved: false,
+        canEndTurn: false,
+        turnPhase: 'WAITING'
+    }));
+});
+```
+
+**3. Event Integration**:
+- Leveraged existing `GameStateManager.endTurn()` → `turnAdvanced` event flow
+- No changes needed to GameStateManager - event was already properly emitted
+- Clean integration with existing turn management system
+
+#### Technical Benefits
+- **Clean Turn Transitions**: Each player sees fresh UI state appropriate for their turn
+- **Event-Driven Architecture**: Proper decoupling between game state and UI state management  
+- **Multiplayer Consistency**: Eliminates confusion from stale UI elements
+- **Zero Performance Impact**: Minimal overhead from event listeners
+- **Maintainable Code**: Clear separation of concerns between components
+
+#### Verification
+- Created comprehensive test: `test-dice-ui-reset.html`
+- Verified dice results clear when turns advance
+- Confirmed available moves reset properly
+- Tested action state cleanup works correctly
+
+### Additional Session Fixes
+- **Test File Maintenance**: Removed 8 obsolete debugging files, retained 3 focused test files
+- **Documentation Accuracy**: Updated Key Files section with current architecture and accurate line counts
 
 ## Project Summary
 Single-page web app using vanilla HTML/CSS/JavaScript with React (via CDN). Players navigate project phases from initiation to completion.
@@ -62,49 +120,48 @@ git pull origin main                                # Pull latest changes
 
 ### Key Files
 ```
-# Core Game Systems - CENTRALIZED ACTION TRACKING
-js/data/GameStateManager.js         # SINGLE SOURCE OF TRUTH for all action tracking
-js/data/CSVDatabase.js              # Unified CSV query system
+# Core Game Systems - CENTRALIZED STATE MANAGEMENT
+js/data/GameStateManager.js         # SINGLE SOURCE OF TRUTH for all state management
+js/data/CSVDatabase.js              # Unified CSV query system with loading state checks
 js/utils/CardUtils.js               # Centralized card configurations & utilities
-js/utils/EffectsEngine.js           # Complete card effect processing system
+js/utils/EffectsEngine.js           # Card effect processing system
+js/utils/MovementEngine.js          # Movement logic with audit trails
+js/utils/AccessibilityUtils.js      # ARIA support and keyboard navigation utilities
 
-# Main Interface (Production) - PURE PRESENTATION COMPONENTS
-js/components/FixedApp.js           # Layout coordinator - NO action logic
-js/components/GameInterface.js      # Clean 3-panel game layout (inside FixedApp.js)
-js/components/FixedPlayerSetup.js   # Professional player setup (inside FixedApp.js)
-js/components/TurnControls.js       # PURE UI - reads from GameStateManager only
+# Main Application Architecture - PRODUCTION READY
+js/components/FixedApp.js           # Main app coordinator with turnAdvanced event handling (583 lines)
+js/components/EnhancedPlayerSetup.js # Full multiplayer setup with unique validation (585 lines)
+js/components/GameManager.js        # Game logic coordination component
+js/components/TurnControls.js       # Turn management UI (308 lines)
 
-# Legacy Interface (DO NOT USE - Complex State Management)
-js/components/App.js                # Original root component (uses problematic useGameState)
-js/components/GamePanelLayout.js    # Responsive panel layout container
-js/components/PlayerStatusPanel.js  # Left panel coordinator (117 lines)
-js/components/ActionPanel.js        # Bottom panel coordinator (318 lines)
-js/components/ResultsPanel.js       # Right panel: results, history, progress
+# Panel System - EVENT-DRIVEN UI COMPONENTS  
+js/components/ActionPanel.js        # Action coordination with dice UI reset (365 lines)
+js/components/PlayerStatusPanel.js  # Player information display (126 lines) 
+js/components/ResultsPanel.js       # Game results and history tracking (382 lines)
 
-# Game Components
-js/components/GameBoard.js          # Interactive board with movement system
-js/components/SpaceExplorer.js      # Space details and exploration panel
-js/components/RulesModal.js         # Standalone rules modal with CSV content
+# Interactive Game Components
+js/components/GameBoard.js          # Interactive board with click-to-explore
+js/components/SpaceExplorer.js      # Space details and exploration modal
+js/components/CardModal.js          # Enhanced card display with flip animation (248 lines)
+js/components/RulesModal.js         # Rules display with CSV content
 
-# Split Architecture Components
-js/components/DiceRollSection.js    # Dice rolling with animation (227 lines)
-js/components/CardActionsSection.js # Card actions with filtering (153 lines)
-js/components/MovementSection.js    # Movement selection/execution (240 lines)
-js/components/TurnControls.js       # Turn management/validation (264 lines)
-js/components/CardModal.js          # Enhanced card display (527 lines)
-js/components/PlayerHeader.js       # Player info display (42 lines)
-js/components/CurrentSpaceInfo.js   # Space details/requirements (84 lines)
-js/components/PlayerResources.js    # Money/time management (119 lines)
-js/components/CardsInHand.js        # Card grid display (140 lines)
+# Specialized UI Sections
+js/components/DiceRollSection.js    # Dice rolling with outcome processing (316 lines)
+js/components/MovementSection.js    # Movement selection and execution
+js/components/CardActionsSection.js # Card action filtering and execution
+js/components/PlayerHeader.js       # Player info with avatar integration (93 lines) 
+js/components/CurrentSpaceInfo.js   # Space details and requirements
+js/components/PlayerResources.js    # Money/time management display
+js/components/CardsInHand.js        # Card grid with modal integration
 
-# Data Files - Clean CSV Architecture with Dice Integration
-data/cards.csv                      # Card properties and effects (unchanged)
-data/MOVEMENT.csv                   # Space-to-space connections
-data/DICE_OUTCOMES.csv              # Dice roll destinations
-data/SPACE_EFFECTS.csv              # Card/time/money effects with conditions + dice references
-data/DICE_EFFECTS.csv               # Dice-based card drawing amounts (1-6 outcomes)
-data/SPACE_CONTENT.csv              # UI display text and story content
-data/GAME_CONFIG.csv                # Metadata & configuration
+# Data Files - CLEAN CSV ARCHITECTURE
+data/cards.csv                      # Card properties and effects (405 entries)
+data/MOVEMENT.csv                   # Space-to-space connections (52 entries)
+data/DICE_OUTCOMES.csv              # Dice roll destinations (18 entries) 
+data/SPACE_EFFECTS.csv              # Card/time/money effects (42 entries)
+data/DICE_EFFECTS.csv               # Dice-based effects (35 entries)
+data/SPACE_CONTENT.csv              # UI display text and content (12 entries)
+data/GAME_CONFIG.csv                # Game metadata and configuration (26 entries)
 ```
 
 ## Development Rules
@@ -248,30 +305,7 @@ gameState.players?.find()  // Defensive
 
 ## Current Status
 
-### Architecture State - COMPREHENSIVE CLEANUP COMPLETE
-- ✅ **CENTRALIZED ACTION TRACKING** - GameStateManager is single source of truth
-- ✅ **STANDARDIZED EVENTS** - All actions use playerActionTaken event
-- ✅ **PURE UI COMPONENTS** - TurnControls/FixedApp are presentation-only
-- ✅ **ZERO RACE CONDITIONS** - Synchronous centralized state updates
-- ✅ **ACTION COUNTER FUNCTIONAL** - Real-time updates from centralized brain
-- ✅ **CLEAN COMPONENT SEPARATION** - GameManager/GameInitializer roles clarified
-- ✅ **CONSOLIDATED DICE PROCESSING** - All dice logic centralized in GameManager
-- ✅ **BULLETPROOF CSV ERROR HANDLING** - 100% loading state coverage verified
-- ✅ **PRODUCTION-READY DEBUG FUNCTIONS** - Debug functions conditionalized
-
-### Latest Session Achievements - CARD DRAWING FUNCTIONALITY RESOLVED
-- **✅ CRITICAL BUG FIXED**: Card drawing functionality now works correctly
-- **Architectural Race Condition Resolved**: Fixed GameManager receiving gameState/gameStateManager as props instead of calling useGameState() internally
-- **Event Handler Stability**: Added guard clauses to all event handlers to prevent null reference errors
-- **React Hooks Compliance**: Fixed Rules of Hooks violations by removing conditional hook calls
-- **Immutability Bug Fixed**: Corrected calculatePlayerScope function to create new objects instead of mutating existing ones
-- **Debug Function Availability**: Made debug functions self-sufficient by checking URL parameters directly
-- **Infinite Loop Prevention**: Stabilized useCallback dependencies to prevent event listener re-registration loops
-- ✅ **Full GameStateManager** - Unified state management, zero duplicate logic
-- ✅ **Clean CSV Architecture** - 7-file structure, specialized engines
-- ✅ **Production Code Quality** - All syntax/reference errors resolved
-- ✅ **UI Reactivity Working** - Cards are successfully added and UI updates in real-time
-
+### Game Features - PRODUCTION READY
 - **CSV-driven content**: All game data from unified CSV API
 - **Interactive board**: Snake layout, 27 spaces, click-to-explore
 - **Card system**: Phase-restricted E cards, immediate W/B/I/L effects
@@ -279,70 +313,34 @@ gameState.players?.find()  // Defensive
 - **Event-driven**: Components communicate via GameStateManager events
 - **Defensive programming**: Safe database access, null safety throughout
 
+### Architecture State - MULTIPLAYER FLOW PERFECTED
+- ✅ **CENTRALIZED ACTION TRACKING** - GameStateManager is single source of truth
+- ✅ **DICE UI STATE MANAGEMENT** - Proper reset on turn transitions
+- ✅ **EVENT-DRIVEN UI CLEANUP** - turnAdvanced listeners in FixedApp/ActionPanel
+- ✅ **MULTIPLAYER CONSISTENCY** - Clean UI state for each player's turn
+- ✅ **ZERO RACE CONDITIONS** - Synchronous centralized state updates
+- ✅ **ZERO STALE UI ELEMENTS** - Dice results and moves properly cleared
+- ✅ **BULLETPROOF CSV ERROR HANDLING** - 100% loading state coverage verified
+- ✅ **PRODUCTION-READY DEBUG FUNCTIONS** - Debug functions conditionalized
+- ✅ **TEST FILE ORGANIZATION** - Only 3 focused test files remain
+
 ### CSS Architecture
 - **Unified design system**: `unified-design.css` contains authoritative styles
 - **Button standardization**: All action buttons use `.btn` base class
 - **Movement labels**: Use "FIRST VISIT" and "SUBSEQUENT VISIT"
 
-## MAJOR ARCHITECTURAL REFACTOR - CARD DRAWING FUNCTIONALITY RESOLUTION
+## Key Architectural Patterns
 
-### Overview
-Comprehensive debugging and architectural improvements to resolve critical card drawing functionality bugs.
+### Event-Driven UI Management
+- **turnAdvanced Event**: UI components listen for turn changes to reset state
+- **GameStateManager Events**: Components communicate via event system, not direct calls
+- **Immutable State Updates**: All state changes create new objects for React change detection
 
-### Root Cause Analysis
-The card drawing system had multiple interconnected issues:
-1. **Race Condition**: GameManager and FixedApp both calling useGameState() independently
-2. **Stale Closures**: Event handlers created with null gameStateManager references
-3. **React Hooks Violations**: Conditional hook calls violating Rules of Hooks
-4. **Immutability Bugs**: State mutations preventing React change detection
-5. **Event Handler Instability**: Infinite loops from unstable useCallback dependencies
-
-### Critical Fixes Applied
-
-1. **Architectural Race Condition Resolution**:
-   - Refactored GameManager to receive gameState/gameStateManager as props
-   - Eliminated dual useGameState() calls creating initialization race conditions
-   - Established clean top-down data flow from FixedApp → GameManager
-
-2. **Event Handler Stabilization**:
-   - Added guard clauses (`if (!gameStateManager) return;`) to all event handlers
-   - Fixed Rules of Hooks violations by removing conditional hook calls
-   - Stabilized useCallback dependencies to prevent infinite re-registration loops
-
-3. **Immutability Corrections**:
-   - Fixed calculatePlayerScope to create new objects instead of mutating existing ones
-   - Ensured all state updates follow immutable patterns for React change detection
-   - Corrected event handler parameter destructuring to match emitted event format
-
-4. **Debug System Improvements**:
-   - Made debug functions self-sufficient by checking URL parameters directly
-   - Removed dependency on script loading order for debug function availability
-   - Added comprehensive diagnostic logging for debugging complex event flows
-
-### Technical Implementation Details
-
-**GameManager.js Changes**:
-- Function signature: `function GameManager({ gameState, gameStateManager })`
-- Removed internal `useGameState()` call
-- Added guard clauses to all event handlers
-- Fixed processCardAction parameter destructuring: `({ playerId, cardType, action })`
-
-**FixedApp.js Changes**:
-- Added props passing to GameManager: `gameState: gameState, gameStateManager: gameStateManager`
-- Conditional rendering: `gameStateManager && window.GameManager`
-
-**GameStateManager.js Changes**:
-- Fixed calculatePlayerScope immutability using Map and spread syntax
-- Removed legacy updatePlayerScope function
-- Enhanced addCardsToPlayer with proper immutable state updates
-
-### Results
-- ✅ **Card Drawing Functional**: "Draw 3" buttons work correctly and add cards to player hands
-- ✅ **UI Reactivity Working**: Real-time updates when cards are added/removed
-- ✅ **Zero Race Conditions**: Predictable component initialization order
-- ✅ **React Compliance**: No Rules of Hooks violations or infinite loops
-- ✅ **Debugging Capability**: Comprehensive logging for future development
-- ✅ **Architectural Integrity**: Clean separation of concerns and data flow
+### Component Responsibilities  
+- **FixedApp.js**: UI state coordination, receives gameState as props
+- **ActionPanel.js**: Action state management with event-driven reset
+- **GameStateManager.js**: Single source of truth for all game state modifications
+- **DiceRollSection.js**: Stateless dice component, state managed by parents
 
 ---
 

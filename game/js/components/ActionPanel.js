@@ -153,6 +153,24 @@ function ActionPanel({ isInUnifiedContainer = false }) {
         }
     });
 
+    // Reset dice UI state when turn advances to new player
+    useEventListener('turnAdvanced', ({ previousPlayer, currentPlayer: newCurrentPlayer }) => {
+        // Reset dice-related state for all players when turn changes
+        setActionState(prev => ({
+            ...prev,
+            hasRolled: false,
+            rolling: false,
+            showDiceRoll: false,
+            diceRollValue: null,
+            diceOutcome: null,
+            pendingAction: null,
+            actionsCompleted: [],
+            hasMoved: false,
+            canEndTurn: false,
+            turnPhase: 'WAITING'
+        }));
+    });
+
 
     useEventListener('spaceActionCompleted', ({ playerId }) => {
         if (playerId === currentPlayer?.id) {

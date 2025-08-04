@@ -145,8 +145,20 @@ const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) =>
             }
         };
 
+        // Reset dice UI state when turn changes
+        const handleTurnAdvanced = ({ previousPlayer, currentPlayer }) => {
+            // Reset dice-related UI state for all players when turn advances
+            updateGameUIState({
+                showingDiceResult: false,
+                diceResult: null,
+                availableMoves: [],
+                showingMoves: false
+            });
+        };
+
         if (gameStateManager) {
             gameStateManager.on('spaceSelected', handleSpaceSelected);
+            gameStateManager.on('turnAdvanced', handleTurnAdvanced);
         }
 
         if (gameUIStateRef.current.showSpaceExplorer) {
@@ -156,6 +168,7 @@ const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) =>
         return () => {
             if (gameStateManager) {
                 gameStateManager.off('spaceSelected', handleSpaceSelected);
+                gameStateManager.off('turnAdvanced', handleTurnAdvanced);
             }
             if (gameUIStateRef.current.showSpaceExplorer) {
                 document.removeEventListener('keydown', handleKeyDown);
