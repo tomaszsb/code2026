@@ -735,8 +735,23 @@ class EffectsEngine {
                 this.log(`Forced discard: ${discardCount} cards for player ${playerId}`);
             }
 
+            // Handle turn effects (skip turn functionality)
+            if (card.turn_effect) {
+                if (card.turn_effect.includes('Skip next turn')) {
+                    window.GameStateManager.setPlayerSkipNextTurn(playerId, true);
+                    hasEffects = true;
+                    this.log(`Set skip next turn for player ${playerId}`);
+                } else if (card.turn_effect.includes('Skip this turn')) {
+                    // For "skip this turn", we need immediate turn advancement
+                    // This will be handled by the current endTurn() logic
+                    hasEffects = true;
+                    this.log(`Skip this turn effect for player ${playerId}`);
+                }
+                results.push(`Turn effect: ${card.turn_effect}`);
+            }
+
             if (!hasEffects) {
-                this.log(`Warning: Card ${card.card_id} has no time_effect or discard_cards values`);
+                this.log(`Warning: Card ${card.card_id} has no time_effect, discard_cards, or turn_effect values`);
                 return { success: false, reason: 'No effects in card' };
             }
 

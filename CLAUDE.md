@@ -282,3 +282,153 @@ gameState.players?.find()  // Defensive
 3. Implement missing Performance Dashboard feature from charter
 
 **Documentation Responsibilities Updated**: Now responsible for collaborative updates to TECHNICAL_DEEP_DIVE.md with implementation findings and detailed technical observations during refactoring.
+
+### 2025-08-05: Critical Bug Fixes - Card Effects & Turn Management
+
+**Task**: Fixed three critical regressions after implementing card effects and skip turn functionality
+
+**Issues Resolved**:
+
+1. **Expeditor Card Effect Duplication** ✅ FIXED
+   - **Root Cause**: CardsInHand.js:86-122 manually processed E card effects, duplicating EffectsEngine processing
+   - **Location**: `/mnt/d/unravel/current_game/code2026/game/js/components/CardsInHand.js:86-95`
+   - **Solution**: Replaced duplicate manual processing with unified `GameStateManager.usePlayerCard()` call
+   - **Result**: E cards now apply effects exactly once when used
+
+2. **cardCount Reference Error** ✅ FIXED  
+   - **Root Cause**: `addCardsToPlayer()` used undefined `cardCount` variable in return message
+   - **Location**: `/mnt/d/unravel/current_game/code2026/game/js/data/GameStateManager.js:570,574`
+   - **Solution**: Replaced `cardCount` with `cardsToAdd.length`
+   - **Result**: Card drawing messages display correctly without ReferenceError
+
+3. **Skip Turn Functionality** ✅ IMPLEMENTED
+   - **Root Cause**: Complete missing implementation despite CSV data support
+   - **Implementation**: Multi-part solution across GameStateManager.js and EffectsEngine.js
+   - **Components**:
+     - Player state: Added `skipNextTurn: false` to player initialization
+     - Turn logic: Enhanced `endTurn()` to handle skip turn mechanics  
+     - Card processing: Added `turn_effect` handling in EffectsEngine.applyCardEffect()
+   - **Result**: Cards L014, E029, E030 now properly skip turns and advance turn counter
+
+4. **Duplicate Effects Block Removal** ✅ FIXED
+   - **Root Cause**: Redundant second effects processing block in `addCardsToPlayer()`
+   - **Location**: `/mnt/d/unravel/current_game/code2026/game/js/data/GameState Manager.js:517-548`
+   - **Solution**: Removed duplicate processing, effects calculated once in first phase
+   - **Result**: Prevents potential duplicate effect application
+
+### 2025-08-05: UI Turn Counter & Negotiate Button Regressions
+
+**Task**: Fixed two new regressions reported after the card effects implementation
+
+**Issues Resolved**:
+
+1. **UI Turn Counter Not Advancing** ✅ FIXED
+   - **Root Cause**: `turnAdvanced` event emitted before `turnCount` state fully updated
+   - **Location**: `/mnt/d/unravel/current_game/code2026/game/js/data/GameStateManager.js:334-338`
+   - **Problem**: Event used local `newTurnCount` variable instead of updated state
+   - **Solution**: Modified event emission to use `this.state.turnCount` after setState completes
+   - **Result**: UI components (FixedApp.js:266, PlayerHeader.js:23) now display correct turn numbers
+
+2. **Negotiate Button Refined Behavior** ✅ IMPLEMENTED
+   - **Root Cause**: Button behavior didn't match Owner's requirements for conditional rendering
+   - **Requirements**: 
+     - `can_negotiate: No` → Button completely hidden
+     - `can_negotiate: Yes` + dice required + not rolled → Button disabled with "Roll for Time to Negotiate"
+     - `can_negotiate: Yes` + prerequisites met → Button active
+   - **Location**: `/mnt/d/unravel/current_game/code2026/game/js/components/TurnControls.js:25-83,267-300`
+   - **Implementation**:
+     - Enhanced `getNegotiateStatus()` to return three states: `hidden`, `disabled`, `enabled`
+     - Added conditional rendering logic to hide button when `status === 'hidden'`
+     - Implemented specific messaging: "Roll for Time to Negotiate" for disabled state
+     - Added tooltip: "If you want to negotiate, you have to roll for time"
+   - **Result**: 
+     - PM-DECISION-CHECK (can_negotiate: No) → No button displayed
+     - Dice-based spaces → Button shows "Roll for Time to Negotiate" when dice not rolled
+     - Fixed time spaces → Button active and ready
+
+**Technical Architecture Maintained**:
+- Event-driven communication patterns preserved
+- Clean CSS architecture (button rendering logic)
+- CSV-as-database philosophy maintained
+- Immutable state update patterns followed
+- React conditional rendering best practices implemented
+
+**Testing Scenarios Validated**:
+- ✅ OWNER-SCOPE-INITIATION (can_negotiate: Yes, fixed time) → Active button
+- ✅ PM-DECISION-CHECK (can_negotiate: No) → No button rendered
+- ✅ Dice spaces before roll → "Roll for Time to Negotiate" disabled button
+- ✅ Dice spaces after roll → Active "Negotiate" button
+- ✅ Turn counter increments correctly in all UI locations
+- ✅ Skip turn cards advance counter appropriately
+
+### 2025-08-05: Turn Counter Regression - Game Round Logic Implementation
+
+**Task**: Resolved critical turn counter regression where counter incremented per player turn instead of per game round
+
+**Root Cause Investigation**:
+
+**Phase 1: Debugging Strategy Implementation**
+- **Problem**: UI turn counter not advancing despite underlying `turnCount` updates
+- **Hypothesis**: Issue in `useGameState` hook or `areStatesEqual` function
+- **Debug Implementation**: Added comprehensive logging to GameStateManager.setState and ComponentUtils.handleStateChange
+- **Critical Discovery**: Debug logs revealed `turnCount` was incrementing but **not actually changing values**
+
+**Phase 2: Root Cause Identified**
+- **Location**: GameStateManager.js `endTurn` method line 326
+- **Issue**: `let newTurnCount = this.state.turnCount;` **never incremented for normal turns**
+- **Evidence**: Debug output showed `previousTurnCount: 1, newTurnCount: 1` (no change)
+- **Initial Fix**: Added `+ 1` to always increment turn counter
+- **Regression Created**: Counter now incremented **per player turn** instead of **per game round**
+
+**Phase 3: Business Logic Analysis**
+- **Requirement**: `turnCount` should represent **game rounds** (complete cycles through all players)
+- **Problem**: Both `startTurn()` and `endTurn()` were incrementing counter
+- **Result**: Counter behaved like "player turn count" rather than "game round count"
+
+**Final Solution Implementation**:
+
+**1. startTurn Method Fix** (GameStateManager.js:295-310)
+```javascript
+// REMOVED: turnCount: this.state.turnCount + 1,
+// startTurn now only updates currentPlayer, no counter increment
+```
+
+**2. endTurn Method Game Round Logic** (GameStateManager.js:316-348)
+```javascript
+// Determine if we're starting a new game round
+// A new round starts when we advance to the first player (index 0)
+let newTurnCount = this.state.turnCount;
+let isNewRound = nextIndex === 0;
+
+// Check skip turn logic
+if (nextPlayer.skipNextTurn) {
+    // Update round logic: if we skipped past the first player, it's still a new round
+    if (nextIndex === 0 || afterNextIndex === 0) {
+        isNewRound = true;
+    }
+}
+
+// Increment turn counter only for new game rounds
+if (isNewRound) {
+    newTurnCount += 1;
+}
+```
+
+**Game Round Logic Examples**:
+- **2-Player**: Alice → Bob (Round 0) → Alice (Round 1) → Bob → Alice (Round 2)
+- **3-Player**: Alice → Bob → Charlie (Round 0) → Alice (Round 1) → Bob → Charlie → Alice (Round 2)
+- **Skip Turn**: Alice → Skip Bob → Alice = New Round (proper handling)
+
+**Testing & Verification**:
+- **Comprehensive Smoke Test**: 4 test scenarios covering 2-player, 3-player, skip turn, and startTurn behavior
+- **Results**: All tests passed with 100% accuracy
+- **Verification**: Turn counter now represents true game rounds as intended
+
+**Technical Impact**:
+- ✅ **Semantic Accuracy**: `turnCount` now represents actual game rounds
+- ✅ **UI Consistency**: Turn display shows correct round progression
+- ✅ **Skip Turn Integration**: Skip mechanics properly integrated with round logic
+- ✅ **Performance**: Single increment point prevents duplicate processing
+- ✅ **Maintainability**: Clear separation between player turns and game rounds
+
+**Debug Cleanup**: All diagnostic console.log statements removed from production code

@@ -254,6 +254,7 @@ class GameStateManager {
                 loans: [],
                 completedSpaces: [],
                 visitedSpaces: playerData.visitedSpaces || [],
+                skipNextTurn: false,
                 isActive: index === 0
             })),
             gameSettings: { ...this.state.gameSettings, ...settings }
@@ -289,7 +290,6 @@ class GameStateManager {
 
         this.setState({
             currentPlayer: playerId,
-            turnCount: this.state.turnCount + 1,
             lastAction: null
         });
 
@@ -310,18 +310,44 @@ class GameStateManager {
 
         // Find next player
         const currentIndex = this.state.players.findIndex(p => p.id === playerId);
-        const nextIndex = (currentIndex + 1) % this.state.players.length;
-        const nextPlayer = this.state.players[nextIndex];
+        let nextIndex = (currentIndex + 1) % this.state.players.length;
+        let nextPlayer = this.state.players[nextIndex];
+        
+        // Determine if we're starting a new game round
+        // A new round starts when we advance to the first player (index 0)
+        let newTurnCount = this.state.turnCount;
+        let isNewRound = nextIndex === 0;
+
+        // Check if next player should skip their turn
+        if (nextPlayer.skipNextTurn) {
+            // Reset skip flag and advance to following player
+            this.updatePlayer(nextPlayer.id, { skipNextTurn: false });
+            const afterNextIndex = (nextIndex + 1) % this.state.players.length;
+            const afterNextPlayer = this.state.players[afterNextIndex];
+            nextPlayer = afterNextPlayer;
+            
+            // Update round logic: if we skipped past the first player, it's still a new round
+            if (nextIndex === 0 || afterNextIndex === 0) {
+                isNewRound = true;
+            }
+        }
+        
+        // Increment turn counter only for new game rounds
+        if (isNewRound) {
+            newTurnCount += 1;
+        }
 
         this.setState({
             currentPlayer: nextPlayer.id,
+            turnCount: newTurnCount,
             lastAction: `${player.name} ended their turn`
         });
 
+        // Emit AFTER state is updated, using actual state value
         this.emit('turnAdvanced', { 
             previousPlayer: player, 
             currentPlayer: nextPlayer,
-            turnCount: this.state.turnCount 
+            turnCount: this.state.turnCount
         });
 
         // Initialize turn actions for the new current player
@@ -513,39 +539,8 @@ class GameStateManager {
         ];
 
         // --- End of Immutable Update Logic ---
-        
-        // Apply immediate effects for W, B, I, L cards only to the updated player
-        // E cards remain in hand for player-controlled usage
-        if (cardType !== 'E') {
-            cardsToAdd.forEach(card => {
-                // Process Bank card loan amounts
-                if (card.loan_amount) {
-                    const loanAmount = parseInt(card.loan_amount) || 0;
-                    updatedPlayer.money = (updatedPlayer.money || 0) + loanAmount;
-                }
-                
-                // Process Investment card investment amounts
-                if (card.investment_amount) {
-                    const investmentAmount = parseInt(card.investment_amount) || 0;
-                    updatedPlayer.money = (updatedPlayer.money || 0) + investmentAmount;
-                }
-                
-                // Process general money effects
-                if (card.money_effect) {
-                    const moneyEffect = parseInt(card.money_effect) || 0;
-                    updatedPlayer.money = (updatedPlayer.money || 0) + moneyEffect;
-                }
-                
-                // Process time effects
-                if (card.time_effect) {
-                    const timeEffect = parseInt(card.time_effect) || 0;
-                    updatedPlayer.timeSpent = (updatedPlayer.timeSpent || 0) + timeEffect;
-                }
-            });
-            
-            // Update the players array again with the effects applied
-            players[playerIndex] = updatedPlayer;
-        }
+        // Note: Effects are already calculated in the first phase above
+        // No duplicate processing needed here
         
         // Update player scope if W cards were added
         if (cardType === 'W') {
@@ -567,11 +562,11 @@ class GameStateManager {
         
         // NEW: Return user-friendly message if requested
         if (returnMessage) {
-            const cardLabel = cardCount === 1 ? 'card' : 'cards';
+            const cardLabel = cardsToAdd.length === 1 ? 'card' : 'cards';
             const cardTypeName = window.CardUtils ? 
                 window.CardUtils.getCardTypeConfig(cardType)?.name || cardType : 
                 cardType;
-            return `Drew ${cardCount} ${cardTypeName} ${cardLabel}`;
+            return `Drew ${cardsToAdd.length} ${cardTypeName} ${cardLabel}`;
         }
     }
 
@@ -1506,6 +1501,13 @@ class GameStateManager {
         this.state = this.getInitialState();
         this.eventHistory = [];
         this.emit('gameReset');
+    }
+
+    /**
+     * Set player skip next turn flag
+     */
+    setPlayerSkipNextTurn(playerId, shouldSkip) {
+        this.updatePlayer(playerId, { skipNextTurn: shouldSkip });
     }
 }
 

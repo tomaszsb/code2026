@@ -83,58 +83,15 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
         }
         
         
-        // Apply card effects based on card properties
-        const effects = {
-            money: 0,
-            time: 0,
-            messages: []
-        };
-        
-        // Process general money effects
-        if (card.money_effect) {
-            const moneyEffect = parseInt(card.money_effect) || 0;
-            effects.money += moneyEffect;
-            effects.messages.push(`Money effect: ${moneyEffect >= 0 ? '+' : ''}$${moneyEffect.toLocaleString()}`);
-        }
-        
-        // Process time effects
-        if (card.time_effect) {
-            const timeEffect = parseInt(card.time_effect) || 0;
-            effects.time += timeEffect;
-            effects.messages.push(`Time effect: ${timeEffect >= 0 ? '+' : ''}${timeEffect} days`);
-        }
-        
-        // Apply effects via GameStateManager
-        if (effects.money !== 0) {
-            window.GameStateManager.emit('moneyChanged', {
-                playerId: player.id,
-                amount: effects.money,
-                source: `card_E_${card.card_id}`
-            });
-        }
-        
-        if (effects.time !== 0) {
-            window.GameStateManager.emit('timeChanged', {
-                playerId: player.id,
-                amount: effects.time,
-                source: `card_E_${card.card_id}`
-            });
-        }
-        
-        // Remove card from hand
-        window.GameStateManager.emit('useCard', {
-            playerId: player.id,
-            cardType: card.card_type,
-            cardId: card.card_id,
-            card: card
-        });
+        // Use GameStateManager's unified card usage system
+        // This handles all effects through EffectsEngine to prevent duplication
+        const result = window.GameStateManager.usePlayerCard(player.id, card.card_id);
         
         // Show feedback message
-        const baseMessage = effects.messages.length > 0 ? effects.messages.join(', ') : 'Card effect applied';
         window.GameStateManager.emit('showMessage', {
             type: 'success',
             message: `Used ${card.card_name || 'E Card'}`,
-            description: baseMessage
+            description: result || 'Card effect applied'
         });
         
     };

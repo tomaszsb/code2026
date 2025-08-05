@@ -22,10 +22,10 @@ function TurnControls({
         return engine;
     });
 
-    // Check if negotiate button should be enabled and get reason if disabled
+    // Check negotiate button status with three states: hidden, disabled, enabled
     const getNegotiateStatus = () => {
-        if (!currentPlayer) return { enabled: false, reason: 'No current player' };
-        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return { enabled: false, reason: 'Database not loaded' };
+        if (!currentPlayer) return { status: 'hidden', reason: 'No current player' };
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) return { status: 'hidden', reason: 'Database not loaded' };
 
         // Check space content for negotiation permission
         const currentSpaceData = window.CSVDatabase.spaceContent.find(
@@ -33,12 +33,15 @@ function TurnControls({
             currentPlayer.visitType || 'First'
         );
 
-        if (!currentSpaceData) return { enabled: false, reason: `Space data not found for ${currentPlayer.position}` };
+        if (!currentSpaceData) return { status: 'hidden', reason: `Space data not found for ${currentPlayer.position}` };
 
-        // Check if space allows negotiation
+        // CRITICAL DECISION POINT: If space explicitly disallows negotiation, hide button entirely
         if (currentSpaceData.can_negotiate === 'No') {
-            return { enabled: false, reason: 'Space does not allow negotiation' };
+            return { status: 'hidden', reason: 'Space does not allow negotiation' };
         }
+
+        // From here on, negotiation is conceptually allowed for this space
+        // Now check if prerequisites are met
 
         // Get time effects from SPACE_EFFECTS.csv
         const timeEffects = window.CSVDatabase.spaceEffects.query({
@@ -48,16 +51,16 @@ function TurnControls({
         });
 
         if (!timeEffects || timeEffects.length === 0) {
-            return { enabled: false, reason: 'No time effects found' };
+            return { status: 'hidden', reason: 'No time effects found' };
         }
 
         const timeEffect = timeEffects[0];
         const timeValue = timeEffect.effect_value;
         const useDice = timeEffect.use_dice === 'true';
 
-        // If time is fixed (not dice-based), always enable
+        // If time is fixed (not dice-based), negotiation is ready
         if (!useDice && timeValue && timeValue !== 'dice') {
-            return { enabled: true, reason: `Fixed time: ${timeValue} days` };
+            return { status: 'enabled', reason: `Fixed time: ${timeValue} days` };
         }
 
         // For dice-based time effects, check if dice action was completed
@@ -66,18 +69,22 @@ function TurnControls({
                 action.type === 'dice' && action.completed
             );
             if (diceCompleted) {
-                return { enabled: true, reason: `Dice rolled, time determined` };
+                return { status: 'enabled', reason: `Dice rolled, time determined` };
             } else {
-                return { enabled: false, reason: `Waiting for dice roll to determine time` };
+                return { 
+                    status: 'disabled', 
+                    reason: 'Roll for Time to Negotiate',
+                    userMessage: 'If you want to negotiate, you have to roll for time'
+                };
             }
         }
 
-        return { enabled: false, reason: `Unknown time format: ${timeValue}` };
+        return { status: 'hidden', reason: `Unknown time format: ${timeValue}` };
     };
 
     // Legacy function for compatibility
     const checkNegotiateEnabled = () => {
-        return getNegotiateStatus().enabled;
+        return getNegotiateStatus().status === 'enabled';
     };
 
     // Handle negotiate action
@@ -257,23 +264,40 @@ function TurnControls({
                 title: canEndTurn ? 'End your turn' : `Complete ${actionCounts.required - actionCounts.completed} more action(s) to end turn`
             }, `End Turn (${actionCounts.completed}/${actionCounts.required})`),
 
-            React.createElement('button', {
-                key: 'negotiate',
-                className: `btn btn--warning negotiate-button ${!checkNegotiateEnabled() ? 'is-disabled' : ''}`,
-                onClick: checkNegotiateEnabled() ? handleNegotiate : undefined,
-                disabled: !checkNegotiateEnabled(),
-                title: (() => {
-                    const status = getNegotiateStatus();
-                    return status.enabled ? 
-                        'Clear all selections and end turn (applies -1 day penalty)' : 
-                        `Negotiate unavailable: ${status.reason}`;
-                })()
-            }, debugMode ? 
-                (() => {
-                    const status = getNegotiateStatus();
-                    return status.enabled ? 'Negotiate' : `Negotiate (${status.reason})`;
-                })() : 
-                'Negotiate'),
+            // Conditional rendering based on negotiate status
+            (() => {
+                const negotiateStatus = getNegotiateStatus();
+                
+                // If negotiation is not allowed for this space, don't render button at all
+                if (negotiateStatus.status === 'hidden') {
+                    return null;
+                }
+                
+                // Render button (either enabled or disabled)
+                const isEnabled = negotiateStatus.status === 'enabled';
+                const displayText = negotiateStatus.status === 'disabled' 
+                    ? negotiateStatus.reason  // "Roll for Time to Negotiate"
+                    : 'Negotiate';
+                
+                const tooltipText = negotiateStatus.status === 'disabled'
+                    ? negotiateStatus.userMessage || negotiateStatus.reason
+                    : 'Clear all selections and end turn (applies -1 day penalty)';
+                
+                // Debug mode enhancement
+                const debugDisplayText = debugMode 
+                    ? (negotiateStatus.status === 'disabled' 
+                        ? `${displayText} (${negotiateStatus.reason})` 
+                        : displayText)
+                    : displayText;
+                
+                return React.createElement('button', {
+                    key: 'negotiate',
+                    className: `btn btn--warning negotiate-button ${!isEnabled ? 'is-disabled' : ''}`,
+                    onClick: isEnabled ? handleNegotiate : undefined,
+                    disabled: !isEnabled,
+                    title: tooltipText
+                }, debugDisplayText);
+            })(),
 
             React.createElement('button', {
                 key: 'view-rules',

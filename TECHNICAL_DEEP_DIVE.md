@@ -1,12 +1,12 @@
 # TECHNICAL_DEEP_DIVE.md - Project Hub NYC PM Game
 
-This document provides a detailed technical analysis of the game's most complex and critical systems: the Card System and the End-of-Turn Sequence. It serves as a reference for understanding the "how" behind the game's mechanics, including identified architectural concerns and proposed solutions.
+This document provides comprehensive technical analysis of the game's core systems: Card Lifecycle Management and Turn Sequence Orchestration. It serves as a definitive reference for understanding system mechanics, architectural patterns, and implementation details including identified technical debt and optimization opportunities.
 
-## 1. Card System Lifecycle
+## 1. Card System Architecture
 
 The card system is a highly data-driven and intricate part of the game, governing how players acquire, manage, and use various types of cards to influence game state.
 
-### 1.1. Card Definition (`cards.csv`)
+### 1.1. Data Layer: Card Definitions
 
 *   **Single Source of Truth:** `cards.csv` is the definitive source for all card data. Each row represents a unique card, defining its type (`W`, `B`, `I`, `L`, `E`), name, description, and most importantly, its mechanical effects.
 *   **`immediate_effect` Column:** This crucial column dictates the primary behavior of a card when it's processed. Values like `Apply Work`, `Apply Loan`, `Apply Card` (for Expeditor cards) direct the `EffectsEngine` to the appropriate logic.
@@ -15,7 +15,7 @@ The card system is a highly data-driven and intricate part of the game, governin
     *   **Immediate Effect Cards (W, B, I, L):** These cards apply their effects automatically upon being drawn. Their values (e.g., `loan_amount` for 'B' cards, `work_cost` for 'W' cards) are immediately processed by `GameStateManager.addCardsToPlayer`.
     *   **Player-Controlled Cards (E - Expeditor):** These are the only cards that remain in the player's hand for strategic, player-initiated use. Their effects are triggered only when the player explicitly chooses to use them.
 
-### 1.2. Acquiring Cards (The "Draw" Flow)
+### 1.2. Card Acquisition Pipeline
 
 1.  **Trigger:** Card draws are typically initiated by game events, such as landing on specific spaces or certain dice roll outcomes.
 2.  **`GameManager.js` (`drawCardsForPlayer`):** This function is responsible for fetching and preparing cards for a player.
@@ -28,7 +28,7 @@ The card system is a highly data-driven and intricate part of the game, governin
     *   It emits a `cardsAddedToPlayer` event, notifying other components of the change.
 4.  **UI Update:** React components (e.g., `CardsInHand.js`) listen for `stateChanged` events (which `GameStateManager.setState` emits after any state update) and re-render to display the newly acquired cards and updated player resources.
 
-### 1.3. Using Cards (The "Play" Flow for 'E' Cards)
+### 1.3. Card Usage Orchestration
 
 1.  **UI Interaction:** Players initiate the use of an 'E' card by clicking a "Use" button within the `CardsInHand.js` component.
 2.  **`CardsInHand.js` (`handleUseCard`):**
@@ -44,23 +44,22 @@ The card system is a highly data-driven and intricate part of the game, governin
 5.  **`GameStateManager.js` (`removeCardFromHand`):** After the effects are successfully applied, `usePlayerCard` calls this method to remove the used card from the player's hand.
 6.  **UI Update:** The `stateChanged` event propagates, causing the UI to update, reflecting the removed card and any changes to player resources.
 
-### 1.4. Architectural Concerns & Proposed Solutions (Card System)
+### 1.4. Technical Debt Assessment
 
-*   **Concern 1: Duplicate 'E' Card Logic:**
-    *   **Description:** The `handleUseCard` function in `CardsInHand.js` contains logic for processing 'E' card effects (money and time updates) that is duplicated in `EffectsEngine.js` (`applyEfficiencyEffect`). This violates the Single Source of Truth principle and creates maintenance overhead.
-    *   **Reasoning (Likely):** This is likely a legacy artifact from earlier development, where `CardsInHand` might have handled its own effects before the `EffectsEngine` was fully centralized.
-    *   **Proposed Solution:** Refactor `CardsInHand.js` to remove the duplicated effect processing logic. Instead, `handleUseCard` should directly call `window.EffectsEngine.applyEfficiencyEffect(card, player.id)`, delegating the effect application entirely to the `EffectsEngine`.
+*   **Concern 1: Duplicate 'E' Card Logic - RESOLVED:**
+    *   **Description:** The `handleUseCard` function in `CardsInHand.js` contained logic for processing 'E' card effects (money and time updates) that was duplicated in `EffectsEngine.js` (`applyEfficiencyEffect`). This violated the Single Source of Truth principle and created maintenance overhead.
+    *   **Resolution:** Refactored `CardsInHand.js` to remove duplicated effect processing logic. The `handleUseCard` function now delegates effect application entirely to the unified `GameStateManager.usePlayerCard()` system, eliminating code duplication and establishing single source of truth for card effects.
 
 *   **Concern 2: Hardcoded vs. Data-Driven Card Behavior:**
     *   **Description:** The `GameStateManager.addCardsToPlayer` function contains a hardcoded check (`if (cardType !== 'E')`) to determine if a card's effects are immediate or player-controlled. This means adding a new player-controlled card type would require code modification, breaking the data-driven philosophy.
     *   **Reasoning:** This reflects a business rule that 'E' cards are unique in their player-controlled activation.
     *   **Proposed Solution:** Leverage the existing `activation_timing` column in `cards.csv` (column 42). Modify `GameStateManager.addCardsToPlayer` to read `card.activation_timing` (e.g., 'Immediate' or 'Player_Controlled') instead of hardcoding the 'E' card type. This makes the behavior fully data-driven and extensible.
 
-## 2. End-of-Turn Sequence
+## 2. Turn Management Architecture
 
 The end-of-turn sequence is a critical orchestration of events that transitions the game from one player's actions to the next, including automatic movement and re-evaluation of game state.
 
-### 2.1. Initiating the End Turn
+### 2.1. Turn Termination Logic
 
 1.  **Component:** `TurnControls.js`
 2.  **User Action:** The player clicks the "End Turn" button.
@@ -68,7 +67,7 @@ The end-of-turn sequence is a critical orchestration of events that transitions 
     *   The button's enabled state is controlled by `gameState.currentTurn.canEndTurn`, which is `true` only when all `requiredActions` for the current turn have been `completed`.
     *   A check prevents ending the turn if the player is on a "Logic" space and has not yet made a required decision.
 
-### 2.2. Automatic Movement (Integral to Turn End)
+### 2.2. Movement Orchestration
 
 1.  **Location:** `handleEndTurn` function within `TurnControls.js`.
 2.  **Movement Calculation:** It uses `movementEngine.getAvailableMoves(currentPlayer)` to determine the possible next spaces based on the current player's position and game rules.
@@ -80,7 +79,7 @@ The end-of-turn sequence is a critical orchestration of events that transitions 
 4.  **Visual Delay:** A small `setTimeout` (50ms) is used to allow the UI to visually update the player's movement before the turn officially concludes.
 5.  **Design Implication:** This design means that player movement is an *automatic consequence* of ending a turn, not a separate player action.
 
-### 2.3. Ending the Turn
+### 2.3. State Transition Processing
 
 1.  **Location:** `handleEndTurn` in `TurnControls.js`.
 2.  **Event Emission:** After the automatic movement (or if no movement was required), `TurnControls.js` emits a `turnEnded` event to the `GameStateManager`:
@@ -93,7 +92,7 @@ The end-of-turn sequence is a critical orchestration of events that transitions 
     *   It updates the global `currentPlayer` ID in the game state to the `nextPlayer.id`.
     *   It emits a `turnAdvanced` event, providing both the `previousPlayer` and the `currentPlayer` to allow other components to react to the turn change.
 
-### 2.4. Initializing the Next Turn's Actions
+### 2.4. Action Requirement Calculation
 
 1.  **Location:** `GameStateManager.js` (`endTurn` calls this immediately after advancing the turn).
 2.  **`GameStateManager.js` (`initializeTurnActions`):**
@@ -101,7 +100,7 @@ The end-of-turn sequence is a critical orchestration of events that transitions 
     *   It updates the `gameState.currentTurn` object with these new requirements, setting the `actionCounts` and `canEndTurn` flag for the new player's turn.
     *   It emits a `turnActionsInitialized` event.
 
-### 2.5. UI Updates
+### 2.5. Event-Driven UI Synchronization
 
 *   Throughout this sequence, various React components (e.g., `PlayerStatusPanel`, `ActionPanel`, `TurnControls` itself) are listening for `stateChanged`, `playerMoved`, `turnAdvanced`, and `turnActionsInitialized` events from the `GameStateManager`. They re-render dynamically to reflect the new player, their position, updated resources, and the actions required for their turn.
 
