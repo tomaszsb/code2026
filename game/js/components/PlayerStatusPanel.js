@@ -13,7 +13,6 @@ function PlayerStatusPanel({ debugMode = false }) {
     });
 
     const currentPlayer = gameState.players?.find(p => p.id === gameState.currentPlayer);
-    console.log('RENDER CHECK: PlayerStatusPanel. Player has ' + (currentPlayer?.cards?.W?.length || 0) + ' W cards.');
     
     // Debug logging for current player
     useEffect(() => {

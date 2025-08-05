@@ -67,13 +67,6 @@ function FixedApp({ debugMode = false, logLevel = 'info' }) {
     
     const showPlayerSetup = gameState.gamePhase === 'SETUP' || gameState.players.length === 0;
     
-    // Debug current game state
-    console.log('🎮 FixedApp render - Current gameState:', {
-        gamePhase: gameState.gamePhase,
-        playersLength: gameState.players?.length || 0,
-        showPlayerSetup: showPlayerSetup,
-        gameStateManager: gameStateManager ? 'AVAILABLE' : 'NULL'
-    });
     
     
     // Main application
@@ -557,6 +550,7 @@ const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) =>
     // Custom comparison for GameInterface - only re-render if critical game state changes
     const prevState = prevProps.gameState;
     const nextState = nextProps.gameState;
+    
     
     // Quick identity check for both gameState and gameStateManager
     if (prevState === nextState && prevProps.gameStateManager === nextProps.gameStateManager) return true;

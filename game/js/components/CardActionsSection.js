@@ -27,13 +27,9 @@ function CardActionsSection({
 
     // Handle card action execution
     const handleCardAction = (cardType, action) => {
-        console.log('🎯 UI DEBUG: handleCardAction called with cardType=', cardType, 'action=', action);
         if (!currentPlayer) {
-            console.log('🎯 UI DEBUG: No current player found');
             return;
         }
-
-        console.log('🎯 UI DEBUG: About to emit processCardAction event for player', currentPlayer.id);
         
         // Emit the card action processing event
         gameStateManager.emit('processCardAction', {
@@ -41,8 +37,6 @@ function CardActionsSection({
             cardType,
             action
         });
-        
-        console.log('🎯 UI DEBUG: processCardAction event emitted');
 
         // Emit standardized player action taken event
         gameStateManager.emit('playerActionTaken', {

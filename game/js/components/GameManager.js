@@ -119,15 +119,12 @@ function GameManager({ gameState, gameStateManager }) {
      */
     const processCardAction = React.useCallback(({ playerId, cardType, action }) => {
         if (!gameStateManager) {
-            console.log('🎯 GAMEMANAGER DEBUG: gameStateManager not available, skipping processCardAction');
             return;
         }
         
         const actionText = action; // Maintain compatibility with the rest of the function
-        console.log('🎯 GAMEMANAGER DEBUG: processCardAction called with:', { playerId, cardType, actionText });
         
         const parsedAction = ComponentUtils.parseCardAction(actionText);
-        console.log('🎯 GAMEMANAGER DEBUG: Parsed action:', parsedAction);
         
         if (!parsedAction) {
             return;
@@ -497,8 +494,6 @@ window.GameManager = GameManager;
 
 // Debug functions - UNCONDITIONAL CREATION FOR DIAGNOSTIC PURPOSES
 window.giveCardToPlayer = (playerId, cardId) => {
-    console.log(`DEBUG: giveCardToPlayer called with playerId=${playerId}, cardId=${cardId}`);
-
     if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
         console.error('CSVDatabase not loaded. Cannot give card.');
         return;
@@ -510,10 +505,8 @@ window.giveCardToPlayer = (playerId, cardId) => {
     }
 
     const card = window.CSVDatabase.cards.find({ card_id: cardId });
-    console.log(`DEBUG: Found card:`, card);
 
     if (card) {
-        console.log(`DEBUG: About to call addCardsToPlayer with type=${card.card_type}`);
         window.GameStateManager.addCardsToPlayer(playerId, card.card_type, [card]);
         console.log(`Successfully gave card "${cardId}" (${card.card_name}) to ${playerId}.`);
     } else {

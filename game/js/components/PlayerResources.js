@@ -9,7 +9,6 @@ function PlayerResources({ onCardSelect, cardsExpanded, onToggleExpanded }) {
     // Get current game state and player reactively
     const [gameState, gameStateManager] = useGameState();
     const player = gameState.players?.find(p => p.id === gameState.currentPlayer);
-    console.log('RENDER CHECK: PlayerResources. Player has ' + (player?.cards?.W?.length || 0) + ' W cards.');
     
     // Return early if no player found
     if (!player) {
@@ -210,29 +209,17 @@ function PlayerResources({ onCardSelect, cardsExpanded, onToggleExpanded }) {
     }
 }
 
-// OPTIMIZED MEMOIZATION - Custom comparison to prevent unnecessary re-renders
+// FIXED MEMOIZATION - Proper comparison for useGameState hook pattern
 const PlayerResourcesMemo = React.memo(PlayerResources, (prevProps, nextProps) => {
-    // Only re-render if player resources actually changed
-    const prevPlayer = prevProps.player;
-    const nextPlayer = nextProps.player;
-    
-    // Quick identity check
-    if (prevPlayer === nextPlayer) return true;
-    
-    // If either is null/undefined, check if both are
-    if (!prevPlayer || !nextPlayer) return prevPlayer === nextPlayer;
-    
-    // Compare critical resource properties
+    // Since PlayerResources gets player data via useGameState() hook internally,
+    // we only need to compare the actual props passed to the component
     return (
-        prevPlayer.id === nextPlayer.id &&
-        prevPlayer.money === nextPlayer.money &&
-        prevPlayer.timeSpent === nextPlayer.timeSpent &&
-        prevPlayer.scopeTotalCost === nextPlayer.scopeTotalCost &&
-        prevPlayer.scopeItems?.length === nextPlayer.scopeItems?.length &&
         prevProps.cardsExpanded === nextProps.cardsExpanded &&
         prevProps.onCardSelect === nextProps.onCardSelect &&
         prevProps.onToggleExpanded === nextProps.onToggleExpanded
     );
+    // Note: Player data changes are handled by useGameState() hook which will
+    // trigger re-renders automatically when GameStateManager emits stateChanged events
 });
 
 window.PlayerResources = PlayerResourcesMemo;

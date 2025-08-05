@@ -462,10 +462,8 @@ class GameStateManager {
      * Add cards to player hand
      */
     addCardsToPlayer(playerId, cardType, cards, returnMessage = false) {
-        console.log(`🎯 DEBUG: addCardsToPlayer called with playerId=${playerId}, cardType=${cardType}, cards=`, cards);
         
         const playerIndex = this.state.players.findIndex(p => p.id === playerId);
-        console.log(`🎯 DEBUG: Found player at index ${playerIndex}`);
         
         if (playerIndex === -1) {
             console.error(`GameStateManager: Player ${playerId} not found`);
@@ -556,14 +554,9 @@ class GameStateManager {
             updatedPlayer.scopeTotalCost = scopeTotalCost;
         }
 
-        console.log(`🎯 DEBUG: About to setState with new players array. Old length=${this.state.players.length}, New length=${players.length}`);
-        console.log(`🎯 DEBUG: Player before update:`, this.state.players[playerIndex]);
-        console.log(`🎯 DEBUG: Player after update:`, updatedPlayer);
         
         this.setState({ players });
         
-        console.log(`🎯 DEBUG: setState completed. New state players length=${this.state.players.length}`);
-        console.log(`🎯 DEBUG: Updated player in new state:`, this.state.players[playerIndex]);
         
         this.emit('cardsAddedToPlayer', {
             player: updatedPlayer,
@@ -1115,8 +1108,8 @@ class GameStateManager {
 
         try {
             const effects = window.CSVDatabase.spaceEffects.query({
-                space: spaceName,
-                visitType: visitType
+                space_name: spaceName,
+                visit_type: visitType
             });
             
             this.log(`Found ${effects.length} space effects for ${spaceName}/${visitType}`);
@@ -1153,7 +1146,7 @@ class GameStateManager {
                     return this.addCardsToPlayer(playerId, cardType, cards, true);
                 }
                 
-                case 'e_time': {
+                case 'time': {
                     const timeAmount = parseInt(effect.effect_value) || 0;
                     return this.updatePlayerTime(playerId, timeAmount, `Space effect: ${effect.space}`, true);
                 }
