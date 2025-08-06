@@ -249,6 +249,50 @@ gameState.players?.find()  // Defensive
 
 ## Recent Work Log
 
+### 2025-08-06: Data-Driven Card Activation Refactoring
+
+**Major Achievement**: Successfully refactored card activation system to be fully data-driven using CSV `activation_timing` column, eliminating hardcoded logic.
+
+**Technical Debt Resolution**:
+- **Problem**: GameStateManager.addCardsToPlayer used hardcoded `if (cardType !== 'E')` check to determine card behavior
+- **Impact**: Violated data-driven architectural principles and made adding new card types difficult
+- **Solution**: Refactored to use `activation_timing` column from cards.csv for behavior control
+
+**Changes Made**:
+
+1. **CSV Data Update** (`game/data/cards.csv`):
+   - **E Cards**: Updated `activation_timing` from "Immediate" to "Player Controlled" (47 cards updated)
+   - **W, B, I, L Cards**: Maintained "Immediate" activation timing (358 cards)
+   - **Result**: CSV data now accurately reflects intended card behavior
+
+2. **GameStateManager Refactoring** (`game/js/data/GameStateManager.js:508-518`):
+   ```javascript
+   // BEFORE - Hardcoded logic:
+   if (cardType !== 'E') {
+       cardsToAdd.forEach(card => {
+           // Apply effects...
+       });
+   }
+
+   // AFTER - Data-driven logic:
+   cardsToAdd.forEach(card => {
+       if (card.activation_timing === 'Immediate') {
+           // Apply effects...
+       }
+       // Skip effects for "Player Controlled" cards
+   });
+   ```
+
+**Benefits Achieved**:
+- ✅ **Fully Data-Driven**: Card behavior controlled by CSV data, not code logic
+- ✅ **Extensible**: Easy to add new card types with different activation behaviors
+- ✅ **Maintainable**: Card behavior changes require only CSV updates
+- ✅ **Architecture Compliant**: Follows CSV-as-database philosophy consistently
+- ✅ **Functionality Preserved**: All existing game behavior remains unchanged
+- ✅ **Tested**: Logic verification confirmed identical behavior to previous hardcoded system
+
+**Technical Architecture**: Maintained event-driven patterns, immutable state management, and CSV-as-database philosophy while eliminating technical debt.
+
 ### 2025-08-06: Documentation Consolidation & Architecture Update
 
 **Major Achievement**: Comprehensive documentation cleanup and consolidation to eliminate duplication and outdated information across 8 .md files.

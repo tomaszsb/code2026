@@ -505,14 +505,17 @@ class GameStateManager {
         let newMoney = currentPlayer.money || 0;
         let newTimeSpent = currentPlayer.timeSpent || 0;
 
-        if (cardType !== 'E') {
-            cardsToAdd.forEach(card => {
+        // DATA-DRIVEN: Apply effects based on each card's activation_timing
+        cardsToAdd.forEach(card => {
+            if (card.activation_timing === 'Immediate') {
                 newMoney += parseInt(card.loan_amount || 0);
                 newMoney += parseInt(card.investment_amount || 0);
                 newMoney += parseInt(card.money_effect || 0);
                 newTimeSpent += parseInt(card.time_effect || 0);
-            });
-        }
+            }
+            // If activation_timing is "Player Controlled" or any other value,
+            // skip applying effects - card will be added to hand only
+        });
 
         const newCardsForType = [...(currentPlayer.cards?.[cardType] || []), ...cardsToAdd];
         const allWCards = cardType === 'W' ? newCardsForType : (currentPlayer.cards?.W || []);
