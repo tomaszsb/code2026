@@ -312,7 +312,7 @@ const ComponentUtils = {
         
         const nextSpaces = [];
         for (let i = 1; i <= 5; i++) {
-            const spaceKey = `space_${i}`;
+            const spaceKey = `destination_${i}`;
             if (movement[spaceKey] && movement[spaceKey].trim()) {
                 nextSpaces.push(movement[spaceKey].trim());
             }

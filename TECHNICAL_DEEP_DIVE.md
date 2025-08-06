@@ -46,9 +46,9 @@ The card system is a highly data-driven and intricate part of the game, governin
 
 ### 1.4. Technical Debt Assessment
 
-*   **Concern 1: Duplicate 'E' Card Logic - RESOLVED:**
-    *   **Description:** The `handleUseCard` function in `CardsInHand.js` contained logic for processing 'E' card effects (money and time updates) that was duplicated in `EffectsEngine.js` (`applyEfficiencyEffect`). This violated the Single Source of Truth principle and created maintenance overhead.
-    *   **Resolution:** Refactored `CardsInHand.js` to remove duplicated effect processing logic. The `handleUseCard` function now delegates effect application entirely to the unified `GameStateManager.usePlayerCard()` system, eliminating code duplication and establishing single source of truth for card effects.
+*   **Concern 1: Duplicate 'E' Card Logic - ✅ RESOLVED:**
+    *   **Description:** Previously, the `handleUseCard` function in `CardsInHand.js` contained logic for processing 'E' card effects (money and time updates) that was duplicated in `EffectsEngine.js`. This violated the Single Source of Truth principle.
+    *   **Resolution:** Refactored `CardsInHand.js` to remove duplicated effect processing logic. All card effect processing now flows through unified `GameStateManager.usePlayerCard()` system, eliminating code duplication and establishing single source of truth for card effects.
 
 *   **Concern 2: Hardcoded vs. Data-Driven Card Behavior:**
     *   **Description:** The `GameStateManager.addCardsToPlayer` function contains a hardcoded check (`if (cardType !== 'E')`) to determine if a card's effects are immediate or player-controlled. This means adding a new player-controlled card type would require code modification, breaking the data-driven philosophy.

@@ -11,6 +11,7 @@ function VisualBoard({ gameState, onSpaceClick, availableMoves, boardState, curr
     const { useState, useEffect } = React;
     const [allSpaces, setAllSpaces] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [explorationPath, setExplorationPath] = useState(null);
     
     useEffect(() => {
         // Load all spaces from GAME_CONFIG.csv (complete list) and merge with SPACE_CONTENT.csv
@@ -57,8 +58,31 @@ function VisualBoard({ gameState, onSpaceClick, availableMoves, boardState, curr
         return acc;
     }, {});
     
+    // Interactive exploration event handlers
+    const handleSpaceMouseEnter = (spaceName) => {
+        if (!window.ComponentUtils) return;
+        
+        // Determine correct visitType based on game state
+        const hasBeenVisited = boardState.visitedSpaces.includes(spaceName);
+        const visitType = hasBeenVisited ? 'Subsequent' : 'First';
+        
+        // Get potential moves from this space with correct visitType
+        const potentialMoves = window.ComponentUtils.getNextSpaces(spaceName, visitType);
+        
+        if (potentialMoves && potentialMoves.length > 0) {
+            setExplorationPath({
+                source: spaceName,
+                destinations: potentialMoves
+            });
+        }
+    };
+    
+    const handleSpaceMouseLeave = () => {
+        setExplorationPath(null);
+    };
+    
     return React.createElement('div', 
-        { className: 'visual-board snake-layout' },
+        { className: 'visual-board snake-layout', style: { position: 'relative' } },
         React.createElement('div', { className: 'board-title' }, 'Project Management Board'),
         React.createElement('div', 
             { className: 'snake-grid' },
@@ -66,41 +90,100 @@ function VisualBoard({ gameState, onSpaceClick, availableMoves, boardState, curr
                 const space = spaceMap[spaceName];
                 if (!space) return null;
                 
+                const isCurrentPosition = currentPlayer && currentPlayer.position === space.space_name;
+                const isAvailableMove = availableMoves.includes(space.space_name);
+                
+                
+                // Declarative rendering logic based on exploration state
+                let shouldDim = false;
+                let shouldHighlight = false;
+                
+                if (explorationPath) {
+                    // Interactive exploration mode: highlight source and destinations
+                    const isExplorationSource = explorationPath.source === space.space_name;
+                    const isExplorationDestination = explorationPath.destinations.includes(space.space_name);
+                    
+                    shouldDim = !isExplorationSource && !isExplorationDestination;
+                    shouldHighlight = isExplorationSource || isExplorationDestination;
+                } else {
+                    // Default Focus View: NEVER dim current position or available moves
+                    // Only dim spaces that are neither current position NOR available moves
+                    shouldDim = !(isCurrentPosition || isAvailableMove);
+                }
+                
                 return React.createElement(window.BoardSpace, {
                     key: space.space_name,
                     space,
                     players: gameState.players.filter(p => p.position === space.space_name),
                     onClick: () => onSpaceClick(space.space_name),
-                    isAvailableMove: availableMoves.includes(space.space_name),
-                    isCurrentPosition: currentPlayer && currentPlayer.position === space.space_name,
+                    onMouseEnter: () => handleSpaceMouseEnter(space.space_name),
+                    onMouseLeave: handleSpaceMouseLeave,
+                    isAvailableMove: isAvailableMove,
+                    isCurrentPosition: isCurrentPosition,
                     isVisited: boardState.visitedSpaces.includes(space.space_name),
+                    isDimmed: shouldDim,
+                    isHighlighted: shouldHighlight,
                     'data-order': index + 1
                 });
             })
-        )
+        ),
+        
+        // Add PathVisualizer for dynamic arrow drawing
+        window.PathVisualizer && React.createElement(window.PathVisualizer, {
+            key: 'path-visualizer',
+            gameState,
+            currentPlayer,
+            availableMoves,
+            boardState,
+            explorationPath
+        })
     );
 }
 
 /**
  * BoardSpace - Individual space on the board
  */
-function BoardSpace({ space, players, onClick, isAvailableMove, isCurrentPosition, isVisited }) {
+function BoardSpace({ space, players, onClick, onMouseEnter, onMouseLeave, isAvailableMove, isCurrentPosition, isVisited, isDimmed, isHighlighted }) {
     const hasPlayers = players.length > 0;
+    
+    // Determine badge color based on player occupancy
+    let badgeColor = 'var(--neutral-500)'; // Default neutral gray
+    
+    if (hasPlayers) {
+        // Use the first player's color, with fallback to blue
+        badgeColor = players[0].color || '#4285f4';
+        
+        // For multiple players, could use a different visual indicator
+        // For now, just use the first player's color
+        if (players.length > 1) {
+            // Could add a visual indicator for multiple players in the future
+            // For now, keep the first player's color
+        }
+    }
     
     // Build CSS classes based on state
     const spaceClasses = [
         'board-space',
+        space.phase ? `phase-${space.phase.toLowerCase()}` : '',
         hasPlayers ? 'has-players' : '',
         isAvailableMove ? 'available-move' : '',
         isCurrentPosition ? 'current-position' : '',
         isVisited ? 'visited' : '',
-        isAvailableMove ? 'clickable' : ''
+        isAvailableMove ? 'clickable' : '',
+        isDimmed ? 'is-dimmed' : '',
+        isHighlighted ? 'is-highlighted' : ''
     ].filter(Boolean).join(' ');
     
     return React.createElement('div', 
         { 
             className: spaceClasses,
             onClick: onClick,
+            onMouseEnter: onMouseEnter,
+            onMouseLeave: onMouseLeave,
+            'data-space': space.space_name,
+            style: {
+                '--badge-color': badgeColor
+            },
             title: `${space.space_name}${hasPlayers ? ` (${players.length} player${players.length > 1 ? 's' : ''})` : ''}`
         },
         React.createElement('div', { className: 'space-header' },

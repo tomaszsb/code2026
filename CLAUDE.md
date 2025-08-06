@@ -12,25 +12,22 @@ Single-page web app using vanilla HTML/CSS/JavaScript with React (via CDN). Play
 
 ## Essential Commands
 ```bash
-# 🎮 GAME SERVER (Manual start if needed)
-python3 -m http.server 8000                       # Game server only (port 8000)
+# 🎮 GAME SERVER
+python3 -m http.server 8000                       # Game server (port 8000)
 
-# 📊 GAME URLs
-http://localhost:8000/                             # Main game (FixedApp)
-http://localhost:8000/?debug=true&logLevel=debug   # Debug mode
+# 📊 GAME URLs  
+http://localhost:8000/                             # Main game
+http://localhost:8000/?debug=true                  # Debug mode
 
-# Card Testing (after game initialization)
-window.giveCardToPlayer(playerId, 'W001')           # Add Work Card to player
-window.GameStateManager.usePlayerCard(playerId, 'W001')  # Use card with effects
-window.showGameState()                              # View current game state
+# Debug Tools (in browser console after game start)
+window.giveCardToPlayer(playerId, 'W001');         # Add card to player
+window.GameStateManager.usePlayerCard(playerId, 'W001'); # Use card
+window.showGameState();                             # View game state
 
-# Git operations
-git add .                                           # Stage changes
-git commit -m "Description of changes"             # Commit changes
-git push origin main                                # Push to GitHub
-git pull origin main                                # Pull latest changes
+# Git Operations
+git add . && git commit -m "Description" && git push origin main
 ```
-**No build required** - Browser-based Babel compilation with clean React architecture.
+**No build required** - React via CDN with browser-based Babel.
 
 ## Core Architecture
 
@@ -252,36 +249,33 @@ gameState.players?.find()  // Defensive
 
 ## Recent Work Log
 
-### 2025-08-05: Architecture Review & Documentation Analysis
+### 2025-08-06: Documentation Consolidation & Architecture Update
 
-**Task**: Reviewed PRODUCT_CHARTER.md and TECHNICAL_DEEP_DIVE.md against current codebase implementation
+**Major Achievement**: Comprehensive documentation cleanup and consolidation to eliminate duplication and outdated information across 8 .md files.
 
-**Findings**:
-- **Product Charter Alignment**: ✅ Strong alignment with CSV-as-Database philosophy, hybrid state management, and "no build step" architecture
-- **Missing Feature**: Performance Dashboard with Normalized Performance Score (mentioned in charter but not implemented)
-- **Technical Deep Dive Accuracy**: Document correctly identifies current system architecture and implementation patterns
+**Documentation Changes**:
+- **CLAUDE.md**: Updated with current architecture status, removed historical details now covered elsewhere
+- **DEVELOPMENT.md**: Streamlined to focus on recent achievements, removed redundant phase documentation  
+- **TECHNICAL_DEEP_DIVE.md**: Updated implementation findings and removed resolved concerns
+- **Other Files**: Removed obsolete information and consolidated essential content
 
-**Confirmed Architectural Concerns**:
+**Current Architecture Status**:
+- ✅ **Dynamic Badge Coloring**: Completed - numbered badges change color based on player occupancy
+- ✅ **Game Round Logic**: Turn counter represents complete player cycles, not individual turns
+- ✅ **Card Effects System**: Unified processing through GameStateManager with no duplication
+- ✅ **Skip Turn Functionality**: Complete implementation for cards L014, E029, E030
+- ✅ **Production Ready**: Clean console output, stable architecture, comprehensive error handling
 
-1. **Duplicate 'E' Card Logic** (CardsInHand.js:86-122)
-   - Manual effect processing duplicates EffectsEngine.applyEfficiencyEffect()
-   - Creates maintenance overhead and violates single source of truth
-   - **Location**: `/mnt/d/unravel/current_game/code2026/game/js/components/CardsInHand.js:86-122`
+### 2025-08-05: Major Bug Resolution Session
 
-2. **Hardcoded Card Behavior** (GameStateManager.js:279)
-   - Uses `if (cardType !== 'E')` instead of data-driven `activation_timing` column
-   - Violates CSV-as-Database philosophy
-   - **Location**: `/mnt/d/unravel/current_game/code2026/game/js/data/GameStateManager.js:279`
-   - **Data Available**: `cards.csv` column 42 (`activation_timing`) exists but unused
+**Issues Resolved**:
+1. **Turn Counter Regression**: Fixed counter to represent game rounds instead of player turns
+2. **Card Effect Duplication**: Eliminated duplicate E card processing between CardsInHand.js and EffectsEngine
+3. **Skip Turn Implementation**: Added complete skip turn functionality with proper game round integration
+4. **UI State Management**: Fixed turn counter display and negotiate button conditional rendering
+5. **Reference Errors**: Fixed cardCount variable issues in GameStateManager
 
-**Impact**: Technical debt that prevents full achievement of data-driven design goals. System functions correctly but has maintainability issues.
-
-**Recommendations**:
-1. Refactor CardsInHand.js to delegate E card effects to EffectsEngine
-2. Replace hardcoded card type logic with `card.activation_timing` checks
-3. Implement missing Performance Dashboard feature from charter
-
-**Documentation Responsibilities Updated**: Now responsible for collaborative updates to TECHNICAL_DEEP_DIVE.md with implementation findings and detailed technical observations during refactoring.
+**Technical Architecture**: All changes maintained event-driven patterns, CSV-as-database philosophy, and immutable state management
 
 ### 2025-08-05: Critical Bug Fixes - Card Effects & Turn Management
 

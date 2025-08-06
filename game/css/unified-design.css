@@ -624,21 +624,24 @@ body {
 /* Board Space Enhancements for Snake Layout */
 .snake-layout .board-space {
   flex: 0 0 auto;
-  width: 120px;
-  height: 80px;
+  width: 180px;
+  height: 100px;
   position: relative;
-  margin: 2px;
-  padding: 6px;
+  margin: 4px;
+  padding: 12px;
   border: 2px solid var(--neutral-300);
   border-radius: var(--radius-md);
   background: var(--surface-color);
   transition: all 0.3s ease;
-  font-size: 10px;
+  font-size: 9px;
+  line-height: 1.3;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
+  word-wrap: break-word;
+  hyphens: auto;
 }
 
 .snake-layout .board-space:hover {
@@ -648,26 +651,112 @@ body {
 }
 
 .snake-layout .board-space.current-position {
-  width: 240px;
-  height: 160px;
-  border-color: var(--success-color);
-  background: var(--success-50);
-  box-shadow: 0 0 12px var(--success-200);
-  font-size: 14px;
+  width: 200px;
+  height: 120px;
+  border: 3px solid var(--success-color);
+  background: linear-gradient(135deg, var(--success-50) 0%, var(--success-100) 100%);
+  box-shadow: 0 0 20px var(--success-200), 0 0 40px rgba(52, 168, 83, 0.3);
+  font-size: 10px;
   font-weight: bold;
   z-index: 10;
+  position: relative;
+  animation: currentPlayerGlow 3s ease-in-out infinite;
+  padding: 14px;
+}
+
+/* Player position indicator - adds a prominent "YOU ARE HERE" marker */
+.snake-layout .board-space.current-position::after {
+  content: "👤 YOU ARE HERE";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--success-color);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: bold;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 11;
+}
+
+@keyframes currentPlayerGlow {
+  0%, 100% { box-shadow: 0 0 20px var(--success-200), 0 0 40px rgba(52, 168, 83, 0.3); }
+  50% { box-shadow: 0 0 30px var(--success-300), 0 0 60px rgba(52, 168, 83, 0.5); }
+}
+
+/* Phase color rules moved to board-space-renderer.css for proper !important precedence */
+
+/* Game Flow Path Visualization */
+.snake-grid {
+  position: relative;
+}
+
+/* Enhanced flow indicators with directional arrows - Dynamic player colors */
+.snake-layout .board-space::before {
+  content: attr(data-order);
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  width: 22px;
+  height: 22px;
+  background: var(--badge-color, var(--neutral-500));
+  color: white;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+  z-index: 20;
+  border: 2px solid white;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* Ensures text is readable on any color */
+}
+
+/* Flow arrows removed - caused confusion in grid layout */
+
+/* Interactive Path Visualization States */
+.board-space.is-dimmed {
+  opacity: 0.4;
+  filter: grayscale(80%);
+  transition: all 0.3s ease;
+}
+
+.board-space.is-highlighted {
+  opacity: 1;
+  filter: grayscale(0%);
+  box-shadow: 0 0 15px var(--info-color);
+  transition: all 0.3s ease;
+}
+
+/* Flow path legend */
+.visual-board::before {
+  content: "📍 Follow the numbered path from SETUP to FINISH";
+  position: absolute;
+  top: -25px;
+  left: 0;
+  font-size: 12px;
+  color: var(--neutral-600);
+  font-weight: 500;
+  background: rgba(255,255,255,0.9);
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .snake-layout .board-space.available-move {
-  width: 180px;
-  height: 120px;
   border-color: var(--warning-color);
   background: var(--warning-50);
   cursor: pointer;
   animation: pulse 2s infinite;
-  font-size: 12px;
+  font-size: 9px;
   font-weight: 600;
   z-index: 5;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
 
 .snake-layout .board-space.visited {
@@ -681,24 +770,7 @@ body {
   100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
 }
 
-/* Flow indicators for wrapped snake layout */
-.snake-layout .board-space::before {
-  content: attr(data-order);
-  position: absolute;
-  top: -8px;
-  left: -8px;
-  width: 20px;
-  height: 20px;
-  background: var(--primary-blue);
-  color: white;
-  border-radius: 50%;
-  font-size: 10px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 15;
-}
+/* Duplicate removed - using enhanced version above */
 
 .phase-section {
   background-color: var(--neutral-50);
