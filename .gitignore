@@ -1,1 +1,4 @@
 *.log\n*.backup
+
+# Dependencies
+node_modules/

@@ -103,7 +103,7 @@ function GameManager({ gameState, gameStateManager }) {
         }
         
         // Show available card actions for manual selection (regardless of dice requirement)
-        const cardTypes = ComponentUtils.getCardTypes(spaceData.space_name, spaceData.visit_type || 'First');
+        const cardTypes = ComponentUtils.getCardTypes(spaceData.space_name, spaceData.visit_type || 'First', gameState, effectsEngineRef.current);
         if (cardTypes.length > 0) {
             gameStateManager.emit('showCardActions', {
                 playerId,

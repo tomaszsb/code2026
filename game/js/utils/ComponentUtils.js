@@ -341,7 +341,7 @@ const ComponentUtils = {
     },
     
     // Get card types that space affects
-    getCardTypes: (spaceName, visitType = 'First') => {
+    getCardTypes: (spaceName, visitType = 'First', gameState = null, effectsEngine = null) => {
         if (!window.CSVDatabase?.loaded) return [];
         const effects = window.CSVDatabase.spaceEffects.query({
             space_name: spaceName,
@@ -349,8 +349,15 @@ const ComponentUtils = {
         });
         
         const types = [];
+        const uniqueActions = new Map(); // Track unique type+action combinations
+        
         effects.forEach(effect => {
             if (effect.effect_type && effect.effect_type.includes('_cards')) {
+                // Evaluate condition to determine if this effect applies
+                if (!ComponentUtils.evaluateEffectCondition(effect.condition, gameState, effectsEngine, spaceName)) {
+                    return; // Skip if condition not met
+                }
+                
                 const cardType = effect.effect_type.replace('_cards', '').toUpperCase();
                 
                 let action;
@@ -361,13 +368,67 @@ const ComponentUtils = {
                     action = `Draw ${effect.effect_value || 1}`;
                 }
                 
-                types.push({ 
-                    type: cardType, 
-                    action: action
-                });
+                // Deduplicate by type+action combination
+                const key = `${cardType}-${action}`;
+                if (!uniqueActions.has(key)) {
+                    uniqueActions.set(key, true);
+                    types.push({ 
+                        type: cardType, 
+                        action: action,
+                        trigger_type: effect.trigger_type || ''
+                    });
+                }
             }
         });
         return types;
+    },
+    
+    // Evaluate effect condition using current game state
+    evaluateEffectCondition: (condition, gameState, effectsEngine, spaceName) => {
+        // Always allow effects with no condition or 'always'
+        if (!condition || condition === 'always') {
+            return true;
+        }
+        
+        // Player-choice conditions: These are fulfilled by the player clicking the button
+        // Examples: roll_1, roll_2, replace, to_right_player, return, etc.
+        const playerChoiceConditions = [
+            'roll_1', 'roll_2', 'replace', 'to_right_player', 'return',
+            'loan_up_to_1.4M', 'loan_1.5M_to_2.75M', 'loan_above_2.75M',
+            'percent_of_borrowed', 'per_200k'
+        ];
+        
+        if (playerChoiceConditions.includes(condition)) {
+            return true; // Always show buttons for player-choice conditions
+        }
+        
+        if (!gameState) {
+            // No game state available, allow all conditions for now
+            // This handles the case where we're called during initial setup
+            return true;
+        }
+        
+        // Use EffectsEngine condition evaluation if available
+        if (effectsEngine && effectsEngine.meetsCondition) {
+            try {
+                return effectsEngine.meetsCondition(condition, gameState, gameState.currentPlayer);
+            } catch (error) {
+                console.warn(`Error evaluating condition '${condition}':`, error);
+                return true; // Default to true on error
+            }
+        }
+        
+        // Fallback condition evaluation
+        if (condition === 'scope_le_4M') {
+            return (gameState.projectScope || 0) <= 4000000;
+        }
+        if (condition === 'scope_gt_4M') {
+            return (gameState.projectScope || 0) > 4000000;
+        }
+        
+        // Default to true for unknown conditions
+        console.warn(`Unknown condition: ${condition}`);
+        return true;
     },
     
     // Get dice action text showing range (e.g., "Draw 1-3")

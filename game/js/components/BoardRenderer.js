@@ -232,7 +232,7 @@ function SpaceDisplay({ spaceName, visitType, onMoveRequest }) {
     }
     
     const nextSpaces = ComponentUtils.getNextSpaces(spaceName, visitType || 'First');
-    const cardTypes = ComponentUtils.getCardTypes(spaceName, visitType || 'First');
+    const cardTypes = ComponentUtils.getCardTypes(spaceName, visitType || 'First', null, window.GameManagerEffectsEngine);
     
     return React.createElement('div', 
         { className: 'flex flex-col gap-4' },

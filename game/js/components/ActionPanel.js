@@ -195,7 +195,7 @@ function ActionPanel({ isInUnifiedContainer = false }) {
             if (currentSpaceData) {
                 const moves = ComponentUtils.getNextSpaces(currentPlayer.position, currentPlayer.visitType || 'First');
                 const requiresDice = ComponentUtils.requiresDiceRoll(currentPlayer.position, currentPlayer.visitType || 'First');
-                const cardTypes = ComponentUtils.getCardTypes(currentPlayer.position, currentPlayer.visitType || 'First');
+                const cardTypes = ComponentUtils.getCardTypes(currentPlayer.position, currentPlayer.visitType || 'First', gameState, window.GameManagerEffectsEngine);
                 
                 
                 setActionState(prev => ({

@@ -249,6 +249,59 @@ gameState.players?.find()  // Defensive
 
 ## Recent Work Log
 
+### 2025-08-08: Data-Driven Card Actions System - Manual Dice Buttons Fix
+
+**Major Achievement**: Successfully resolved critical bug where manual dice action buttons were missing on multiple spaces and implemented a robust data-driven filtering system.
+
+**Problem Resolved**:
+- **Missing Buttons**: PM-DECISION-CHECK, INVESTOR-FUND-REVIEW, and LEND-SCOPE-CHECK spaces were not displaying their manual card action buttons
+- **Brittle Architecture**: CardActionsSection.js used hardcoded space arrays that required manual updates for each new space
+- **Condition Evaluation Issues**: ComponentUtils.js failed to recognize player-choice conditions like `roll_1`, `roll_2`, and `replace`
+
+**Technical Solutions Implemented**:
+
+1. **Data Layer Enhancement** (`game/data/SPACE_EFFECTS.csv`):
+   - Added `trigger_type` column as 7th column in SPACE_EFFECTS.csv
+   - Set `trigger_type: manual` for 10 dice-based card actions across target spaces
+   - Created single source of truth for button visibility control
+
+2. **Data-Driven Filtering Logic** (`game/js/components/CardActionsSection.js`):
+   ```javascript
+   // BEFORE - Hardcoded array approach:
+   const allowDiceActionsSpaces = ['INVESTOR-FUND-REVIEW', 'LEND-SCOPE-CHECK'];
+   const isManualDiceSpace = allowDiceActionsSpaces.includes(currentPlayer.position);
+   
+   // AFTER - Data-driven approach:
+   if (cardAction.trigger_type === 'manual') {
+       return true; // Always show manual trigger actions
+   }
+   ```
+
+3. **Enhanced ComponentUtils** (`game/js/utils/ComponentUtils.js`):
+   - Updated `getCardTypes()` to return `trigger_type` from CSV data
+   - Enhanced `evaluateEffectCondition()` to recognize player-choice conditions:
+     ```javascript
+     const playerChoiceConditions = ['roll_1', 'roll_2', 'replace', 'to_right_player', 'return'];
+     if (playerChoiceConditions.includes(condition)) {
+         return true; // Show buttons for player-choice conditions
+     }
+     ```
+
+4. **Code Simplification**:
+   - Removed duplicate filtering logic from CardActionsSection.js
+   - Eliminated hardcoded space-specific business logic
+   - Centralized all filtering decisions in CSV data layer
+
+**Benefits Achieved**:
+- ✅ **Bug Resolution**: All manual dice action buttons now appear correctly
+- ✅ **Maintainable**: New spaces only require CSV updates, no code changes  
+- ✅ **Extensible**: Easy to add new trigger types (auto, manual, conditional, etc.)
+- ✅ **Clean Architecture**: Single source of truth in CSV data
+- ✅ **Robust**: No hardcoded space arrays to maintain
+- ✅ **Data-Driven**: Follows established CSV-as-database philosophy
+
+**Spaces Fixed**: PM-DECISION-CHECK, INVESTOR-FUND-REVIEW, LEND-SCOPE-CHECK now properly display manual dice action buttons based on CSV `trigger_type: manual` settings.
+
 ### 2025-08-06: Data-Driven Card Activation Refactoring
 
 **Major Achievement**: Successfully refactored card activation system to be fully data-driven using CSV `activation_timing` column, eliminating hardcoded logic.

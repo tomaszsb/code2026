@@ -1,0 +1,57 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Auto-Start Project",
+            "type": "shell",
+            "command": "./auto-start.sh",
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "runOptions": {
+                "runOn": "folderOpen"
+            }
+        },
+        {
+            "label": "Start All Servers (Legacy)",
+            "type": "shell",
+            "command": "./startup.sh",
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Start Bridge Server Only",
+            "type": "shell",
+            "command": "./start-bridge.sh",
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always"
+            }
+        },
+        {
+            "label": "Start Game Server Only", 
+            "type": "shell",
+            "command": "python3",
+            "args": ["-m", "http.server", "8000"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always"
+            }
+        }
+    ]
+}

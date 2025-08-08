@@ -1368,7 +1368,9 @@ class GameStateManager {
             if (window.ComponentUtils && window.ComponentUtils.getCardTypes) {
                 const cardTypes = window.ComponentUtils.getCardTypes(
                     player.position, 
-                    player.visitType || 'First'
+                    player.visitType || 'First',
+                    this.state,
+                    window.GameManagerEffectsEngine
                 );
                 if (cardTypes && cardTypes.length > 0) {
                     requiredActions.push({ type: 'card', required: true, completed: false, cardTypes });

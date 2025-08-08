@@ -98,35 +98,14 @@ function CardActionsSection({
         if (!availableCardActions) return [];
 
         return availableCardActions.filter((cardAction) => {
-            // Filter out dice-based card actions (these are handled by dice roll automatically)
-            if (isDiceBasedAction(cardAction)) {
-                return false;
+            // Data-driven filtering: Check trigger_type first
+            if (cardAction.trigger_type === 'manual') {
+                return true; // Always show manual trigger actions
             }
             
-            // Temporary aggressive filter: remove any "Draw dice" actions
-            if (cardAction.action && cardAction.action.includes('dice')) {
-                return false;
-            }
-            
-            // Smart filtering for OWNER-FUND-INITIATION space
-            if (currentPlayer && currentPlayer.position === 'OWNER-FUND-INITIATION') {
-                const scopeCost = currentPlayer.scopeTotalCost || 0;
-                const fourMillion = 4000000; // $4M threshold
-                
-                // Work card: hide on OWNER-FUND-INITIATION (funding space, not work space)
-                if (cardAction.type === 'W') {
-                    return false;
-                }
-                
-                // Bank card: only show if scope ≤ $4M
-                if (cardAction.type === 'B' && scopeCost > fourMillion) {
-                    return false;
-                }
-                
-                // Investor card: only show if scope > $4M
-                if (cardAction.type === 'I' && scopeCost <= fourMillion) {
-                    return false;
-                }
+            // Hide dice-based actions that don't have trigger_type='manual'
+            if (isDiceBasedAction(cardAction) || (cardAction.action && cardAction.action.includes('dice'))) {
+                return false; // Hide automatic dice actions
             }
             
             return true; // Show all other cards normally

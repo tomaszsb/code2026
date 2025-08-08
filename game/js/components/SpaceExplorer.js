@@ -105,6 +105,7 @@ function SpaceExplorer() {
             spaceData,
             isValidMove,
             player,
+            gameState,
             onExploreSpace: exploreSpace
         }),
         
@@ -127,7 +128,7 @@ function SpaceExplorer() {
 /**
  * SpaceDetails - Detailed space information display
  */
-function SpaceDetails({ spaceName, spaceData, isValidMove, player, onExploreSpace }) {
+function SpaceDetails({ spaceName, spaceData, isValidMove, player, gameState, onExploreSpace }) {
     if (!spaceData) {
         return React.createElement('div',
             { className: 'card card--compact text-center' },
@@ -136,7 +137,7 @@ function SpaceDetails({ spaceName, spaceData, isValidMove, player, onExploreSpac
     }
     
     const nextSpaces = ComponentUtils.getNextSpaces(spaceName, spaceData?.visit_type || 'First');
-    const cardTypes = ComponentUtils.getCardTypes(spaceName, spaceData?.visit_type || 'First');
+    const cardTypes = ComponentUtils.getCardTypes(spaceName, spaceData?.visit_type || 'First', gameState, window.GameManagerEffectsEngine);
     const requiresDice = ComponentUtils.requiresDiceRoll(spaceName, spaceData?.visit_type || 'First');
     
     // Determine visit status based on player's current visit type or spaceData
