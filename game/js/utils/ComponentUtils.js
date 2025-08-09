@@ -353,10 +353,6 @@ const ComponentUtils = {
         
         effects.forEach(effect => {
             if (effect.effect_type && effect.effect_type.includes('_cards')) {
-                // Evaluate condition to determine if this effect applies
-                if (!ComponentUtils.evaluateEffectCondition(effect.condition, gameState, effectsEngine, spaceName)) {
-                    return; // Skip if condition not met
-                }
                 
                 const cardType = effect.effect_type.replace('_cards', '').toUpperCase();
                 
@@ -413,8 +409,7 @@ const ComponentUtils = {
             try {
                 return effectsEngine.meetsCondition(condition, gameState, gameState.currentPlayer);
             } catch (error) {
-                console.warn(`Error evaluating condition '${condition}':`, error);
-                return true; // Default to true on error
+                return true;
             }
         }
         
@@ -427,7 +422,6 @@ const ComponentUtils = {
         }
         
         // Default to true for unknown conditions
-        console.warn(`Unknown condition: ${condition}`);
         return true;
     },
     

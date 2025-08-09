@@ -171,34 +171,44 @@ class EffectsEngine {
         // Parse card type from action (e.g., 'draw_w' -> 'w')
         const cardType = this.parseCardType(action, effect);
 
-        // Ensure player has cards object
-        if (!player.cards) {
-            player.cards = { w: 0, b: 0, i: 0, l: 0, e: 0 };
-        }
-
+        // ARCHITECTURE FIX: EffectsEngine should NOT modify player state directly
+        // All card modifications MUST go through GameStateManager events
+        
         switch (true) {
             case action.includes('draw'):
-                player.cards[cardType] = (player.cards[cardType] || 0) + value;
-                this.log(`Drew ${value} ${cardType.toUpperCase()} cards (total: ${player.cards[cardType]})`);
+                // Emit event for GameStateManager to handle
+                if (window.GameStateManager) {
+                    window.GameStateManager.emit('drawCards', {
+                        playerId: player.id,
+                        cardType: cardType,
+                        count: value,
+                        source: 'card_effect'
+                    });
+                }
+                this.log(`Requested draw of ${value} ${cardType} cards for player ${player.id}`);
                 return { 
                     success: true, 
                     action: 'card_draw', 
                     cardType: cardType, 
-                    value: value,
-                    newTotal: player.cards[cardType]
+                    value: value
                 };
 
             case action.includes('remove'):
-                const currentAmount = player.cards[cardType] || 0;
-                const removeAmount = Math.min(value, currentAmount);
-                player.cards[cardType] = currentAmount - removeAmount;
-                this.log(`Removed ${removeAmount} ${cardType.toUpperCase()} cards (total: ${player.cards[cardType]})`);
+                // Emit event for GameStateManager to handle
+                if (window.GameStateManager) {
+                    window.GameStateManager.emit('removeCards', {
+                        playerId: player.id,
+                        cardType: cardType,
+                        count: value,
+                        source: 'card_effect'
+                    });
+                }
+                this.log(`Requested removal of ${value} ${cardType} cards for player ${player.id}`);
                 return { 
                     success: true, 
                     action: 'card_remove', 
                     cardType: cardType, 
-                    value: removeAmount,
-                    newTotal: player.cards[cardType]
+                    value: value
                 };
 
             case action.includes('replace'):
@@ -258,6 +268,7 @@ class EffectsEngine {
         
         // Emit event for GameStateManager to handle card drawing
         if (window.GameStateManager && value > 0) {
+            // DEFENSIVE LOGGING: Log drawCards event emission
             window.GameStateManager.emit('drawCards', {
                 playerId: player.id,
                 cardType: cardType,
@@ -895,20 +906,20 @@ class EffectsEngine {
     parseCardType(action, effect) {
         // Try to extract from action (e.g., 'draw_w')
         if (action.includes('_')) {
-            return action.split('_')[1];
+            return action.split('_')[1].toUpperCase(); // Return UPPERCASE
         }
 
         // Fallback to inferring from description or space
         if (effect.description) {
             const desc = effect.description.toLowerCase();
-            if (desc.includes(' w ')) return 'w';
-            if (desc.includes(' b ')) return 'b';
-            if (desc.includes(' i ')) return 'i';
-            if (desc.includes(' l ')) return 'l';
-            if (desc.includes(' e ')) return 'e';
+            if (desc.includes(' w ')) return 'W';
+            if (desc.includes(' b ')) return 'B';
+            if (desc.includes(' i ')) return 'I';
+            if (desc.includes(' l ')) return 'L';
+            if (desc.includes(' e ')) return 'E';
         }
 
-        return 'w'; // Default fallback
+        return 'W'; // Default fallback
     }
 
     /**

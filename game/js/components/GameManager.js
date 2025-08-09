@@ -18,13 +18,12 @@ function GameManager({ gameState, gameStateManager }) {
                 if (effectsEngineRef.current) {
                     if (window.CSVDatabase && window.CSVDatabase.loaded) {
                         effectsEngineRef.current.initialize(window.CSVDatabase);
-                        console.log('✅ GameManager: EffectsEngine successfully initialized and connected to CSVDatabase');
+                        
                     } else {
                         await new Promise(resolve => {
                             const interval = setInterval(() => {
                                 if (window.CSVDatabase && window.CSVDatabase.loaded) {
                                     effectsEngineRef.current.initialize(window.CSVDatabase);
-                                    console.log('✅ GameManager: EffectsEngine successfully initialized and connected to CSVDatabase (delayed)');
                                     clearInterval(interval);
                                     resolve();
                                 }
@@ -175,6 +174,8 @@ function GameManager({ gameState, gameStateManager }) {
             const randomIndex = Math.floor(Math.random() * availableCards.length);
             drawnCards.push(availableCards[randomIndex]);
         }
+        
+        // DEFENSIVE LOGGING: Log each card being added
         
         
         gameStateManager.addCardsToPlayer(playerId, cardType, drawnCards);

@@ -19,6 +19,8 @@ class GameStateManager {
         // Event listeners
         this.on('turnEnded', (event) => this.endTurn(event.playerId));
         this.on('playerActionTaken', (event) => this.handlePlayerAction(event));
+        this.on('drawCards', (event) => this.handleDrawCards(event));
+        this.on('removeCards', (event) => this.handleRemoveCards(event));
     }
 
     /**
@@ -499,6 +501,10 @@ class GameStateManager {
         const currentPlayer = this.state.players[playerIndex];
         const cardsToAdd = Array.isArray(cards) ? cards : [cards];
 
+        
+
+        
+
         // --- Start of Immutable Update Logic ---
 
         // 1. Calculate all potential changes first
@@ -518,6 +524,9 @@ class GameStateManager {
         });
 
         const newCardsForType = [...(currentPlayer.cards?.[cardType] || []), ...cardsToAdd];
+        
+        
+        
         const allWCards = cardType === 'W' ? newCardsForType : (currentPlayer.cards?.W || []);
         const { scopeItems, scopeTotalCost } = this.calculatePlayerScope(allWCards);
 
@@ -540,6 +549,8 @@ class GameStateManager {
             updatedPlayer,
             ...this.state.players.slice(playerIndex + 1)
         ];
+
+        
 
         // --- End of Immutable Update Logic ---
         // Note: Effects are already calculated in the first phase above
@@ -1129,19 +1140,27 @@ class GameStateManager {
                     const cardType = effect.card_type || 'W';
                     const amount = parseInt(effect.effect_value) || 1;
                     
-                    // Generate card objects matching FixedApp.js pattern
-                    const cards = [];
+                    // FIX: Draw actual cards from CSV database instead of generating incomplete ones
+                    if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+                        console.error('GameStateManager: CSVDatabase not loaded for space card generation');
+                        return 'Cards not available - database not loaded';
+                    }
+                    
+                    const availableCards = window.CSVDatabase.cards.query({card_type: cardType});
+                    if (availableCards.length === 0) {
+                        console.error(`GameStateManager: No ${cardType} cards available in CSV database`);
+                        return `No ${cardType} cards available`;
+                    }
+                    
+                    // Draw random cards from CSV database (same logic as GameManager.drawCardsForPlayer)
+                    const drawnCards = [];
                     for (let i = 0; i < amount; i++) {
-                        cards.push({
-                            id: Date.now() + Math.random(), // Ensure uniqueness
-                            card_id: `generated_${Date.now()}_${i}`,
-                            type: cardType,
-                            drawnAt: effect.space || 'unknown'
-                        });
+                        const randomIndex = Math.floor(Math.random() * availableCards.length);
+                        drawnCards.push(availableCards[randomIndex]);
                     }
                     
                     // Add cards through existing method with message return
-                    return this.addCardsToPlayer(playerId, cardType, cards, true);
+                    return this.addCardsToPlayer(playerId, cardType, drawnCards, true);
                 }
                 
                 case 'time': {
@@ -1496,6 +1515,94 @@ class GameStateManager {
         } catch (error) {
             console.error('GameStateManager: Error handling player action:', error);
             this.handleError(error, 'Player Action Processing');
+        }
+    }
+
+    /**
+     * Handle drawCards events from EffectsEngine
+     */
+    handleDrawCards(eventData) {
+        const { playerId, cardType, count, source } = eventData;
+        
+        try {
+            // Generate random cards from CSV data
+            if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+                console.error('GameStateManager: CSVDatabase not loaded for card drawing');
+                return;
+            }
+            
+            const availableCards = window.CSVDatabase.cards.query({card_type: cardType});
+            if (availableCards.length === 0) {
+                console.error(`GameStateManager: No ${cardType} cards available`);
+                return;
+            }
+            
+            const drawnCards = [];
+            for (let i = 0; i < count; i++) {
+                const randomIndex = Math.floor(Math.random() * availableCards.length);
+                drawnCards.push(availableCards[randomIndex]);
+            }
+            
+            // Use existing addCardsToPlayer method
+            const message = this.addCardsToPlayer(playerId, cardType, drawnCards, true);
+            
+        } catch (error) {
+            console.error('GameStateManager: Error handling drawCards event:', error);
+            this.handleError(error, 'Draw Cards Event');
+        }
+    }
+
+    /**
+     * Handle removeCards events from EffectsEngine
+     */
+    handleRemoveCards(eventData) {
+        const { playerId, cardType, count, source } = eventData;
+        
+        try {
+            const playerIndex = this.state.players.findIndex(p => p.id === playerId);
+            if (playerIndex === -1) {
+                console.error(`GameStateManager: Player ${playerId} not found for card removal`);
+                return;
+            }
+            
+            const currentPlayer = this.state.players[playerIndex];
+            
+            // Ensure player has cards of this type
+            if (!currentPlayer.cards[cardType] || !Array.isArray(currentPlayer.cards[cardType])) {
+                console.log(`GameStateManager: Player ${playerId} has no ${cardType} cards to remove`);
+                return;
+            }
+            
+            const currentCards = currentPlayer.cards[cardType];
+            const removeCount = Math.min(count, currentCards.length);
+            
+            if (removeCount > 0) {
+                // Create new player object with updated cards
+                const updatedPlayer = {
+                    ...currentPlayer,
+                    cards: {
+                        ...currentPlayer.cards,
+                        [cardType]: currentCards.slice(removeCount) // Remove from beginning of array
+                    }
+                };
+                
+                // Update state
+                const updatedPlayers = [...this.state.players];
+                updatedPlayers[playerIndex] = updatedPlayer;
+                this.setState({ players: updatedPlayers });
+                
+                // Emit event for UI feedback
+                this.emit('cardsRemovedFromPlayer', {
+                    playerId,
+                    cardType,
+                    removedCount: removeCount,
+                    source
+                });
+            }
+            
+        } catch (error) {
+            console.error('GameStateManager: Error handling removeCards event:', error);
+            this.handleError(error, 'Remove Cards Event');
         }
     }
 

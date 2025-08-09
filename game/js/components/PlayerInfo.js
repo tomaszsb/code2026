@@ -17,12 +17,12 @@ function PlayerInfo({ player, isCurrentPlayer = false, compact = false }) {
 
     // Extract scope information from W (Work) cards
     const extractScope = () => {
-        if (!player.cards || player.cards.length === 0) {
+        if (!player.cards || typeof player.cards !== 'object') {
             return { items: [], totalCost: 0, totalTime: 0 };
         }
 
-        // Filter W cards only
-        const workCards = player.cards.filter(card => card.card_type === 'W');
+        // Get W cards from the cards object structure
+        const workCards = player.cards.W || [];
         
         const scopeItems = workCards.map(card => {
             const workType = card.work_type || card.work_type_restriction || 'General Work';
@@ -90,7 +90,7 @@ function PlayerInfo({ player, isCurrentPlayer = false, compact = false }) {
         const cardTypes = ['W', 'B', 'I', 'L', 'E'];
         
         cardTypes.forEach(type => {
-            distribution[type] = player.cards.filter(card => card.card_type === type).length;
+            distribution[type] = Array.isArray(player.cards[type]) ? player.cards[type].length : 0;
         });
 
         return distribution;
@@ -161,7 +161,13 @@ function PlayerInfo({ player, isCurrentPlayer = false, compact = false }) {
                     padding: '4px 8px',
                     borderRadius: '4px'
                 }
-            }, `${player.cards?.length || 0} cards`)
+            }, `${(() => {
+                if (!player.cards) return 0;
+                const cardTypes = ['W', 'B', 'I', 'L', 'E'];
+                return cardTypes.reduce((total, type) => {
+                    return total + (Array.isArray(player.cards[type]) ? player.cards[type].length : 0);
+                }, 0);
+            })()} cards`)
         ]);
     }
 
@@ -312,7 +318,13 @@ function PlayerInfo({ player, isCurrentPlayer = false, compact = false }) {
                         React.createElement('div', {
                             key: 'value',
                             className: 'font-bold text-large'
-                        }, player.cards?.length || 0)
+                        }, (() => {
+                            if (!player.cards) return 0;
+                            const cardTypes = ['W', 'B', 'I', 'L', 'E'];
+                            return cardTypes.reduce((total, type) => {
+                                return total + (Array.isArray(player.cards[type]) ? player.cards[type].length : 0);
+                            }, 0);
+                        })())
                     ])
                 ])
             ]),

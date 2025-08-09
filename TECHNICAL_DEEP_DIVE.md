@@ -146,10 +146,13 @@ The card system is a highly data-driven and intricate part of the game, governin
     *   **Description:** Previously, the `handleUseCard` function in `CardsInHand.js` contained logic for processing 'E' card effects (money and time updates) that was duplicated in `EffectsEngine.js`. This violated the Single Source of Truth principle.
     *   **Resolution:** Refactored `CardsInHand.js` to remove duplicated effect processing logic. All card effect processing now flows through unified `GameStateManager.usePlayerCard()` system, eliminating code duplication and establishing single source of truth for card effects.
 
-*   **Concern 2: Hardcoded vs. Data-Driven Card Behavior:**
-    *   **Description:** The `GameStateManager.addCardsToPlayer` function contains a hardcoded check (`if (cardType !== 'E')`) to determine if a card's effects are immediate or player-controlled. This means adding a new player-controlled card type would require code modification, breaking the data-driven philosophy.
-    *   **Reasoning:** This reflects a business rule that 'E' cards are unique in their player-controlled activation.
-    *   **Proposed Solution:** Leverage the existing `activation_timing` column in `cards.csv` (column 42). Modify `GameStateManager.addCardsToPlayer` to read `card.activation_timing` (e.g., 'Immediate' or 'Player_Controlled') instead of hardcoding the 'E' card type. This makes the behavior fully data-driven and extensible.
+*   **Concern 2: Hardcoded vs. Data-Driven Card Behavior - ✅ RESOLVED:**
+    *   **Description:** Previously, the `GameStateManager.addCardsToPlayer` function contained a hardcoded check (`if (cardType !== 'E')`) to determine if a card's effects are immediate or player-controlled. This violated the data-driven philosophy and made adding new player-controlled card types difficult.
+    *   **Resolution:** Implemented data-driven card activation system using the `activation_timing` column in `cards.csv`. Refactored `GameStateManager.addCardsToPlayer` to read `card.activation_timing` values ('Immediate' or 'Player Controlled') instead of hardcoding the 'E' card type check. This makes the behavior fully data-driven and extensible.
+
+*   **Concern 3: Syntax Error Technical Debt - ✅ RESOLVED:**
+    *   **Description:** Accumulated syntax errors in core game files were preventing proper script execution. EffectsEngine.js contained duplicate conditional blocks, and CardsInHand.js had missing closing braces in validation logic.
+    *   **Resolution:** Systematically identified and resolved all syntax errors using Node.js validation. Fixed duplicate `if` statement block in EffectsEngine.js and added missing closing brace in CardsInHand.js defensive filtering logic. All JavaScript files now parse and execute correctly.
 
 ## 2. Turn Management Architecture
 

@@ -23,7 +23,7 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
         }
     }, [showCardsModal]);
     
-    // CARDS DISPLAY FIX: Enhanced memoization with deeper change detection
+    // CARDS DISPLAY FIX: Enhanced memoization with defensive filtering
     const allCards = useMemo(() => {
         if (!player?.cards || typeof player.cards !== 'object') {
             return [];
@@ -32,7 +32,21 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
         const cards = [];
         Object.keys(player.cards).forEach(cardType => {
             if (Array.isArray(player.cards[cardType])) {
-                cards.push(...player.cards[cardType]);
+                // DEFENSIVE FILTER: Only add valid card objects
+                const validCards = player.cards[cardType].filter(card => {
+                    // Check if card is valid
+                    const isValid = card && 
+                                   typeof card === 'object' && 
+                                   card.card_id && 
+                                   card.card_type;
+                    
+                    if (!isValid) {
+                    }
+                    
+                    return isValid;
+                });
+                
+                cards.push(...validCards);
             }
         });
         
@@ -188,7 +202,10 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
                 style: { marginBottom: '8px' }
             }, Object.entries(
                 allCards.reduce((acc, card) => {
-                    acc[card.card_type] = (acc[card.card_type] || 0) + 1;
+                    // DEFENSIVE: Double-check card validity in reduce
+                    if (card && card.card_type) {
+                        acc[card.card_type] = (acc[card.card_type] || 0) + 1;
+                    }
                     return acc;
                 }, {})
             ).map(([type, count]) => `${type}: ${count}`).join(', ')),

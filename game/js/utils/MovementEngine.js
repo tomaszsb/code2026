@@ -415,6 +415,7 @@ class MovementEngine {
             if (drawMatch && this.gameStateManager) {
                 const count = parseInt(drawMatch[1]);
                 const type = cardType.replace('_card', '').toUpperCase();
+                
                 this.gameStateManager.emit('drawCards', {
                     playerId: player.id,
                     cardType: type,
