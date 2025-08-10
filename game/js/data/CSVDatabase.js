@@ -198,7 +198,6 @@ class CSVDatabase {
             this.log(`Loaded ${this.data.cards.length} cards`);
             
             // DEBUG: Verify card data parsing - first 5 card IDs
-            console.log('First 5 card IDs:', this.data.cards.slice(0, 5).map(card => `"${card.card_id}"`));
             
             
         } catch (error) {
@@ -240,9 +239,7 @@ class CSVDatabase {
             });
             
             // Show sample of parsed data to see what did work
-            console.log(`Successfully parsed ${result.data.length} rows`);
             if (result.data.length > 0) {
-                console.log('Sample of parsed data (first 3 rows):', result.data.slice(0, 3));
             }
         }
 

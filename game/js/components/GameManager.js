@@ -402,7 +402,6 @@ function GameManager({ gameState, gameStateManager }) {
     
     const clearCardsAddedThisTurnHandler = React.useCallback(() => {
         // Obsolete feature - no longer needed in centralized architecture
-        console.log('clearCardsAddedThisTurn: Feature obsolete in new architecture');
     }, []);
     
     const useCardHandler = React.useCallback(({ playerId, cardId }) => {
@@ -504,7 +503,6 @@ window.giveCardToPlayer = (playerId, cardId) => {
 
     if (card) {
         window.GameStateManager.addCardsToPlayer(playerId, card.card_type, [card]);
-        console.log(`Successfully gave card "${cardId}" (${card.card_name}) to ${playerId}.`);
     } else {
         console.error(`Card with ID "${cardId}" not found in CSVDatabase.`);
     }
@@ -515,7 +513,6 @@ window.showGameState = () => {
         console.error('GameStateManager not available');
         return;
     }
-    console.log('=== Live GameStateManager State ===');
     console.log(window.GameStateManager.state);
 
     if (window.GameStateManager.state.players) {

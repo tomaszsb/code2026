@@ -46,7 +46,6 @@ function EnhancedPlayerSetup({ gameStateManager }) {
                 // Check if there are available colors
                 if (!availableColor) {
                     alert(`Cannot add more players. All ${availableColors.length} available colors are already in use.`);
-                    console.log('No available colors for new player:', { usedColors, availableColorsCount: availableColors.length });
                     return currentPlayers;
                 }
                 
@@ -57,7 +56,6 @@ function EnhancedPlayerSetup({ gameStateManager }) {
                 // Check if there are available avatars
                 if (!availableAvatar) {
                     alert(`Cannot add more players. All ${availableAvatars.length} available avatars are already in use.`);
-                    console.log('No available avatars for new player:', { usedAvatars, availableAvatarsCount: availableAvatars.length });
                     return currentPlayers;
                 }
                 
@@ -84,7 +82,6 @@ function EnhancedPlayerSetup({ gameStateManager }) {
     
     // Update player property
     const updatePlayer = (playerId, property, value) => {
-        console.log('updatePlayer called:', { playerId, property, value });
         
         // Special handling for color and avatar properties to enforce uniqueness
         if (property === 'color' || property === 'avatar') {
@@ -100,10 +97,8 @@ function EnhancedPlayerSetup({ gameStateManager }) {
                         const colorOption = availableColors.find(c => c.color === value);
                         const colorName = colorOption ? colorOption.name : value;
                         alert(`The ${colorName} color is already taken by another player. Please choose a different color.`);
-                        console.log('Color conflict detected:', { playerId, attemptedColor: value, colorName });
                     } else if (property === 'avatar') {
                         alert(`This avatar (${value}) is already taken by another player. Please choose a different avatar.`);
-                        console.log('Avatar conflict detected:', { playerId, attemptedAvatar: value });
                     }
                     return currentPlayers; // Return unchanged state
                 }
@@ -115,7 +110,6 @@ function EnhancedPlayerSetup({ gameStateManager }) {
                         : player
                 );
                 const updatedPlayer = updatedPlayers.find(p => p.id === playerId);
-                console.log('Player state updated:', { playerId: playerId, updatedPlayer: updatedPlayer });
                 return updatedPlayers;
             });
         } else {
@@ -127,7 +121,6 @@ function EnhancedPlayerSetup({ gameStateManager }) {
                         : player
                 );
                 const updatedPlayer = updatedPlayers.find(p => p.id === playerId);
-                console.log('Player state updated:', { playerId: playerId, updatedPlayer: updatedPlayer });
                 return updatedPlayers;
             });
         }
@@ -307,7 +300,6 @@ function EnhancedPlayerSetup({ gameStateManager }) {
                     }
                 },
                     players.map(player => {
-                        console.log('Rendering player card:', { playerId: player.id, renderedColor: player.color });
                         return React.createElement('div', {
                             key: player.id,
                             className: 'player-card',
@@ -392,12 +384,10 @@ function EnhancedPlayerSetup({ gameStateManager }) {
                                 },
                                     availableColors.map(colorOption => {
                                         const isSelected = player.color === colorOption.color;
-                                        console.log('Color option comparison:', { playerColor: player.color, optionColor: colorOption.color, isSelected: isSelected });
                                         return React.createElement('button', {
                                             key: colorOption.color,
                                             className: 'color-option',
                                             onClick: () => {
-                                                console.log('Color button clicked:', { playerId: player.id, property: 'color', value: colorOption.color });
                                                 updatePlayer(player.id, 'color', colorOption.color);
                                             },
                                             style: {

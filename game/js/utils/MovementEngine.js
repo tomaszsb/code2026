@@ -405,10 +405,6 @@ class MovementEngine {
      * Process individual card effect
      */
     processCardEffect(player, cardType, effect) {
-        console.log('🔍 MovementEngine DEBUG: processCardEffect called');
-        console.log('🔍 MovementEngine DEBUG: Input cardType:', cardType);
-        console.log('🔍 MovementEngine DEBUG: Input effect:', effect);
-        console.log('🔍 MovementEngine DEBUG: Player:', player?.name || 'Unknown');
         
         if (!effect || effect === '') return;
 
@@ -421,10 +417,6 @@ class MovementEngine {
                 const count = parseInt(drawMatch[1]);
                 const type = cardType.replace('_card', '').toUpperCase();
                 
-                console.log('🔍 MovementEngine DEBUG: About to emit drawCards');
-                console.log('🔍 MovementEngine DEBUG: Emit type (final):', type);
-                console.log('🔍 MovementEngine DEBUG: Emit count:', count);
-                console.log('🔍 MovementEngine DEBUG: Original cardType before transform:', cardType);
                 
                 this.gameStateManager.emit('drawCards', {
                     playerId: player.id,
