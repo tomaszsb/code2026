@@ -46,6 +46,14 @@ function ResultsPanel() {
         addAction(`${player?.name} played ${card.card_name || 'a card'}`, 'card');
     });
 
+    useEventListener('showCardAcknowledgment', ({ playerId, card, playerName }) => {
+        addAction(`${playerName} received ${card.card_name || `a ${card.cardType} card`}`, 'card');
+    });
+
+    useEventListener('cardAcknowledged', ({ playerId, card, playerName }) => {
+        addAction(`${playerName} acknowledged ${card.card_name || `a ${card.cardType} card`}`, 'card');
+    });
+
     useEventListener('negotiationChosen', ({ playerId, option, space }) => {
         const player = gameState.players?.find(p => p.id === playerId);
         addAction(`${player?.name} chose to ${option} at ${space}`, 'negotiation');

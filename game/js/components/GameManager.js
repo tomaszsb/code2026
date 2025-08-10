@@ -153,26 +153,21 @@ function GameManager({ gameState, gameStateManager }) {
     }, [gameStateManager]);
     
     /**
-     * Draw random cards for player - STABILIZED
+     * Draw cards for player - FIXED: Now uses proper deck management
      */
     const drawCardsForPlayer = React.useCallback((playerId, cardType, amount) => {
         
-        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
-            console.error('GameManager: CSVDatabase not loaded for card drawing');
+        if (!gameStateManager) {
+            console.error('GameManager: GameStateManager not available for card drawing');
             return;
         }
         
-        const availableCards = window.CSVDatabase.cards.query({card_type: cardType});
+        // Use new deck management system - draws unique cards with proper removal
+        const drawnCards = gameStateManager.drawCardsFromDeck(cardType, amount);
         
-        if (availableCards.length === 0) {
-            console.error(`GameManager: No ${cardType} cards available`);
-            throw new Error(`No ${cardType} cards available`);
-        }
-        
-        const drawnCards = [];
-        for (let i = 0; i < amount; i++) {
-            const randomIndex = Math.floor(Math.random() * availableCards.length);
-            drawnCards.push(availableCards[randomIndex]);
+        if (drawnCards.length === 0) {
+            console.warn(`GameManager: No ${cardType} cards could be drawn`);
+            return;
         }
         
         // DEFENSIVE LOGGING: Log each card being added

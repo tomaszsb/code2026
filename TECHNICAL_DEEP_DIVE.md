@@ -1,104 +1,8 @@
 # TECHNICAL_DEEP_DIVE.md - Project Hub NYC PM Game
 
-This document provides comprehensive technical analysis of the game's core systems: Card Lifecycle Management, Card Actions Filtering System, and Turn Sequence Orchestration. It serves as a definitive reference for understanding system mechanics, architectural patterns, and implementation details including identified technical debt and optimization opportunities.
+This document provides comprehensive technical analysis of the game's core systems: Card Lifecycle Management, Card Actions Filtering System, Conditional Card Drawing System, and Turn Sequence Orchestration. It serves as a definitive reference for understanding system mechanics, architectural patterns, and implementation details including identified technical debt and optimization opportunities.
 
-## 1. Data-Driven Card Actions Filtering System ✅ NEW
-
-The card actions filtering system is a sophisticated data-driven architecture that controls the visibility and availability of manual card action buttons across different game spaces. This system was completely refactored in August 2025 to eliminate hardcoded business logic and implement CSV-controlled filtering.
-
-### 1.1. Architecture Overview
-
-**Problem Solved:** Previously, CardActionsSection.js used hardcoded arrays (`allowDiceActionsSpaces = ['INVESTOR-FUND-REVIEW', 'LEND-SCOPE-CHECK']`) to determine which spaces should display manual dice action buttons. This approach was brittle, required code changes for new spaces, and violated the CSV-as-database philosophy.
-
-**Solution Implemented:** A three-layer data-driven pipeline:
-1. **Data Layer**: `SPACE_EFFECTS.csv` with `trigger_type` column
-2. **Processing Layer**: `ComponentUtils.getCardTypes()` with condition evaluation  
-3. **Filtering Layer**: `CardActionsSection.js` with trigger_type-based filtering
-
-### 1.2. Data Layer: SPACE_EFFECTS.csv Enhancement
-
-```csv
-space_name,visit_type,effect_type,effect_value,condition,use_dice,trigger_type
-PM-DECISION-CHECK,First,l_cards,1,roll_1,true,manual
-PM-DECISION-CHECK,First,e_cards,1,replace,,
-LEND-SCOPE-CHECK,First,l_cards,dice,always,true,manual
-INVESTOR-FUND-REVIEW,First,l_cards,dice,always,true,manual
-```
-
-**Key Fields:**
-- **`trigger_type`**: Controls button visibility (`manual`, `auto`, or blank)
-- **`condition`**: Defines when the effect can be triggered (`roll_1`, `roll_2`, `replace`, `always`, etc.)
-- **`use_dice`**: Indicates if the effect involves dice mechanics
-
-### 1.3. Processing Layer: ComponentUtils.getCardTypes()
-
-This function processes space effects and returns card action objects with trigger_type data:
-
-```javascript
-// Enhanced return structure
-types.push({ 
-    type: cardType,           // 'L', 'E', 'B', etc.
-    action: action,           // 'Draw 1', 'Draw dice', etc.  
-    trigger_type: effect.trigger_type || ''  // 'manual', 'auto', ''
-});
-```
-
-**Condition Evaluation Enhancement:**
-The `evaluateEffectCondition()` function was enhanced to distinguish between:
-- **Game State Conditions**: `scope_le_4M`, `scope_gt_4M` (evaluated against current game state)
-- **Player Choice Conditions**: `roll_1`, `roll_2`, `replace` (always return true for button display)
-
-```javascript
-const playerChoiceConditions = [
-    'roll_1', 'roll_2', 'replace', 'to_right_player', 'return',
-    'loan_up_to_1.4M', 'loan_1.5M_to_2.75M', 'loan_above_2.75M'
-];
-
-if (playerChoiceConditions.includes(condition)) {
-    return true; // Always show buttons for player-choice conditions
-}
-```
-
-### 1.4. Filtering Layer: CardActionsSection.js Logic
-
-Simplified data-driven filtering logic:
-
-```javascript
-// BEFORE - Hardcoded approach:
-const allowDiceActionsSpaces = ['INVESTOR-FUND-REVIEW', 'LEND-SCOPE-CHECK'];
-const isManualDiceSpace = allowDiceActionsSpaces.includes(currentPlayer.position);
-if (!isManualDiceSpace && isDiceBasedAction(cardAction)) {
-    return false; // Hide dice actions
-}
-
-// AFTER - Data-driven approach:
-if (cardAction.trigger_type === 'manual') {
-    return true; // Always show manual trigger actions
-}
-if (isDiceBasedAction(cardAction) || cardAction.action.includes('dice')) {
-    return false; // Hide automatic dice actions
-}
-```
-
-### 1.5. Benefits Achieved
-
-**✅ Maintainability**: New spaces only require CSV data updates, no code changes
-**✅ Extensibility**: Easy to add new trigger types (`conditional`, `timed`, etc.)
-**✅ Data Integrity**: Single source of truth in CSV eliminates inconsistencies
-**✅ Robustness**: No hardcoded arrays to maintain or forget to update
-**✅ Architecture Compliance**: Strengthens CSV-as-database philosophy
-
-### 1.6. Debugging Architecture
-
-A comprehensive logging system was implemented to trace the card action processing pipeline:
-
-1. **ComponentUtils Logging**: Effect processing and condition evaluation
-2. **CardActionsSection Logging**: Filtering decisions and trigger_type checks
-3. **Pipeline Tracing**: Complete visibility from CSV data to final UI rendering
-
-This debugging system enabled rapid identification of the exact failure points and successful resolution of the missing button issue.
-
-## 2. Card System Architecture
+## 1. Card System Architecture
 
 The card system is a highly data-driven and intricate part of the game, governing how players acquire, manage, and use various types of cards to influence game state.
 
@@ -154,11 +58,226 @@ The card system is a highly data-driven and intricate part of the game, governin
     *   **Description:** Accumulated syntax errors in core game files were preventing proper script execution. EffectsEngine.js contained duplicate conditional blocks, and CardsInHand.js had missing closing braces in validation logic.
     *   **Resolution:** Systematically identified and resolved all syntax errors using Node.js validation. Fixed duplicate `if` statement block in EffectsEngine.js and added missing closing brace in CardsInHand.js defensive filtering logic. All JavaScript files now parse and execute correctly.
 
-## 2. Turn Management Architecture
+*   **Concern 4: Conditional Card Drawing Logic - ✅ RESOLVED:**
+    *   **Description:** OWNER-FUND-INITIATION space was drawing both B and I cards simultaneously from mutually exclusive conditions (scope ≤$4M vs >$4M), violating business logic requiring only one card type based on project scope.
+    *   **Resolution:** Implemented comprehensive conditional logic system with `evaluateEffectCondition()` and `processMutuallyExclusiveCardEffects()` methods in GameStateManager. Fixed SPACE_EFFECTS.csv card_type column assignments for proper B/I card distribution. Project scope now correctly determines Bank cards (≤$4M) vs Investment cards (>$4M) exclusively.
+
+*   **Concern 5: Manual Funding Card Control - ✅ RESOLVED:**
+    *   **Description:** Funding cards were automatically drawn on space entry, removing player agency and strategic decision-making from the funding acquisition process.
+    *   **Resolution:** Implemented manual funding card draw system with `triggerFundingCardDraw()` method in GameStateManager and funding button in CardActionsSection.js. Added state tracking with `fundingCardDrawnForSpace` and `spaceActionsCompleted` properties. Enhanced UX with contextual button text ("Get Bank Card" vs "Get Investment Card") and integrated with turn completion system via playerActionTaken event emission.
+
+## 2. Phase 21 Systems - Conditional Card Drawing & Manual Funding ✅ NEW (2025-08-10)
+
+The Phase 21 development cycle introduced sophisticated conditional logic capabilities and manual player-controlled funding card acquisition, addressing critical business logic violations and enhancing player agency.
+
+### 2.1. Conditional Card Drawing System
+
+**Problem Addressed:** OWNER-FUND-INITIATION space was drawing both Bank (B) and Investment (I) cards simultaneously from mutually exclusive conditions, violating the business rule that project scope should determine funding type exclusively.
+
+**Solution Architecture:**
+
+**1. Conditional Logic Engine** (GameStateManager.js):
+```javascript
+// Condition evaluation with defensive programming
+evaluateEffectCondition(condition, player) {
+    if (!condition || !player) return true;
+    
+    switch (condition) {
+        case 'scope_le_4M': 
+            return (player.scope || 0) <= 4000000;
+        case 'scope_gt_4M': 
+            return (player.scope || 0) > 4000000;
+        default: 
+            return true; // Allow unknown conditions
+    }
+}
+
+// Mutually exclusive effect processing
+processMutuallyExclusiveCardEffects(playerId, effects) {
+    const player = this.state.players.find(p => p.id === playerId);
+    const messages = [];
+    
+    for (const effect of effects) {
+        if (this.evaluateEffectCondition(effect.condition, player)) {
+            const message = this.processSpaceEffect(playerId, effect);
+            if (message) messages.push(message);
+            break; // Process only the FIRST matching condition
+        }
+    }
+    return messages;
+}
+```
+
+**2. Data Layer Integration** (SPACE_EFFECTS.csv):
+- Fixed card_type column assignments for proper conditional routing
+- B cards: `condition: scope_le_4M` (projects ≤$4M get Bank funding)  
+- I cards: `condition: scope_gt_4M` (projects >$4M get Investment funding)
+
+### 2.2. Manual Funding Card Draw System
+
+**Problem Addressed:** Funding cards were automatically drawn on space entry, removing strategic player decision-making from the funding acquisition process.
+
+**Solution Implementation:**
+
+**1. GameStateManager Integration:**
+```javascript
+triggerFundingCardDraw(playerId) {
+    const player = this.state.players.find(p => p.id === playerId);
+    if (!player || player.position !== 'OWNER-FUND-INITIATION') {
+        return [];
+    }
+    
+    // Process conditional effects and track completion
+    const messages = this.processMutuallyExclusiveCardEffects(playerId, mutuallyExclusiveEffects);
+    
+    if (messages.length > 0) {
+        // Mark space actions as completed to prevent button reappearance
+        this.setState({
+            currentTurn: {
+                ...this.state.currentTurn,
+                fundingCardDrawnForSpace: true,
+                spaceActionsCompleted: true
+            }
+        });
+        
+        // Emit turn completion event
+        this.emit('playerActionTaken', {
+            playerId: playerId,
+            actionType: 'card',
+            actionData: { source: 'funding_card_draw', cardType: mutuallyExclusiveEffects[0]?.card_type }
+        });
+    }
+    
+    return messages;
+}
+```
+
+**2. UI Integration** (CardActionsSection.js):
+- Dynamic button text based on project scope: "Get Bank Card" (≤$4M) vs "Get Investment Card" (>$4M)
+- Contextual tooltips explaining funding thresholds
+- Button visibility controlled by `fundingCardDrawnForSpace` state
+- Integration with existing card action filtering system
+
+### 2.3. Space Action Completion System
+
+**Problem Addressed:** Bank/Investor buttons reappeared after funding card draw completion, allowing duplicate card acquisition.
+
+**Solution Features:**
+- **State Persistence:** `spaceActionsCompleted` property prevents button reappearance after funding card draw
+- **State Reset Logic:** Automatic reset on turn changes and space movement
+- **Integration Points:** Works with existing `getFilteredCardActions()` filtering system
+- **Defensive Programming:** Multiple validation layers to prevent state corruption
+
+### 2.4. Benefits Achieved
+
+**✅ Business Logic Integrity:** Project scope now correctly determines exclusive funding type (B or I cards)
+**✅ Player Agency:** Funding decisions require deliberate player action and strategic timing
+**✅ State Consistency:** Button visibility accurately reflects completion status across turn cycles
+**✅ Turn Integration:** Manual actions seamlessly integrate with existing turn progression system
+**✅ Data-Driven Architecture:** All conditional logic controlled by CSV data, not hardcoded business rules
+**✅ Extensibility:** Conditional system supports unlimited new conditions and mutually exclusive effect groups
+
+## 3. Data-Driven Card Actions Filtering System ✅ (2025-08-08)
+
+The card actions filtering system is a sophisticated data-driven architecture that controls the visibility and availability of manual card action buttons across different game spaces. This system was completely refactored in August 2025 to eliminate hardcoded business logic and implement CSV-controlled filtering.
+
+### 3.1. Architecture Overview
+
+**Problem Solved:** Previously, CardActionsSection.js used hardcoded arrays (`allowDiceActionsSpaces = ['INVESTOR-FUND-REVIEW', 'LEND-SCOPE-CHECK']`) to determine which spaces should display manual dice action buttons. This approach was brittle, required code changes for new spaces, and violated the CSV-as-database philosophy.
+
+**Solution Implemented:** A three-layer data-driven pipeline:
+1. **Data Layer**: `SPACE_EFFECTS.csv` with `trigger_type` column
+2. **Processing Layer**: `ComponentUtils.getCardTypes()` with condition evaluation  
+3. **Filtering Layer**: `CardActionsSection.js` with trigger_type-based filtering
+
+### 3.2. Data Layer: SPACE_EFFECTS.csv Enhancement
+
+```csv
+space_name,visit_type,effect_type,effect_value,condition,use_dice,trigger_type
+PM-DECISION-CHECK,First,l_cards,1,roll_1,true,manual
+PM-DECISION-CHECK,First,e_cards,1,replace,,
+LEND-SCOPE-CHECK,First,l_cards,dice,always,true,manual
+INVESTOR-FUND-REVIEW,First,l_cards,dice,always,true,manual
+```
+
+**Key Fields:**
+- **`trigger_type`**: Controls button visibility (`manual`, `auto`, or blank)
+- **`condition`**: Defines when the effect can be triggered (`roll_1`, `roll_2`, `replace`, `always`, etc.)
+- **`use_dice`**: Indicates if the effect involves dice mechanics
+
+### 3.3. Processing Layer: ComponentUtils.getCardTypes()
+
+This function processes space effects and returns card action objects with trigger_type data:
+
+```javascript
+// Enhanced return structure
+types.push({ 
+    type: cardType,           // 'L', 'E', 'B', etc.
+    action: action,           // 'Draw 1', 'Draw dice', etc.  
+    trigger_type: effect.trigger_type || ''  // 'manual', 'auto', ''
+});
+```
+
+**Condition Evaluation Enhancement:**
+The `evaluateEffectCondition()` function was enhanced to distinguish between:
+- **Game State Conditions**: `scope_le_4M`, `scope_gt_4M` (evaluated against current game state)
+- **Player Choice Conditions**: `roll_1`, `roll_2`, `replace` (always return true for button display)
+
+```javascript
+const playerChoiceConditions = [
+    'roll_1', 'roll_2', 'replace', 'to_right_player', 'return',
+    'loan_up_to_1.4M', 'loan_1.5M_to_2.75M', 'loan_above_2.75M'
+];
+
+if (playerChoiceConditions.includes(condition)) {
+    return true; // Always show buttons for player-choice conditions
+}
+```
+
+### 3.4. Filtering Layer: CardActionsSection.js Logic
+
+Simplified data-driven filtering logic:
+
+```javascript
+// BEFORE - Hardcoded approach:
+const allowDiceActionsSpaces = ['INVESTOR-FUND-REVIEW', 'LEND-SCOPE-CHECK'];
+const isManualDiceSpace = allowDiceActionsSpaces.includes(currentPlayer.position);
+if (!isManualDiceSpace && isDiceBasedAction(cardAction)) {
+    return false; // Hide dice actions
+}
+
+// AFTER - Data-driven approach:
+if (cardAction.trigger_type === 'manual') {
+    return true; // Always show manual trigger actions
+}
+if (isDiceBasedAction(cardAction) || cardAction.action.includes('dice')) {
+    return false; // Hide automatic dice actions
+}
+```
+
+### 3.5. Benefits Achieved
+
+**✅ Maintainability**: New spaces only require CSV data updates, no code changes
+**✅ Extensibility**: Easy to add new trigger types (`conditional`, `timed`, etc.)
+**✅ Data Integrity**: Single source of truth in CSV eliminates inconsistencies
+**✅ Robustness**: No hardcoded arrays to maintain or forget to update
+**✅ Architecture Compliance**: Strengthens CSV-as-database philosophy
+
+### 3.6. Debugging Architecture
+
+A comprehensive logging system was implemented to trace the card action processing pipeline:
+
+1. **ComponentUtils Logging**: Effect processing and condition evaluation
+2. **CardActionsSection Logging**: Filtering decisions and trigger_type checks
+3. **Pipeline Tracing**: Complete visibility from CSV data to final UI rendering
+
+This debugging system enabled rapid identification of the exact failure points and successful resolution of the missing button issue.
+
+## 4. Turn Management Architecture
 
 The end-of-turn sequence is a critical orchestration of events that transitions the game from one player's actions to the next, including automatic movement and re-evaluation of game state.
 
-### 2.1. Turn Termination Logic
+### 4.1. Turn Termination Logic
 
 1.  **Component:** `TurnControls.js`
 2.  **User Action:** The player clicks the "End Turn" button.
@@ -166,7 +285,7 @@ The end-of-turn sequence is a critical orchestration of events that transitions 
     *   The button's enabled state is controlled by `gameState.currentTurn.canEndTurn`, which is `true` only when all `requiredActions` for the current turn have been `completed`.
     *   A check prevents ending the turn if the player is on a "Logic" space and has not yet made a required decision.
 
-### 2.2. Movement Orchestration
+### 4.2. Movement Orchestration
 
 1.  **Location:** `handleEndTurn` function within `TurnControls.js`.
 2.  **Movement Calculation:** It uses `movementEngine.getAvailableMoves(currentPlayer)` to determine the possible next spaces based on the current player's position and game rules.
@@ -178,7 +297,7 @@ The end-of-turn sequence is a critical orchestration of events that transitions 
 4.  **Visual Delay:** A small `setTimeout` (50ms) is used to allow the UI to visually update the player's movement before the turn officially concludes.
 5.  **Design Implication:** This design means that player movement is an *automatic consequence* of ending a turn, not a separate player action.
 
-### 2.3. State Transition Processing
+### 4.3. State Transition Processing
 
 1.  **Location:** `handleEndTurn` in `TurnControls.js`.
 2.  **Event Emission:** After the automatic movement (or if no movement was required), `TurnControls.js` emits a `turnEnded` event to the `GameStateManager`:
@@ -191,7 +310,7 @@ The end-of-turn sequence is a critical orchestration of events that transitions 
     *   It updates the global `currentPlayer` ID in the game state to the `nextPlayer.id`.
     *   It emits a `turnAdvanced` event, providing both the `previousPlayer` and the `currentPlayer` to allow other components to react to the turn change.
 
-### 2.4. Action Requirement Calculation
+### 4.4. Action Requirement Calculation
 
 1.  **Location:** `GameStateManager.js` (`endTurn` calls this immediately after advancing the turn).
 2.  **`GameStateManager.js` (`initializeTurnActions`):**
@@ -199,69 +318,6 @@ The end-of-turn sequence is a critical orchestration of events that transitions 
     *   It updates the `gameState.currentTurn` object with these new requirements, setting the `actionCounts` and `canEndTurn` flag for the new player's turn.
     *   It emits a `turnActionsInitialized` event.
 
-### 2.5. Event-Driven UI Synchronization
+### 4.5. Event-Driven UI Synchronization
 
 *   Throughout this sequence, various React components (e.g., `PlayerStatusPanel`, `ActionPanel`, `TurnControls` itself) are listening for `stateChanged`, `playerMoved`, `turnAdvanced`, and `turnActionsInitialized` events from the `GameStateManager`. They re-render dynamically to reflect the new player, their position, updated resources, and the actions required for their turn.
-
-## 3. Implementation Status & Findings (2025-08-05)
-
-This section documents the current implementation status of the architectural concerns identified above, based on codebase review.
-
-### 3.1. Concern 1: Duplicate 'E' Card Logic - **CONFIRMED**
-
-**Status**: The duplicate logic concern is **validated** in the current implementation.
-
-**Evidence**:
-*   **Location**: `/mnt/d/unravel/current_game/code2026/game/js/components/CardsInHand.js:86-122`
-*   **Duplicate Processing**: The `handleUseCard` function manually processes money and time effects:
-    ```javascript
-    // Process general money effects
-    if (card.money_effect) {
-        const moneyEffect = parseInt(card.money_effect) || 0;
-        effects.money += moneyEffect;
-    }
-    
-    // Process time effects  
-    if (card.time_effect) {
-        const timeEffect = parseInt(card.time_effect) || 0;
-        effects.time += timeEffect;
-    }
-    ```
-*   **Parallel Implementation**: `EffectsEngine.js` contains `applyEfficiencyEffect()` method that handles identical E card processing through proper GameStateManager delegation.
-*   **Maintenance Risk**: Changes to E card effect logic must be made in two places, violating the Single Source of Truth principle.
-
-**Impact**: Creates technical debt and increases maintenance overhead. The system functions correctly but violates architectural consistency.
-
-### 3.2. Concern 2: Hardcoded vs. Data-Driven Card Behavior - ✅ **RESOLVED**
-
-**Status**: The hardcoded behavior concern is **validated** in the current implementation.
-
-**Evidence**:
-*   **Location**: `/mnt/d/unravel/current_game/code2026/game/js/data/GameStateManager.js:279`
-*   **Hardcoded Logic**: 
-    ```javascript
-    if (cardType !== 'E') {
-        // Apply immediate effects for W, B, I, L cards
-        cardsToAdd.forEach(card => {
-            // Process effects...
-        });
-    }
-    ```
-*   **Data Available**: `cards.csv` contains `activation_timing` column (column 42) with "Immediate" values, but this data is **not utilized** for behavioral decisions.
-*   **Extensibility Issue**: Adding new player-controlled card types requires code modification instead of CSV data changes.
-
-**Impact**: Violates the CSV-as-Database philosophy and reduces system flexibility. New card activation patterns require development work rather than content updates.
-
-### 3.3. Current System Assessment
-
-**Overall Architecture**: The system successfully implements the CSV-as-Database philosophy for most game content, with clean separation between data and logic. The hybrid state management approach works effectively.
-
-**Technical Debt Areas**:
-1. **Effect Processing Duplication**: E card effects processed in both UI components and EffectsEngine
-2. **Mixed Data-Driven Patterns**: Most card behavior is data-driven, but activation timing remains hardcoded
-
-**System Functionality**: Both concerns represent architectural inconsistencies rather than functional bugs. The game operates correctly but has maintainability and extensibility limitations.
-
-**Recommended Refactoring Priority**: 
-1. **High**: Eliminate duplicate E card logic to establish single source of truth
-2. **Medium**: Implement data-driven activation timing to complete CSV-as-Database transition

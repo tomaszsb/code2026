@@ -97,7 +97,11 @@ const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) =>
         availableMoves: [],
         showingMoves: false,
         showSpaceExplorer: false,
-        selectedSpaceData: null
+        selectedSpaceData: null,
+        // Card acknowledgment state
+        showCardAcknowledgment: false,
+        cardToAcknowledge: null,
+        playerName: null
     });
     
     // Only use useState for state that actually needs to trigger re-renders
@@ -149,9 +153,29 @@ const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) =>
             });
         };
 
+        // Handle card acknowledgment display
+        const handleShowCardAcknowledgment = ({ card, playerId, playerName }) => {
+            updateGameUIState({
+                showCardAcknowledgment: true,
+                cardToAcknowledge: card,
+                playerName: playerName
+            });
+        };
+
+        // Handle card acknowledgment completion
+        const handleCardAcknowledged = ({ card, acknowledged }) => {
+            updateGameUIState({
+                showCardAcknowledgment: false,
+                cardToAcknowledge: null,
+                playerName: null
+            });
+        };
+
         if (gameStateManager) {
             gameStateManager.on('spaceSelected', handleSpaceSelected);
             gameStateManager.on('turnAdvanced', handleTurnAdvanced);
+            gameStateManager.on('showCardAcknowledgment', handleShowCardAcknowledgment);
+            gameStateManager.on('cardAcknowledged', handleCardAcknowledged);
         }
 
         if (gameUIStateRef.current.showSpaceExplorer) {
@@ -162,6 +186,8 @@ const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) =>
             if (gameStateManager) {
                 gameStateManager.off('spaceSelected', handleSpaceSelected);
                 gameStateManager.off('turnAdvanced', handleTurnAdvanced);
+                gameStateManager.off('showCardAcknowledgment', handleShowCardAcknowledgment);
+                gameStateManager.off('cardAcknowledged', handleCardAcknowledged);
             }
             if (gameUIStateRef.current.showSpaceExplorer) {
                 document.removeEventListener('keydown', handleKeyDown);
@@ -419,6 +445,20 @@ const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) =>
             key: 'win-manager',
             gameState: gameState,
             gameStateManager: window.GameStateManager
+        }) : null,
+        
+        // Card Acknowledgment Modal
+        window.CardAcknowledgmentModal ? React.createElement(window.CardAcknowledgmentModal, {
+            key: 'card-acknowledgment-modal',
+            isVisible: gameUIStateRef.current.showCardAcknowledgment,
+            card: gameUIStateRef.current.cardToAcknowledge,
+            playerName: gameUIStateRef.current.playerName,
+            onAcknowledge: () => {
+                if (gameStateManager) {
+                    gameStateManager.acknowledgeCard(true);
+                }
+            },
+            gameStateManager: gameStateManager
         }) : null,
         // Left Panel - Complete Player Container
         React.createElement('div', {

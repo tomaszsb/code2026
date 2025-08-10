@@ -98,7 +98,8 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
         
         
         // Use GameStateManager's unified card usage system
-        // This handles all effects through EffectsEngine to prevent duplication
+        // This handles all effects through EffectsEngine and deck management
+        // Could also use: window.GameStateManager.playCardFromHand(player.id, card.card_id)
         const result = window.GameStateManager.usePlayerCard(player.id, card.card_id);
         
         // Show feedback message

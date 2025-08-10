@@ -43,7 +43,9 @@ class GameStateManager {
                     completed: 0
                 },
                 canEndTurn: false,
-                lastActionTimestamp: null
+                lastActionTimestamp: null,
+                fundingCardDrawnForSpace: false,
+                spaceActionsCompleted: false
             },
             gameSettings: {
                 maxPlayers: 4,
@@ -55,6 +57,22 @@ class GameStateManager {
                 showingSpace: null,
                 diceRolling: false,
                 loading: false
+            },
+            // CARD ACKNOWLEDGMENT STATE
+            cardAcknowledgment: {
+                isActive: false,
+                queue: [],
+                currentCard: null,
+                playerId: null,
+                onComplete: null
+            },
+            // DECK MANAGEMENT STATE - Separate decks for each card type
+            cardDecks: {
+                W: { available: [], discarded: [], inPlay: [] },
+                B: { available: [], discarded: [], inPlay: [] },
+                I: { available: [], discarded: [], inPlay: [] },
+                L: { available: [], discarded: [], inPlay: [] },
+                E: { available: [], discarded: [], inPlay: [] }
             },
             error: null,
             lastAction: null
@@ -225,6 +243,406 @@ class GameStateManager {
     }
 
     /**
+     * CARD ACKNOWLEDGMENT SYSTEM
+     * Provides UX for immediate cards that need user confirmation
+     */
+
+    /**
+     * Show immediate card to user for acknowledgment
+     * @param {Object} card - Card to show
+     * @param {string} cardType - Card type
+     * @param {number} playerId - Player who received the card
+     * @param {Function} onAcknowledge - Callback after acknowledgment
+     */
+    showCardForAcknowledgment(card, cardType, playerId, onAcknowledge) {
+        this.setState({
+            cardAcknowledgment: {
+                isActive: true,
+                currentCard: { ...card, cardType },
+                playerId: playerId,
+                onComplete: onAcknowledge,
+                queue: this.state.cardAcknowledgment.queue
+            }
+        });
+
+        this.emit('showCardAcknowledgment', {
+            card: { ...card, cardType },
+            playerId,
+            playerName: this.state.players.find(p => p.id === playerId)?.name || 'Player'
+        });
+    }
+
+    /**
+     * Process card acknowledgment from UI
+     * @param {boolean} acknowledged - Whether user acknowledged the card
+     */
+    acknowledgeCard(acknowledged = true) {
+        const acknowledgment = this.state.cardAcknowledgment;
+        
+        if (!acknowledgment.isActive || !acknowledgment.currentCard) {
+            console.warn('GameStateManager: No card waiting for acknowledgment');
+            return;
+        }
+
+        const { currentCard, onComplete } = acknowledgment;
+        
+        // Clear current acknowledgment state
+        this.setState({
+            cardAcknowledgment: {
+                ...acknowledgment,
+                isActive: false,
+                currentCard: null,
+                onComplete: null
+            }
+        });
+
+        this.emit('cardAcknowledged', {
+            card: currentCard,
+            acknowledged
+        });
+
+        // Call completion callback if provided
+        if (onComplete && typeof onComplete === 'function') {
+            onComplete(acknowledged);
+        }
+
+        // Process next card in queue if any
+        this.processNextCardAcknowledgment();
+    }
+
+    /**
+     * Add multiple cards to acknowledgment queue
+     * @param {Array} cards - Cards to add to queue
+     * @param {string} cardType - Card type
+     * @param {number} playerId - Player ID
+     * @param {Function} onComplete - Callback when all cards acknowledged
+     */
+    queueCardsForAcknowledgment(cards, cardType, playerId, onComplete) {
+        const queue = cards.map(card => ({
+            card: { ...card, cardType },
+            cardType,
+            playerId,
+            onAcknowledge: (acknowledged) => {
+                // Individual card acknowledgment handling can go here
+            }
+        }));
+
+        this.setState({
+            cardAcknowledgment: {
+                ...this.state.cardAcknowledgment,
+                queue: [...this.state.cardAcknowledgment.queue, ...queue],
+                onComplete: onComplete
+            }
+        });
+
+        // Start processing if not already active
+        if (!this.state.cardAcknowledgment.isActive) {
+            this.processNextCardAcknowledgment();
+        }
+    }
+
+    /**
+     * Process next card in acknowledgment queue
+     */
+    processNextCardAcknowledgment() {
+        const acknowledgment = this.state.cardAcknowledgment;
+        
+        if (acknowledgment.isActive || acknowledgment.queue.length === 0) {
+            // Check if queue is empty and we have a completion callback
+            if (acknowledgment.queue.length === 0 && acknowledgment.onComplete) {
+                const callback = acknowledgment.onComplete;
+                this.setState({
+                    cardAcknowledgment: {
+                        ...acknowledgment,
+                        onComplete: null
+                    }
+                });
+                callback();
+            }
+            return;
+        }
+
+        // Get next card from queue
+        const nextCardInfo = acknowledgment.queue[0];
+        const remainingQueue = acknowledgment.queue.slice(1);
+
+        // Update state with next card
+        this.setState({
+            cardAcknowledgment: {
+                ...acknowledgment,
+                isActive: true,
+                currentCard: nextCardInfo.card,
+                playerId: nextCardInfo.playerId,
+                queue: remainingQueue,
+                onComplete: acknowledgment.onComplete // Keep overall completion callback
+            }
+        });
+
+        // Show the card
+        this.emit('showCardAcknowledgment', {
+            card: nextCardInfo.card,
+            playerId: nextCardInfo.playerId,
+            playerName: this.state.players.find(p => p.id === nextCardInfo.playerId)?.name || 'Player'
+        });
+    }
+
+    /**
+     * Check if card acknowledgment system is currently active
+     */
+    isCardAcknowledgmentActive() {
+        return this.state.cardAcknowledgment.isActive;
+    }
+
+    /**
+     * DECK MANAGEMENT SYSTEM
+     */
+
+    /**
+     * Initialize card decks from CSV data
+     * Called once during game initialization
+     */
+    initializeCardDecks() {
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+            console.error('GameStateManager: Cannot initialize decks - CSVDatabase not loaded');
+            return;
+        }
+
+        const cardTypes = ['W', 'B', 'I', 'L', 'E'];
+        const newCardDecks = {};
+
+        cardTypes.forEach(cardType => {
+            // Get all cards of this type from CSV
+            const allCardsOfType = window.CSVDatabase.cards.query({card_type: cardType});
+            
+            // Shuffle the deck
+            const shuffledCards = this.shuffleArray([...allCardsOfType]);
+            
+            newCardDecks[cardType] = {
+                available: shuffledCards,
+                discarded: [],
+                inPlay: []
+            };
+            
+            this.log(`Initialized ${cardType} deck with ${shuffledCards.length} cards`);
+        });
+
+        this.setState({ cardDecks: newCardDecks });
+        this.log('All card decks initialized');
+    }
+
+    /**
+     * Shuffle an array using Fisher-Yates algorithm
+     */
+    shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    /**
+     * Draw cards from deck with proper removal and reshuffling
+     * SOLVES: Duplicate card drawing bug
+     * @param {string} cardType - Card type (W, B, I, L, E)
+     * @param {number} count - Number of cards to draw
+     * @returns {Array} Array of unique cards drawn from deck
+     */
+    drawCardsFromDeck(cardType, count) {
+        if (!this.state.cardDecks || !this.state.cardDecks[cardType]) {
+            console.error(`GameStateManager: Invalid card type ${cardType}`);
+            return [];
+        }
+
+        const deck = this.state.cardDecks[cardType];
+        const drawnCards = [];
+        
+        // Create working copy of deck state
+        let availableCards = [...deck.available];
+        let discardedCards = [...deck.discarded];
+
+        for (let i = 0; i < count; i++) {
+            // Check if deck is empty and needs reshuffling
+            if (availableCards.length === 0) {
+                if (discardedCards.length === 0) {
+                    console.warn(`GameStateManager: No more ${cardType} cards available to draw`);
+                    break;
+                }
+                
+                // Reshuffle discarded cards back into available deck
+                availableCards = this.shuffleArray(discardedCards);
+                discardedCards = [];
+                this.log(`Reshuffled ${cardType} deck: ${availableCards.length} cards back in play`);
+            }
+
+            // Draw a card (remove from available)
+            const drawnCard = availableCards.shift();
+            if (drawnCard) {
+                drawnCards.push(drawnCard);
+                this.log(`Drew ${cardType} card: ${drawnCard.card_id}`);
+            }
+        }
+
+        // Update deck state with changes
+        const newCardDecks = {
+            ...this.state.cardDecks,
+            [cardType]: {
+                ...this.state.cardDecks[cardType],
+                available: availableCards,
+                discarded: discardedCards
+            }
+        };
+
+        this.setState({ cardDecks: newCardDecks });
+
+        return drawnCards;
+    }
+
+    /**
+     * Move card to discard pile (when effect completes)
+     * @param {string} cardType - Card type
+     * @param {Object} card - Card object to discard
+     */
+    discardCard(cardType, card) {
+        const deck = this.state.cardDecks[cardType];
+        if (!deck) {
+            console.error(`GameStateManager: Invalid card type ${cardType} for discard`);
+            return;
+        }
+
+        const newCardDecks = {
+            ...this.state.cardDecks,
+            [cardType]: {
+                ...deck,
+                discarded: [...deck.discarded, card]
+            }
+        };
+
+        this.setState({ cardDecks: newCardDecks });
+        this.log(`Discarded ${cardType} card: ${card.card_id}`);
+    }
+
+    /**
+     * Move card to in-play state (for persistent effects)
+     * @param {string} cardType - Card type
+     * @param {Object} card - Card object with persistent effects
+     * @param {number} playerId - Player who activated the card
+     */
+    moveCardToInPlay(cardType, card, playerId) {
+        const deck = this.state.cardDecks[cardType];
+        if (!deck) {
+            console.error(`GameStateManager: Invalid card type ${cardType} for in-play`);
+            return;
+        }
+
+        // Add metadata for tracking
+        const inPlayCard = {
+            ...card,
+            playerId: playerId,
+            activatedTurn: this.state.turnCount,
+            turnsRemaining: parseInt(card.duration_count) || 1
+        };
+
+        const newCardDecks = {
+            ...this.state.cardDecks,
+            [cardType]: {
+                ...deck,
+                inPlay: [...deck.inPlay, inPlayCard]
+            }
+        };
+
+        this.setState({ cardDecks: newCardDecks });
+        this.log(`Moved ${cardType} card to in-play: ${card.card_id} for ${inPlayCard.turnsRemaining} turns`);
+    }
+
+    /**
+     * Process in-play cards at turn end (decrement counters, move expired to discard)
+     */
+    processInPlayCards() {
+        const newCardDecks = { ...this.state.cardDecks };
+        let hasChanges = false;
+
+        ['W', 'B', 'I', 'L', 'E'].forEach(cardType => {
+            const deck = newCardDecks[cardType];
+            const updatedInPlay = [];
+            
+            deck.inPlay.forEach(card => {
+                const newTurnsRemaining = card.turnsRemaining - 1;
+                
+                if (newTurnsRemaining <= 0) {
+                    // Move to discard pile
+                    deck.discarded.push({
+                        ...card,
+                        // Remove in-play metadata
+                        playerId: undefined,
+                        activatedTurn: undefined,
+                        turnsRemaining: undefined
+                    });
+                    this.log(`${cardType} card ${card.card_id} effect expired, moved to discard`);
+                    hasChanges = true;
+                } else {
+                    // Keep in play with decremented counter
+                    updatedInPlay.push({
+                        ...card,
+                        turnsRemaining: newTurnsRemaining
+                    });
+                }
+            });
+
+            deck.inPlay = updatedInPlay;
+        });
+
+        if (hasChanges) {
+            this.setState({ cardDecks: newCardDecks });
+        }
+    }
+
+    /**
+     * Get current in-play cards (for UI display and effect processing)
+     * @returns {Object} In-play cards organized by card type
+     */
+    getInPlayCards() {
+        const inPlayCards = {};
+        ['W', 'B', 'I', 'L', 'E'].forEach(cardType => {
+            inPlayCards[cardType] = [...this.state.cardDecks[cardType].inPlay];
+        });
+        return inPlayCards;
+    }
+
+    /**
+     * Handle card state transition after being played from hand
+     * Determines if card goes to discarded pile or in-play state
+     * @param {Object} card - Card object
+     * @param {string} cardType - Card type (W, B, I, L, E)
+     * @param {number} playerId - Player who used the card
+     */
+    handleCardStateTransition(card, cardType, playerId) {
+        try {
+            // Check if card has persistent effects based on duration
+            const hasPersistentEffect = card.duration && 
+                                      card.duration !== 'Immediate' && 
+                                      card.duration !== 'Permanent' && 
+                                      card.duration_count && 
+                                      parseInt(card.duration_count) > 0;
+
+            if (hasPersistentEffect) {
+                // Move to in-play state for persistent effects
+                this.moveCardToInPlay(cardType, card, playerId);
+                this.log(`Card ${card.card_id} moved to in-play state (${card.duration} for ${card.duration_count} turns)`);
+            } else {
+                // Move to discard pile for immediate/permanent effects
+                this.discardCard(cardType, card);
+                this.log(`Card ${card.card_id} moved to discard pile (${card.duration || 'Immediate'} effect)`);
+            }
+        } catch (error) {
+            console.error('Error in handleCardStateTransition:', error);
+            // Fallback: move to discard pile
+            this.discardCard(cardType, card);
+        }
+    }
+
+    /**
      * GAME STATE ACTIONS
      */
 
@@ -264,6 +682,9 @@ class GameStateManager {
         
         // Use setState to ensure proper event emission and state change event
         this.setState(newGameState);
+        
+        // Initialize card decks AFTER state is set
+        this.initializeCardDecks();
         
         // Save initial snapshots for all players at their starting positions
         this.state.players.forEach((player) => {
@@ -345,6 +766,9 @@ class GameStateManager {
             lastAction: `${player.name} ended their turn`
         });
 
+        // Process in-play cards (decrement counters, move expired to discard)
+        this.processInPlayCards();
+
         // Emit AFTER state is updated, using actual state value
         this.emit('turnAdvanced', { 
             previousPlayer: player, 
@@ -399,6 +823,17 @@ class GameStateManager {
             position: spaceName,
             visitType: visitType
         });
+        
+        // Reset funding card state and space actions when moving to a new space
+        if (previousPosition !== spaceName) {
+            this.setState({
+                currentTurn: {
+                    ...this.state.currentTurn,
+                    fundingCardDrawnForSpace: false,
+                    spaceActionsCompleted: false
+                }
+            });
+        }
         
         this.emit('playerMoved', {
             player: updatedPlayer,
@@ -487,6 +922,298 @@ class GameStateManager {
     }
 
     /**
+     * Process immediate cards with user acknowledgment system
+     * @param {number} playerId - Player ID
+     * @param {string} cardType - Card type
+     * @param {Array} immediateCards - Cards requiring immediate processing
+     * @param {Array} cardsForHand - Cards that go to hand
+     * @param {boolean} returnMessage - Whether to return user message
+     */
+    processImmediateCardsWithAcknowledgment(playerId, cardType, immediateCards, cardsForHand, returnMessage) {
+        // Add any non-immediate cards to hand first
+        if (cardsForHand.length > 0) {
+            this.addCardsToPlayerHand(playerId, cardType, cardsForHand);
+        }
+
+        // Queue immediate cards for acknowledgment
+        this.queueCardsForAcknowledgment(immediateCards, cardType, playerId, () => {
+            // This callback runs after all immediate cards are acknowledged
+            // Now apply their effects
+            this.applyImmediateCardEffects(playerId, cardType, immediateCards);
+        });
+
+        // Return early message about cards being shown
+        if (returnMessage) {
+            const immediateCount = immediateCards.length;
+            const handCount = cardsForHand.length;
+            const cardLabel = (immediateCount + handCount) === 1 ? 'card' : 'cards';
+            
+            if (immediateCount > 0 && handCount > 0) {
+                return `Drew ${immediateCount + handCount} ${cardLabel} (${immediateCount} immediate, ${handCount} to hand)`;
+            } else if (immediateCount > 0) {
+                return `Drew ${immediateCount} ${cardLabel} - click to acknowledge`;
+            } else {
+                return `Drew ${handCount} ${cardLabel} to hand`;
+            }
+        }
+    }
+
+    /**
+     * UNIFIED CARD ACKNOWLEDGMENT: Process all drawn cards (immediate and player-controlled) with acknowledgment
+     * @param {number} playerId - Player ID
+     * @param {string} cardType - Card type
+     * @param {Array} allCards - All cards to be acknowledged
+     * @param {boolean} returnMessage - Whether to return user message
+     */
+    processDrawnCardsWithAcknowledgment(playerId, cardType, allCards, returnMessage) {
+        console.log('🎴 UNIFIED: Processing', allCards.length, 'cards for acknowledgment');
+        
+        // Queue ALL cards for acknowledgment (immediate and player-controlled)
+        this.queueCardsForAcknowledgment(allCards, cardType, playerId, () => {
+            // This callback runs after ALL cards are acknowledged
+            // Now process each card based on its type
+            this.processAcknowledgedCards(playerId, cardType, allCards);
+        });
+
+        // Return message about cards being shown
+        if (returnMessage) {
+            const cardLabel = allCards.length === 1 ? 'card' : 'cards';
+            return `Drew ${allCards.length} ${cardLabel} - click to acknowledge each card`;
+        }
+    }
+
+    /**
+     * Process cards after acknowledgment based on their activation timing
+     * @param {number} playerId - Player ID
+     * @param {string} cardType - Card type
+     * @param {Array} allCards - All acknowledged cards
+     */
+    processAcknowledgedCards(playerId, cardType, allCards) {
+        console.log('🎴 UNIFIED: Processing acknowledged cards:', allCards.length);
+        
+        // Separate cards by activation timing for processing
+        const immediateCards = [];
+        const playerControlledCards = [];
+        
+        allCards.forEach(card => {
+            if (card.activation_timing === 'Immediate') {
+                immediateCards.push(card);
+            } else {
+                playerControlledCards.push(card);
+            }
+        });
+
+        // Process immediate cards (apply effects)
+        if (immediateCards.length > 0) {
+            console.log('🎴 UNIFIED: Applying effects for', immediateCards.length, 'immediate cards');
+            this.applyImmediateCardEffects(playerId, cardType, immediateCards);
+        }
+
+        // Process player-controlled cards (add to hand)
+        if (playerControlledCards.length > 0) {
+            console.log('🎴 UNIFIED: Adding', playerControlledCards.length, 'player-controlled cards to hand');
+            this.addCardsToPlayerHand(playerId, cardType, playerControlledCards);
+        }
+    }
+
+    /**
+     * Apply effects for immediate cards after user acknowledgment
+     * @param {number} playerId - Player ID  
+     * @param {string} cardType - Card type
+     * @param {Array} cards - Immediate cards to process
+     */
+    applyImmediateCardEffects(playerId, cardType, cards) {
+        const playerIndex = this.state.players.findIndex(p => p.id === playerId);
+        if (playerIndex === -1) {
+            console.error(`GameStateManager: Player ${playerId} not found for immediate card effects`);
+            return;
+        }
+
+        const currentPlayer = this.state.players[playerIndex];
+        let newMoney = currentPlayer.money || 0;
+        let newTimeSpent = currentPlayer.timeSpent || 0;
+
+        // Apply effects for each acknowledged card
+        cards.forEach(card => {
+            newMoney += parseInt(card.loan_amount || 0);
+            newMoney += parseInt(card.investment_amount || 0);  
+            newMoney += parseInt(card.money_effect || 0);
+            newTimeSpent += parseInt(card.time_effect || 0);
+
+            // Handle card state transition to discard/in-play
+            const hasPersistentEffect = card.duration && 
+                                      card.duration !== 'Immediate' && 
+                                      card.duration !== 'Permanent';
+
+            if (hasPersistentEffect) {
+                this.moveCardToInPlay(cardType, card, playerId);
+            } else {
+                this.discardCard(cardType, card);
+            }
+        });
+
+        // Update player with new money/time (for W cards: also update scope)
+        let updatedPlayer = {
+            ...currentPlayer,
+            money: newMoney,
+            timeSpent: newTimeSpent
+        };
+
+        // Handle W card scope calculation  
+        if (cardType === 'W') {
+            console.log('🔍 DEBUG: Starting W card scope calculation for player:', playerId);
+            console.log('🔍 DEBUG: Current player data:', currentPlayer);
+            console.log('🔍 DEBUG: Processing W cards:', cards);
+            
+            // For immediate W cards, we need to calculate scope from the processed cards
+            // since they don't go to hand but contribute to project scope directly
+            const existingScopeItems = currentPlayer.scopeItems || [];
+            const existingScopeTotal = currentPlayer.scopeTotalCost || 0;
+            
+            console.log('🔍 DEBUG: existingScopeItems:', existingScopeItems);
+            console.log('🔍 DEBUG: existingScopeTotal:', existingScopeTotal);
+            
+            // Add new W cards to project scope
+            let newScopeTotal = existingScopeTotal;
+            const scopeItemsMap = new Map();
+            
+            // Add existing scope items to map
+            existingScopeItems.forEach(item => {
+                scopeItemsMap.set(item.workType, { ...item });
+            });
+            
+            console.log('🔍 DEBUG: scopeItemsMap after adding existing items:', scopeItemsMap);
+            
+            // Process immediate W cards and add to scope
+            cards.forEach(card => {
+                const workType = card.work_type_restriction || 'General Construction';
+                const workCost = parseInt(card.work_cost) || 0;
+                console.log('🔍 DEBUG: Processing card:', card.card_id, 'workType:', workType, 'workCost:', workCost);
+                
+                newScopeTotal += workCost;
+                
+                if (scopeItemsMap.has(workType)) {
+                    const existing = scopeItemsMap.get(workType);
+                    console.log('🔍 DEBUG: Updating existing workType:', workType, 'existing:', existing);
+                    scopeItemsMap.set(workType, {
+                        ...existing,
+                        cost: existing.cost + workCost,
+                        count: existing.count + 1
+                    });
+                } else {
+                    console.log('🔍 DEBUG: Adding new workType:', workType);
+                    scopeItemsMap.set(workType, {
+                        workType: workType,
+                        cost: workCost,
+                        count: 1
+                    });
+                }
+                console.log('🔍 DEBUG: scopeItemsMap after processing card:', scopeItemsMap);
+            });
+            
+            console.log('🔍 DEBUG: newScopeTotal:', newScopeTotal);
+            
+            updatedPlayer.scopeItems = Array.from(scopeItemsMap.values());
+            updatedPlayer.scopeTotalCost = newScopeTotal;
+            
+            console.log('🔍 DEBUG: Final updatedPlayer.scopeItems:', updatedPlayer.scopeItems);
+            console.log('🔍 DEBUG: Final updatedPlayer.scopeTotalCost:', updatedPlayer.scopeTotalCost);
+        }
+
+        // Update state
+        const players = [
+            ...this.state.players.slice(0, playerIndex),
+            updatedPlayer,
+            ...this.state.players.slice(playerIndex + 1)
+        ];
+
+        console.log('🔍 DEBUG: About to call setState with updatedPlayer:', updatedPlayer);
+        console.log('🔍 DEBUG: updatedPlayer.scopeItems before setState:', updatedPlayer.scopeItems);
+        console.log('🔍 DEBUG: updatedPlayer.scopeTotalCost before setState:', updatedPlayer.scopeTotalCost);
+
+        this.setState({ players });
+        
+        console.log('🔍 DEBUG: setState called, checking state after update...');
+        // Check state after setState (note: might be async)
+        setTimeout(() => {
+            const verifyPlayer = this.state.players.find(p => p.id === playerId);
+            console.log('🔍 DEBUG: Player state after setState:', verifyPlayer);
+            console.log('🔍 DEBUG: Player scopeItems after setState:', verifyPlayer?.scopeItems);
+            console.log('🔍 DEBUG: Player scopeTotalCost after setState:', verifyPlayer?.scopeTotalCost);
+        }, 100);
+
+        // Emit events
+        this.emit('cardsProcessedImmediate', {
+            player: updatedPlayer,
+            cardType,
+            cards: cards,
+            totalCards: cards.length
+        });
+
+        this.log(`Applied effects for ${cards.length} immediate ${cardType} cards for player ${playerId}`);
+    }
+
+    /**
+     * Add cards directly to player hand (for non-immediate cards)
+     * @param {number} playerId - Player ID
+     * @param {string} cardType - Card type  
+     * @param {Array} cards - Cards to add to hand
+     */
+    addCardsToPlayerHand(playerId, cardType, cards) {
+        console.log('🔍 E-CARD DEBUG: addCardsToPlayerHand called');
+        console.log('🔍 E-CARD DEBUG: playerId:', playerId, 'cardType:', cardType, 'cards.length:', cards.length);
+        
+        const playerIndex = this.state.players.findIndex(p => p.id === playerId);
+        if (playerIndex === -1) {
+            console.error(`GameStateManager: Player ${playerId} not found`);
+            return;
+        }
+
+        const currentPlayer = this.state.players[playerIndex];
+        console.log('🔍 E-CARD DEBUG: currentPlayer before update:', currentPlayer);
+        console.log('🔍 E-CARD DEBUG: currentPlayer.scopeItems:', currentPlayer.scopeItems);
+        console.log('🔍 E-CARD DEBUG: currentPlayer.scopeTotalCost:', currentPlayer.scopeTotalCost);
+        
+        const newCardsForType = [...(currentPlayer.cards?.[cardType] || []), ...cards];
+
+        const updatedPlayer = {
+            ...currentPlayer,
+            cards: {
+                ...currentPlayer.cards,
+                [cardType]: newCardsForType
+            }
+        };
+
+        console.log('🔍 E-CARD DEBUG: updatedPlayer after creation:', updatedPlayer);
+        console.log('🔍 E-CARD DEBUG: updatedPlayer.scopeItems:', updatedPlayer.scopeItems);
+        console.log('🔍 E-CARD DEBUG: updatedPlayer.scopeTotalCost:', updatedPlayer.scopeTotalCost);
+
+        const players = [
+            ...this.state.players.slice(0, playerIndex),
+            updatedPlayer,
+            ...this.state.players.slice(playerIndex + 1)
+        ];
+
+        console.log('🔍 E-CARD DEBUG: About to call setState with updated players array');
+        this.setState({ players });
+        
+        console.log('🔍 E-CARD DEBUG: setState called, checking result...');
+        setTimeout(() => {
+            const verifyPlayer = this.state.players.find(p => p.id === playerId);
+            console.log('🔍 E-CARD DEBUG: Player state after setState:', verifyPlayer);
+            console.log('🔍 E-CARD DEBUG: Player scopeItems after setState:', verifyPlayer?.scopeItems);
+            console.log('🔍 E-CARD DEBUG: Player scopeTotalCost after setState:', verifyPlayer?.scopeTotalCost);
+        }, 100);
+
+        this.emit('cardsAddedToHand', {
+            player: updatedPlayer,
+            cardType,
+            cards: cards,
+            totalCards: newCardsForType.length
+        });
+    }
+
+    /**
      * Add cards to player hand
      */
     addCardsToPlayer(playerId, cardType, cards, returnMessage = false) {
@@ -511,24 +1238,35 @@ class GameStateManager {
         let newMoney = currentPlayer.money || 0;
         let newTimeSpent = currentPlayer.timeSpent || 0;
 
-        // DATA-DRIVEN: Apply effects based on each card's activation_timing
-        cardsToAdd.forEach(card => {
-            if (card.activation_timing === 'Immediate') {
-                newMoney += parseInt(card.loan_amount || 0);
-                newMoney += parseInt(card.investment_amount || 0);
-                newMoney += parseInt(card.money_effect || 0);
-                newTimeSpent += parseInt(card.time_effect || 0);
-            }
-            // If activation_timing is "Player Controlled" or any other value,
-            // skip applying effects - card will be added to hand only
-        });
+        // UNIFIED ACKNOWLEDGMENT: All cards now go through acknowledgment modal
+        // No need to separate immediate vs hand cards - all get acknowledged first
+        
+        // Send ALL cards through unified acknowledgment process
+        return this.processDrawnCardsWithAcknowledgment(
+            playerId,
+            cardType, 
+            cardsToAdd,
+            returnMessage
+        );
 
-        const newCardsForType = [...(currentPlayer.cards?.[cardType] || []), ...cardsToAdd];
+        const newCardsForType = [...(currentPlayer.cards?.[cardType] || []), ...cardsForHand];
         
         
         
-        const allWCards = cardType === 'W' ? newCardsForType : (currentPlayer.cards?.W || []);
-        const { scopeItems, scopeTotalCost } = this.calculatePlayerScope(allWCards);
+        // Only recalculate scope for W cards, preserve existing scope for other card types
+        let scopeItems, scopeTotalCost;
+        if (cardType === 'W') {
+            // For W cards, recalculate scope from all W cards (hand cards only, immediate W cards are handled separately)
+            const result = this.calculatePlayerScope(newCardsForType);
+            scopeItems = result.scopeItems;
+            scopeTotalCost = result.scopeTotalCost;
+            console.log('✅ SCOPE FIX: Recalculated scope for W cards:', { items: scopeItems.length, total: scopeTotalCost });
+        } else {
+            // For non-W cards (like E), preserve existing scope data
+            scopeItems = currentPlayer.scopeItems || [];
+            scopeTotalCost = currentPlayer.scopeTotalCost || 0;
+            console.log('✅ SCOPE FIX: Preserved existing scope for', cardType, 'cards:', { items: scopeItems.length, total: scopeTotalCost });
+        }
 
         // 2. Create the single, new, updated player object
         const updatedPlayer = {
@@ -734,6 +1472,17 @@ class GameStateManager {
     }
 
     /**
+     * Play card from hand with full deck management integration
+     * This is the main method for playing cards from hand UI
+     * @param {number} playerId - Player ID
+     * @param {string} cardId - Card ID to play
+     * @returns {string} User-friendly result message
+     */
+    playCardFromHand(playerId, cardId) {
+        return this.usePlayerCard(playerId, cardId);
+    }
+
+    /**
      * ARCHITECTURE SAFETY NOTE:
      * This method ONLY calls card-specific EffectsEngine methods that 
      * properly delegate to GameStateManager. It NEVER calls space effect 
@@ -792,11 +1541,14 @@ class GameStateManager {
                 throw new Error(result?.reason || 'Card effect failed');
             }
             
-            // 4. Remove card from hand & emit events
+            // 4. Remove card from hand
             const removed = this.removeCardFromHand(playerId, cardId);
             if (!removed) {
                 throw new Error('Failed to remove card from hand');
             }
+            
+            // 5. DECK MANAGEMENT INTEGRATION: Handle card state transitions
+            this.handleCardStateTransition(card, cardType, playerId);
             
             this.emit('cardUsed', { playerId, card, cardType, result });
             
@@ -1107,6 +1859,75 @@ class GameStateManager {
      */
 
     /**
+     * Evaluate space effect condition for a player
+     */
+    evaluateEffectCondition(playerId, condition) {
+        if (!condition || condition === 'always') {
+            return true;
+        }
+
+        const player = this.state.players.find(p => p.id === playerId);
+        if (!player) {
+            return false;
+        }
+
+        const playerScope = player.scopeTotalCost || 0;
+        
+        console.log(`🔍 CONDITION: Evaluating ${condition} for player ${player.name}`);
+        console.log(`🔍 CONDITION: Player scope: $${playerScope.toLocaleString()}`);
+
+        switch (condition) {
+            case 'scope_le_4M':
+                const result_le = playerScope <= 4000000;
+                console.log(`🔍 CONDITION: ${condition} result: ${result_le}`);
+                return result_le;
+            case 'scope_gt_4M':
+                const result_gt = playerScope > 4000000;
+                console.log(`🔍 CONDITION: ${condition} result: ${result_gt}`);
+                return result_gt;
+            default:
+                console.warn(`Unknown condition: ${condition}`);
+                return false;
+        }
+    }
+
+    /**
+     * Process mutually exclusive card effects (like B/I cards based on scope)
+     */
+    processMutuallyExclusiveCardEffects(playerId, effects) {
+        console.log('🔍 CONDITIONAL: Processing mutually exclusive card effects');
+        console.log('🔍 CONDITIONAL: Effects to evaluate:', effects.length);
+        
+        const messages = [];
+        
+        // Group effects by their mutual exclusion criteria
+        const scopeBasedEffects = effects.filter(effect => 
+            effect.condition && (effect.condition.includes('scope_le_4M') || effect.condition.includes('scope_gt_4M'))
+        );
+        
+        if (scopeBasedEffects.length > 0) {
+            console.log('🔍 CONDITIONAL: Found', scopeBasedEffects.length, 'scope-based effects');
+            
+            // Evaluate each condition and only process the first one that matches
+            for (const effect of scopeBasedEffects) {
+                const conditionMet = this.evaluateEffectCondition(playerId, effect.condition);
+                console.log('🔍 CONDITIONAL: Effect', effect.effect_type, 'condition', effect.condition, 'met:', conditionMet);
+                
+                if (conditionMet) {
+                    const message = this.processSpaceEffect(playerId, effect);
+                    if (message) {
+                        messages.push(message);
+                    }
+                    // CRITICAL: Only process ONE effect from mutually exclusive group
+                    break;
+                }
+            }
+        }
+        
+        return messages;
+    }
+
+    /**
      * Get space effects from CSV database for a specific space and visit type
      */
     getSpaceEffects(spaceName, visitType = 'First') {
@@ -1136,27 +1957,19 @@ class GameStateManager {
     processSpaceEffect(playerId, effect) {
         try {
             switch (effect.effect_type) {
+                case 'w_cards':
+                case 'b_cards':
+                case 'i_cards':
+                case 'l_cards':
                 case 'e_cards': {
                     const cardType = effect.card_type || 'W';
                     const amount = parseInt(effect.effect_value) || 1;
                     
-                    // FIX: Draw actual cards from CSV database instead of generating incomplete ones
-                    if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
-                        console.error('GameStateManager: CSVDatabase not loaded for space card generation');
-                        return 'Cards not available - database not loaded';
-                    }
+                    // Use new deck management system - draws unique cards with proper removal
+                    const drawnCards = this.drawCardsFromDeck(cardType, amount);
                     
-                    const availableCards = window.CSVDatabase.cards.query({card_type: cardType});
-                    if (availableCards.length === 0) {
-                        console.error(`GameStateManager: No ${cardType} cards available in CSV database`);
-                        return `No ${cardType} cards available`;
-                    }
-                    
-                    // Draw random cards from CSV database (same logic as GameManager.drawCardsForPlayer)
-                    const drawnCards = [];
-                    for (let i = 0; i < amount; i++) {
-                        const randomIndex = Math.floor(Math.random() * availableCards.length);
-                        drawnCards.push(availableCards[randomIndex]);
+                    if (drawnCards.length === 0) {
+                        return `No ${cardType} cards available to draw`;
                     }
                     
                     // Add cards through existing method with message return
@@ -1168,9 +1981,15 @@ class GameStateManager {
                     return this.updatePlayerTime(playerId, timeAmount, `Space effect: ${effect.space}`, true);
                 }
                 
-                case 'e_money': {
+                case 'money': {
                     const moneyAmount = parseInt(effect.effect_value) || 0;
                     return this.updatePlayerMoney(playerId, moneyAmount, `Space effect: ${effect.space}`, true);
+                }
+                
+                case 'fee': {
+                    const feeAmount = parseInt(effect.effect_value) || 0;
+                    // Fees are negative money effects
+                    return this.updatePlayerMoney(playerId, -feeAmount, `Space fee: ${effect.space}`, true);
                 }
                 
                 default:
@@ -1193,16 +2012,119 @@ class GameStateManager {
         
         this.log(`Processing ${effects.length} space effects for player ${playerId} at ${spaceName}`);
         
-        effects.forEach((effect, index) => {
-            this.log(`Processing effect ${index + 1}:`, effect);
+        // Identify mutually exclusive card effect groups (B/I cards based on scope)
+        const mutuallyExclusiveEffects = effects.filter(effect => {
+            return (effect.effect_type === 'b_cards' || effect.effect_type === 'i_cards') && 
+                   effect.condition && 
+                   (effect.condition.includes('scope_le_4M') || effect.condition.includes('scope_gt_4M'));
+        });
+        
+        // Process mutually exclusive groups first, BUT skip automatic processing for OWNER-FUND-INITIATION
+        if (mutuallyExclusiveEffects.length > 0 && spaceName !== 'OWNER-FUND-INITIATION') {
+            console.log('🔍 CONDITIONAL: Found mutually exclusive card effects, processing with conditional logic');
+            const conditionalMessages = this.processMutuallyExclusiveCardEffects(playerId, mutuallyExclusiveEffects);
+            effectMessages.push(...conditionalMessages);
+        } else if (spaceName === 'OWNER-FUND-INITIATION') {
+            console.log('🔍 CONDITIONAL: Skipping automatic B/I card draw at OWNER-FUND-INITIATION - waiting for manual trigger');
+        }
+        
+        // Process remaining non-mutually-exclusive effects
+        const remainingEffects = effects.filter(effect => {
+            // Skip effects that were already processed in mutually exclusive groups
+            return !(mutuallyExclusiveEffects.includes(effect));
+        });
+        
+        remainingEffects.forEach((effect, index) => {
+            this.log(`Processing regular effect ${index + 1}:`, effect);
             
-            const message = this.processSpaceEffect(playerId, effect);
-            if (message) {
-                effectMessages.push(message);
+            // Evaluate condition for regular effects
+            const conditionMet = this.evaluateEffectCondition(playerId, effect.condition);
+            if (conditionMet) {
+                const message = this.processSpaceEffect(playerId, effect);
+                if (message) {
+                    effectMessages.push(message);
+                }
+            } else {
+                this.log(`Skipping effect due to unmet condition: ${effect.condition}`);
             }
         });
         
         return effectMessages;
+    }
+
+    /**
+     * Trigger manual funding card draw for OWNER-FUND-INITIATION space
+     * This method handles the B/I card conditional logic that was skipped during automatic processing
+     */
+    triggerFundingCardDraw(playerId) {
+        const player = this.state.players.find(p => p.id === playerId);
+        if (!player) {
+            console.error(`Player ${playerId} not found`);
+            return [];
+        }
+
+        // Only allow this for players at OWNER-FUND-INITIATION
+        if (player.position !== 'OWNER-FUND-INITIATION') {
+            console.error(`Player ${player.name} is not at OWNER-FUND-INITIATION space`);
+            return [];
+        }
+
+        console.log(`🔍 MANUAL: Triggering funding card draw for ${player.name} at ${player.position}`);
+
+        // Get the B/I card effects for OWNER-FUND-INITIATION
+        const effects = this.getSpaceEffects('OWNER-FUND-INITIATION', player.visitType || 'First');
+        const mutuallyExclusiveEffects = effects.filter(effect => {
+            return (effect.effect_type === 'b_cards' || effect.effect_type === 'i_cards') && 
+                   effect.condition && 
+                   (effect.condition.includes('scope_le_4M') || effect.condition.includes('scope_gt_4M'));
+        });
+
+        if (mutuallyExclusiveEffects.length === 0) {
+            console.log('🔍 MANUAL: No B/I card effects found for OWNER-FUND-INITIATION');
+            return [];
+        }
+
+        // Process the conditional B/I card effects
+        const messages = this.processMutuallyExclusiveCardEffects(playerId, mutuallyExclusiveEffects);
+        
+        // If card was successfully drawn, mark funding card as drawn and space actions as completed
+        if (messages.length > 0) {
+            this.setState({
+                currentTurn: {
+                    ...this.state.currentTurn,
+                    fundingCardDrawnForSpace: true,
+                    spaceActionsCompleted: true
+                }
+            });
+            console.log('🔍 MANUAL: Funding card draw completed, button will be hidden');
+            console.log('🔍 MANUAL: Space actions marked as completed, other card buttons will be hidden');
+            
+            // Mark funding card draw as completed action
+            this.emit('playerActionTaken', {
+                playerId: playerId,
+                actionType: 'card',
+                actionData: {
+                    source: 'funding_card_draw',
+                    spaceName: 'OWNER-FUND-INITIATION',
+                    cardType: mutuallyExclusiveEffects[0]?.card_type,
+                    messages: messages
+                },
+                timestamp: Date.now(),
+                spaceName: 'OWNER-FUND-INITIATION',
+                visitType: player.visitType || 'First'
+            });
+            console.log('🔍 MANUAL: Funding card draw marked as completed action');
+        }
+        
+        // Emit event for UI feedback
+        this.emit('fundingCardDrawn', {
+            playerId,
+            player,
+            spaceName: 'OWNER-FUND-INITIATION',
+            messages
+        });
+
+        return messages;
     }
 
     /**
@@ -1361,7 +2283,9 @@ class GameStateManager {
                         completed: 0
                     },
                     canEndTurn: true,
-                    lastActionTimestamp: Date.now()
+                    lastActionTimestamp: Date.now(),
+                    fundingCardDrawnForSpace: false,
+                    spaceActionsCompleted: false
                 }
             });
             return;
@@ -1418,7 +2342,9 @@ class GameStateManager {
                     completed: 0
                 },
                 canEndTurn: requiredCount === 0,
-                lastActionTimestamp: Date.now()
+                lastActionTimestamp: Date.now(),
+                fundingCardDrawnForSpace: false,
+                spaceActionsCompleted: false
             }
         });
 
@@ -1520,27 +2446,18 @@ class GameStateManager {
 
     /**
      * Handle drawCards events from EffectsEngine
+     * FIXED: Now uses proper deck management system
      */
     handleDrawCards(eventData) {
         const { playerId, cardType, count, source } = eventData;
         
         try {
-            // Generate random cards from CSV data
-            if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
-                console.error('GameStateManager: CSVDatabase not loaded for card drawing');
-                return;
-            }
+            // Use new deck management system - draws unique cards with proper removal
+            const drawnCards = this.drawCardsFromDeck(cardType, count || 1);
             
-            const availableCards = window.CSVDatabase.cards.query({card_type: cardType});
-            if (availableCards.length === 0) {
-                console.error(`GameStateManager: No ${cardType} cards available`);
+            if (drawnCards.length === 0) {
+                console.warn(`GameStateManager: No ${cardType} cards could be drawn`);
                 return;
-            }
-            
-            const drawnCards = [];
-            for (let i = 0; i < count; i++) {
-                const randomIndex = Math.floor(Math.random() * availableCards.length);
-                drawnCards.push(availableCards[randomIndex]);
             }
             
             // Use existing addCardsToPlayer method
@@ -1620,6 +2537,175 @@ class GameStateManager {
      */
     setPlayerSkipNextTurn(playerId, shouldSkip) {
         this.updatePlayer(playerId, { skipNextTurn: shouldSkip });
+    }
+
+    /**
+     * DEBUG: Test immediate card acknowledgment system
+     * Tests W, B, I, L cards with user acknowledgment flow
+     */
+    testImmediateCardAcknowledgment() {
+        console.log('🧪 Testing Immediate Card Acknowledgment System...');
+        
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+            console.log('❌ CSVDatabase not loaded');
+            return false;
+        }
+
+        try {
+            // Initialize decks if not done
+            if (!this.state.cardDecks || !this.state.cardDecks.W.available.length) {
+                this.initializeCardDecks();
+            }
+
+            // Ensure we have a test player
+            if (this.state.players.length === 0) {
+                this.setState({
+                    players: [{
+                        id: 1,
+                        name: 'Test Player',
+                        cards: { W: [], B: [], I: [], L: [], E: [] },
+                        money: 10000,
+                        timeSpent: 0
+                    }]
+                });
+            }
+
+            const testPlayerId = this.state.players[0].id;
+
+            // Test each immediate card type
+            const cardTests = [
+                { type: 'W', description: 'Worktype (immediate to project scope)' },
+                { type: 'B', description: 'Bank (immediate money effect)' },
+                { type: 'I', description: 'Investment (immediate money effect)' },
+                { type: 'L', description: 'Life (immediate or persistent effects)' }
+            ];
+
+            cardTests.forEach(({ type, description }) => {
+                console.log(`\n🎯 Testing ${type} card acknowledgment (${description})`);
+                
+                // Draw 2 cards of this type to test the acknowledgment system
+                const testCards = this.drawCardsFromDeck(type, 2);
+                
+                if (testCards.length > 0) {
+                    console.log(`✅ Drew ${testCards.length} ${type} cards: ${testCards.map(c => c.card_id).join(', ')}`);
+                    
+                    // This should trigger the acknowledgment system
+                    const message = this.addCardsToPlayer(testPlayerId, type, testCards, true);
+                    console.log(`📋 Result message: ${message}`);
+                    
+                    // Check if acknowledgment system is active
+                    if (this.isCardAcknowledgmentActive()) {
+                        console.log(`✅ Card acknowledgment system activated`);
+                        console.log(`📋 Cards in queue: ${this.state.cardAcknowledgment.queue.length}`);
+                        console.log(`🎴 Current card: ${this.state.cardAcknowledgment.currentCard?.card_id}`);
+                    } else {
+                        console.log(`❌ Card acknowledgment system NOT activated`);
+                    }
+                } else {
+                    console.log(`❌ No ${type} cards available for testing`);
+                }
+            });
+
+            console.log(`\n📊 Final acknowledgment state:`, {
+                isActive: this.state.cardAcknowledgment.isActive,
+                queueLength: this.state.cardAcknowledgment.queue.length,
+                currentCard: this.state.cardAcknowledgment.currentCard?.card_id || 'None'
+            });
+
+            console.log('🎉 Immediate card acknowledgment test setup completed');
+            console.log('💡 Use window.GameStateManager.acknowledgeCard() to manually acknowledge cards');
+            
+            return true;
+
+        } catch (error) {
+            console.log(`❌ Test failed: ${error.message}`);
+            return false;
+        }
+    }
+
+    /**
+     * DEBUG: Test card playing from hand functionality
+     * Creates a test scenario with cards in hand and tests playing them
+     */
+    testCardPlayingFromHand() {
+        console.log('🧪 Testing Card Playing From Hand...');
+        
+        if (!window.CSVDatabase || !window.CSVDatabase.loaded) {
+            console.log('❌ CSVDatabase not loaded');
+            return false;
+        }
+
+        try {
+            // Initialize decks if not done
+            if (!this.state.cardDecks || !this.state.cardDecks.E.available.length) {
+                this.initializeCardDecks();
+            }
+
+            // Get test E cards
+            const testECards = window.CSVDatabase.cards.query({
+                card_type: 'E',
+                activation_timing: 'Player Controlled'
+            }).slice(0, 2);
+
+            if (testECards.length === 0) {
+                console.log('❌ No E cards available for testing');
+                return false;
+            }
+
+            // Ensure we have a test player
+            if (this.state.players.length === 0) {
+                this.setState({
+                    players: [{
+                        id: 1,
+                        name: 'Test Player',
+                        cards: { W: [], B: [], I: [], L: [], E: [] },
+                        money: 10000,
+                        timeSpent: 0
+                    }]
+                });
+            }
+
+            const testPlayerId = this.state.players[0].id;
+
+            // Add E cards to player's hand manually for testing
+            this.addCardsToPlayer(testPlayerId, 'E', testECards, false);
+
+            console.log(`✅ Added ${testECards.length} E cards to player hand`);
+            console.log(`📋 Player hand: ${testECards.map(c => c.card_id).join(', ')}`);
+
+            // Test playing first card
+            const testCard = testECards[0];
+            console.log(`🎮 Playing card: ${testCard.card_id} (${testCard.card_name})`);
+            
+            const result = this.playCardFromHand(testPlayerId, testCard.card_id);
+            console.log(`✅ Card played result: ${result}`);
+
+            // Check deck states
+            const deckStates = {
+                discarded: this.state.cardDecks.E.discarded.length,
+                inPlay: this.state.cardDecks.E.inPlay.length,
+                available: this.state.cardDecks.E.available.length
+            };
+
+            console.log(`📊 Deck States - Discarded: ${deckStates.discarded}, In-Play: ${deckStates.inPlay}, Available: ${deckStates.available}`);
+            
+            // Check if card was removed from player hand
+            const playerCards = this.state.players.find(p => p.id === testPlayerId)?.cards?.E || [];
+            const cardRemovedFromHand = !playerCards.find(c => c.card_id === testCard.card_id);
+            
+            if (cardRemovedFromHand) {
+                console.log('✅ Card successfully removed from player hand');
+            } else {
+                console.log('❌ Card still in player hand');
+            }
+
+            console.log('🎉 Card playing from hand test completed');
+            return true;
+
+        } catch (error) {
+            console.log(`❌ Test failed: ${error.message}`);
+            return false;
+        }
     }
 }
 

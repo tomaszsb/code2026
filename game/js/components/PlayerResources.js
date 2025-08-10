@@ -27,15 +27,23 @@ function PlayerResources({ onCardSelect, cardsExpanded, onToggleExpanded }) {
     
     // SCOPE DISPLAY FIX: Use React hooks to track player property changes
     const playerResources = useMemo(() => {
+        console.log('🔍 UI DEBUG: PlayerResources useMemo triggered');
+        console.log('🔍 UI DEBUG: Current player object:', player);
+        console.log('🔍 UI DEBUG: player?.scopeItems:', player?.scopeItems);
+        console.log('🔍 UI DEBUG: player?.scopeTotalCost:', player?.scopeTotalCost);
+        
         if (!player) return null;
         
-        return {
+        const resources = {
             money: typeof player.money === 'number' ? player.money : 0,
             timeSpent: typeof player.timeSpent === 'number' ? player.timeSpent : 0,
             scopeItems: Array.isArray(player.scopeItems) ? player.scopeItems : [],
             scopeTotalCost: typeof player.scopeTotalCost === 'number' ? player.scopeTotalCost : 0
         };
-    }, [player?.money, player?.timeSpent, player?.scopeItems, player?.scopeTotalCost]);
+        
+        console.log('🔍 UI DEBUG: Computed playerResources:', resources);
+        return resources;
+    }, [player]);
     
     try {
         if (!player || !playerResources) {

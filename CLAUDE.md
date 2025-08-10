@@ -249,6 +249,67 @@ gameState.players?.find()  // Defensive
 
 ## Recent Work Log
 
+### 2025-08-10: Phase 21 - Conditional Card Drawing & Manual Funding System
+
+**Major Achievement**: Successfully implemented conditional card drawing system and manual funding card draw feature, eliminating card duplication and enabling player-controlled actions.
+
+**Phase 21 Accomplishments**:
+
+1. **Conditional Card Drawing System** ✅ COMPLETED
+   - **Problem**: OWNER-FUND-INITIATION space was drawing both B and I cards simultaneously from mutually exclusive conditions 
+   - **Root Cause**: Space effects processing lacked conditional logic evaluation
+   - **Solution**: Implemented `evaluateEffectCondition()` and `processMutuallyExclusiveCardEffects()` methods in GameStateManager
+   - **Technical Implementation**:
+     ```javascript
+     // GameStateManager.js - Conditional Logic
+     evaluateEffectCondition(condition, player) {
+         switch (condition) {
+             case 'scope_le_4M': return player.scope <= 4000000;
+             case 'scope_gt_4M': return player.scope > 4000000;
+             default: return true;
+         }
+     }
+     ```
+   - **Data Layer**: Fixed `card_type` column assignments in SPACE_EFFECTS.csv for proper B/I card distribution
+   - **Result**: Project scope now correctly determines Bank cards (≤$4M) vs Investment cards (>$4M)
+
+2. **Manual Funding Card Draw Feature** ✅ COMPLETED  
+   - **Problem**: Funding cards auto-drawn on space entry, removing player agency
+   - **User Requirement**: Convert to player-initiated button action in CardActionsSection
+   - **Implementation**:
+     - Added `triggerFundingCardDraw()` method to GameStateManager
+     - Implemented funding button in CardActionsSection.js with scope-based tooltips
+     - Added state tracking with `fundingCardDrawnForSpace` to prevent duplicate draws
+     - Integrated with turn completion system via `playerActionTaken` event emission
+   - **UX Enhancement**: Button shows contextual messaging - "Get Bank Card" (≤$4M) or "Get Investment Card" (>$4M)
+
+3. **Space Action Completion System** ✅ COMPLETED
+   - **Problem**: Bank/Investor buttons reappeared after funding card draw completion
+   - **Solution**: Implemented `spaceActionsCompleted` state tracking
+   - **Features**:
+     - Permanent button hiding after funding card draw
+     - State reset on turn changes and space movement  
+     - Integration with existing action completion patterns
+     - Enhanced filtering logic in CardActionsSection.js
+
+4. **Turn Requirement Integration** ✅ COMPLETED
+   - **Issue**: Funding card draw wasn't advancing "End Turn" button counter
+   - **Solution**: Added `playerActionTaken` event emission to `triggerFundingCardDraw()`
+   - **Result**: Manual funding action now properly completes turn requirements
+
+**Technical Architecture Maintained**:
+- ✅ **CSV-as-Database**: All conditional logic driven by SPACE_EFFECTS.csv data
+- ✅ **Event-Driven**: Player actions communicate via event system 
+- ✅ **Immutable State**: All state changes through GameStateManager methods
+- ✅ **Component Separation**: UI logic in CardActionsSection, state logic in GameStateManager
+- ✅ **Defensive Programming**: Comprehensive validation and error handling
+
+**User Experience Improvements**:
+- ✅ **Player Agency**: Funding cards now require deliberate player action
+- ✅ **Clear Feedback**: Scope-based button text and tooltips 
+- ✅ **Turn Flow**: Manual actions properly integrate with turn progression
+- ✅ **State Consistency**: Button visibility reflects completion status
+
 ### 2025-08-08: Data-Driven Card Actions System - Manual Dice Buttons Fix
 
 **Major Achievement**: Successfully resolved critical bug where manual dice action buttons were missing on multiple spaces and implemented a robust data-driven filtering system.

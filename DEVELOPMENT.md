@@ -2,15 +2,23 @@
 
 **Project Management Board Game - Clean Architecture Rebuild**
 
-## Current Status: PRODUCTION READY ✅ 
+## Current Status: PHASE 21 COMPLETE ✅ 
 
-**LATEST ACHIEVEMENT:** Successfully resolved critical manual dice button bug and implemented robust data-driven card actions filtering system with complete CSV control.
+**LATEST ACHIEVEMENT:** Successfully implemented Phase 21 - Conditional Card Drawing & Manual Funding System, eliminating card duplication and enabling player-controlled funding actions.
 
-**CURRENT STATE:** Production-ready game with fully data-driven architecture, working card action buttons across all spaces, unified CSV-controlled filtering system, and comprehensive player-choice condition evaluation. All manual dice actions functioning correctly.
+**CURRENT STATE:** Production-ready game with enhanced conditional logic engine, manual funding card draws, space action completion tracking, and seamless turn requirement integration. All card drawing mechanics now work correctly with proper player agency.
 
-**PROGRESS:** Major architectural refactoring session eliminating hardcoded `if (cardType !== 'E')` logic and implementing fully data-driven card activation system using CSV `activation_timing` column.
+**PROGRESS:** Major development phase implementing conditional card drawing system, manual funding card draw feature, space action completion system, and turn requirement integration.
 
-**RESOLVED ISSUES:**
+**PHASE 21 COMPLETED FEATURES:**
+- ✅ **Conditional Card Drawing System:** Eliminated dual B/I card draws from mutually exclusive conditions at OWNER-FUND-INITIATION
+- ✅ **Manual Funding Card Draw:** Player-initiated funding cards with contextual UI ("Get Bank Card" vs "Get Investment Card")
+- ✅ **Space Action Completion:** Permanent button hiding after funding card draw with state reset on turn/space changes
+- ✅ **Turn Requirement Integration:** Manual funding actions properly advance "End Turn" button counter via playerActionTaken events
+- ✅ **Conditional Logic Engine:** `evaluateEffectCondition()` and `processMutuallyExclusiveCardEffects()` methods in GameStateManager
+- ✅ **Enhanced State Tracking:** `fundingCardDrawnForSpace` and `spaceActionsCompleted` properties for robust state management
+
+**PREVIOUS RESOLVED ISSUES:**
 - ✅ **Manual Dice Button Bug:** Fixed missing buttons on PM-DECISION-CHECK, INVESTOR-FUND-REVIEW, LEND-SCOPE-CHECK spaces
 - ✅ **Data-Driven Card Actions:** Replaced hardcoded space arrays with CSV `trigger_type` column control system
 - ✅ **Player-Choice Conditions:** Enhanced condition evaluation to recognize `roll_1`, `roll_2`, `replace` and other player actions
