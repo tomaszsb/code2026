@@ -98,7 +98,10 @@ const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) =>
         showingMoves: false,
         showSpaceExplorer: false,
         selectedSpaceData: null,
-        // Card acknowledgment state
+        // Modal management - scalable activeModal pattern
+        activeModal: null, // 'DICE_RESULT', 'CARD_ACK', 'RULES', etc.
+        modalProps: {}, // Props for the active modal
+        // Legacy card acknowledgment state (to be migrated)
         showCardAcknowledgment: false,
         cardToAcknowledge: null,
         playerName: null
@@ -114,6 +117,37 @@ const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) =>
         gameUIStateRef.current = { ...currentState, ...newState };
         setForceRender(prev => prev + 1);
     }, []); // Empty dependency array since it only uses refs and setters
+    
+    // Handle modal closure - MOVED OUT OF useEffect TO MAIN COMPONENT SCOPE
+    const handleCloseModal = React.useCallback(() => {
+        updateGameUIState({
+            activeModal: null,
+            modalProps: {}
+        });
+        
+        // Clear global modal state when any modal closes
+        if (gameStateManager) {
+            gameStateManager.setUIState('isDiceResultModalActive', false);
+        }
+    }, [updateGameUIState, gameStateManager]);
+
+    // Handle dice result modal display - MOVED OUT OF useEffect TO MAIN COMPONENT SCOPE
+    const handleShowDiceResult = React.useCallback(({ diceValue, effects, spaceName, visitType }) => {
+        updateGameUIState({
+            activeModal: 'DICE_RESULT',
+            modalProps: {
+                diceValue: diceValue,
+                effects: effects,
+                spaceName: spaceName,
+                visitType: visitType
+            }
+        });
+        
+        // Make modal state globally accessible for CardActionsSection
+        if (gameStateManager) {
+            gameStateManager.setUIState('isDiceResultModalActive', true);
+        }
+    }, [updateGameUIState, gameStateManager]);
     
     
     
@@ -171,11 +205,14 @@ const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) =>
             });
         };
 
+
+
         if (gameStateManager) {
             gameStateManager.on('spaceSelected', handleSpaceSelected);
             gameStateManager.on('turnAdvanced', handleTurnAdvanced);
             gameStateManager.on('showCardAcknowledgment', handleShowCardAcknowledgment);
             gameStateManager.on('cardAcknowledged', handleCardAcknowledged);
+            gameStateManager.on('showDiceResult', handleShowDiceResult);
         }
 
         if (gameUIStateRef.current.showSpaceExplorer) {
@@ -188,6 +225,7 @@ const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) =>
                 gameStateManager.off('turnAdvanced', handleTurnAdvanced);
                 gameStateManager.off('showCardAcknowledgment', handleShowCardAcknowledgment);
                 gameStateManager.off('cardAcknowledged', handleCardAcknowledged);
+                gameStateManager.off('showDiceResult', handleShowDiceResult);
             }
             if (gameUIStateRef.current.showSpaceExplorer) {
                 document.removeEventListener('keydown', handleKeyDown);
@@ -447,7 +485,7 @@ const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) =>
             gameStateManager: window.GameStateManager
         }) : null,
         
-        // Card Acknowledgment Modal
+        // Card Acknowledgment Modal (Legacy)
         window.CardAcknowledgmentModal ? React.createElement(window.CardAcknowledgmentModal, {
             key: 'card-acknowledgment-modal',
             isVisible: gameUIStateRef.current.showCardAcknowledgment,
@@ -460,6 +498,38 @@ const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) =>
             },
             gameStateManager: gameStateManager
         }) : null,
+
+        // New Scalable Modal System
+        (() => {
+            const activeModal = gameUIStateRef.current.activeModal;
+            const modalProps = gameUIStateRef.current.modalProps;
+            
+            switch (activeModal) {
+                case 'DICE_RESULT':
+                    return window.DiceResultModal ? React.createElement(window.DiceResultModal, {
+                        key: 'dice-result-modal',
+                        diceValue: modalProps.diceValue,
+                        effects: modalProps.effects,
+                        spaceName: modalProps.spaceName,
+                        visitType: modalProps.visitType,
+                        onContinue: () => {
+                            // Close modal first
+                            handleCloseModal();
+                            // Then trigger effect processing
+                            if (gameStateManager) {
+                                gameStateManager.emit('applyDiceEffects', modalProps);
+                            }
+                        }
+                    }) : null;
+                
+                case 'RULES':
+                    // Future: move rules modal to this system
+                    return null;
+                    
+                default:
+                    return null;
+            }
+        })(),
         // Left Panel - Complete Player Container
         React.createElement('div', {
             key: 'left-panel',

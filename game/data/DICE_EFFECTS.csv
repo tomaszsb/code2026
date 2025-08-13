@@ -23,14 +23,16 @@ INVESTOR-FUND-REVIEW,First,cards,I,Draw 1,Draw 1,Draw 1,Draw 2,Draw 2,Draw 2
 INVESTOR-FUND-REVIEW,Subsequent,cards,I,Draw 1,Draw 1,Draw 1,Draw 2,Draw 2,Draw 2
 INVESTOR-FUND-REVIEW,First,time,days,30,30,30,50,50,70
 INVESTOR-FUND-REVIEW,Subsequent,time,days,30,30,50,50,70,70
-LEND-SCOPE-CHECK,First,cards,L,No change,No change,Draw 1,No change,No change,No change
-LEND-SCOPE-CHECK,Subsequent,cards,L,No change,No change,No change,Draw 1,No change,No change
-LEND-SCOPE-CHECK,First,cards,E,Draw 1,Draw 1,Draw 1,Draw 1,Draw 1,Draw 1
-LEND-SCOPE-CHECK,Subsequent,cards,E,Remove 1,Remove 1,Remove 1,Remove 1,Remove 1,Remove 1
+LEND-SCOPE-CHECK,First,l_cards,L,No change,No change,Draw 1,No change,No change,No change
+LEND-SCOPE-CHECK,Subsequent,l_cards,L,No change,No change,No change,Draw 1,No change,No change
+LEND-SCOPE-CHECK,First,e_cards,E,Draw 1,Draw 1,Draw 1,Draw 1,Draw 1,Draw 1
+LEND-SCOPE-CHECK,Subsequent,e_cards,E,Remove 1,Remove 1,Remove 1,Remove 1,Remove 1,Remove 1
 OWNER-DECISION-REVIEW,First,cards,W,Remove 1,Draw 1,Draw 1,Replace 1,Replace 1,No change
 OWNER-DECISION-REVIEW,Subsequent,cards,W,Remove 1,Draw 1,Replace 1,No change,No change,No change
 OWNER-DECISION-REVIEW,First,cards,E,Remove 1,Draw 1,Draw 1,Replace 1,Replace 1,No change
 OWNER-DECISION-REVIEW,Subsequent,cards,E,Remove 1,Draw 1,Replace 1,No change,No change,No change
+PM-DECISION-CHECK,First,l_cards,L,Draw 1,No change,No change,No change,No change,No change
+PM-DECISION-CHECK,Subsequent,l_cards,L,No change,Draw 1,No change,No change,No change,No change
 REG-DOB-FEE-REVIEW,Subsequent,money,fee,0%,0%,0%,1%,1%,1%
 REG-DOB-FINAL-REVIEW,First,time,days,1,1,10,30,1,1
 REG-DOB-FINAL-REVIEW,Subsequent,time,days,1,1,1,10,30,1

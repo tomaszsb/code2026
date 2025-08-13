@@ -421,12 +421,20 @@ const CardsInHandMemo = React.memo(CardsInHand, (prevProps, nextProps) => {
     // If either is null/undefined, check if both are
     if (!prevCards || !nextCards) return prevCards === nextCards;
     
-    // Compare card counts for each type
+    // Compare card counts and actual card IDs for each type
     const cardTypes = ['W', 'B', 'I', 'L', 'E'];
     for (const type of cardTypes) {
         const prevCount = prevCards[type]?.length || 0;
         const nextCount = nextCards[type]?.length || 0;
         if (prevCount !== nextCount) return false;
+        
+        // Compare actual card IDs to detect card changes
+        const prevCardIds = (prevCards[type] || []).map(card => card.card_id).sort();
+        const nextCardIds = (nextCards[type] || []).map(card => card.card_id).sort();
+        if (prevCardIds.length !== nextCardIds.length) return false;
+        for (let i = 0; i < prevCardIds.length; i++) {
+            if (prevCardIds[i] !== nextCardIds[i]) return false;
+        }
     }
     
     // Check other props

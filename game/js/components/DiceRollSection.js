@@ -25,8 +25,11 @@ function DiceRollSection({
         }
     });
 
+
     // Handle dice roll action
     const handleDiceRoll = async () => {
+        console.log('🎲 DICE DEBUG: handleDiceRoll function called');
+        
         if (!currentPlayer || !window.CSVDatabase?.loaded) {
             console.error('Cannot roll dice: missing player or database');
             return;
@@ -36,7 +39,8 @@ function DiceRollSection({
             onDiceRoll({ 
                 rolling: true,
                 diceRollValue: '🎲',
-                diceOutcome: null
+                diceOutcome: null,
+                diceValue: null
             });
 
             // Simulate dice roll animation delay
@@ -115,69 +119,17 @@ function DiceRollSection({
                 hasRolled: true,
                 diceRollValue: diceValue,
                 diceOutcome: diceOutcomeResult,
-                diceOutcomeText: formattedOutcome
+                diceOutcomeText: formattedOutcome,
+                diceValue: diceValue
             });
 
-            // Process dice effects if any
-            if (diceOutcomeResult) {
-                // Process card effects
-                if (diceOutcomeResult.cards && diceOutcomeResult.cardType) {
-                    gameStateManager.emit('processDiceOutcome', {
-                        playerId: currentPlayer.id,
-                        outcome: diceOutcomeResult.cards,
-                        cardType: diceOutcomeResult.cardType,
-                        spaceName: currentPlayer.position,
-                        visitType: currentPlayer.visitType || 'First'
-                    });
-                }
-
-                // Process money effects
-                if (diceOutcomeResult.money) {
-                    let moneyAmount = 0;
-                    if (diceOutcomeResult.money.includes('%')) {
-                        // Percentage-based (like fees)
-                        const percentage = parseFloat(diceOutcomeResult.money.replace('%', ''));
-                        // Apply percentage to player's current money (this would need player data)
-                        moneyAmount = Math.floor((currentPlayer.money || 0) * percentage / 100);
-                    } else {
-                        moneyAmount = parseInt(diceOutcomeResult.money);
-                    }
-                    
-                    if (!isNaN(moneyAmount) && moneyAmount !== 0) {
-                        gameStateManager.emit('moneyChanged', {
-                            playerId: currentPlayer.id,
-                            amount: moneyAmount,
-                            source: 'dice_roll'
-                        });
-                    }
-                }
-
-                // Process time effects
-                if (diceOutcomeResult.time) {
-                    const timeAmount = parseInt(diceOutcomeResult.time);
-                    if (!isNaN(timeAmount) && timeAmount !== 0) {
-                        gameStateManager.emit('timeChanged', {
-                            playerId: currentPlayer.id,
-                            amount: timeAmount,
-                            source: 'dice_roll'
-                        });
-                    }
-                }
-            }
-
-            // Emit completion event for movement (if destination exists)
-            gameStateManager.emit('diceRollComplete', {
-                playerId: currentPlayer.id,
-                spaceName: currentPlayer.position,
-                visitType: currentPlayer.visitType || 'First',
-                rollValue: diceValue
-            });
-
-            // Emit standardized player action taken event
+            // CRITICAL: Fire playerActionTaken immediately to allow turn progression
+            console.log('🎲 DICE DEBUG: Firing playerActionTaken event for turn system');
             gameStateManager.emit('playerActionTaken', {
                 playerId: currentPlayer.id,
                 actionType: 'dice',
                 actionData: {
+                    diceValue: diceValue,
                     rollValue: diceValue,
                     effects: diceOutcomeResult,
                     outcome: formattedOutcome
@@ -187,12 +139,36 @@ function DiceRollSection({
                 visitType: currentPlayer.visitType || 'First'
             });
 
+            // Always show dice result modal with context data for specific feedback
+            console.log('🎲 DICE DEBUG: Preparing to show dice result modal');
+            console.log('🎲 DICE DEBUG: diceOutcomeResult:', diceOutcomeResult);
+            
+            // Always create a modal data object with context, even if no effects applied
+            const modalData = {
+                diceValue: diceValue,
+                effects: diceOutcomeResult, // Can be null - modal will handle this
+                spaceName: currentPlayer.position,
+                visitType: currentPlayer.visitType || 'First'
+            };
+            
+            console.log('🎲 DICE DEBUG: Showing dice result modal with context data');
+            gameStateManager.emit('showDiceResult', modalData);
+            console.log('🎲 DICE DEBUG: Global modal event emitted with context');
+
         } catch (error) {
             console.error('Error rolling dice:', error);
             onDiceRoll({ rolling: false });
         }
     };
 
+
+    // DEBUG: Log dice roll section props
+    if (currentPlayer && (currentPlayer.position === 'OWNER-SCOPE-INITIATION' || currentPlayer.position === 'PM-DECISION-CHECK')) {
+        console.log(`🎲 DICE SECTION DEBUG: ${currentPlayer.position}`);
+        console.log(`🎲 DICE SECTION DEBUG: diceRequired=${diceRequired}, showDiceRoll=${showDiceRoll}`);
+        console.log(`🎲 DICE SECTION DEBUG: hasRolled=${hasRolled}, rolling=${rolling}`);
+        console.log(`🎲 DICE SECTION DEBUG: diceRollValue=${diceRollValue}, diceOutcome=`, diceOutcome);
+    }
 
     // Don't render if dice roll is not required or shown
     if (!showDiceRoll && !diceRequired) {
@@ -212,7 +188,7 @@ function DiceRollSection({
         
         const effectTypes = [];
         diceEffects.forEach(effect => {
-            if (effect.effect_type === 'cards' && effect.card_type) {
+            if ((effect.effect_type === 'cards' || effect.effect_type.endsWith('_cards')) && effect.card_type) {
                 const cardTypeName = window.CardUtils?.getCardTypeConfig(effect.card_type)?.name || effect.card_type;
                 const actionText = window.ComponentUtils?.getDiceActionText(
                     currentPlayer.position, 
@@ -231,6 +207,7 @@ function DiceRollSection({
     };
 
     const effectsPreview = getDiceEffectsPreview();
+
 
     return React.createElement('div', {
         key: 'dice-roll-section',

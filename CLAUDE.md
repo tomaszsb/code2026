@@ -263,8 +263,13 @@ gameState.players?.find()  // Defensive
 
 ---
 
-**For detailed development history see DEVELOPMENT.md**  
-**For verification procedures see VERIFICATION_PLAN.md**
+**Documentation Structure:**
+- **CLAUDE.md**: Primary technical reference with current work log (this file)
+- **GEMINI.md**: AI collaboration charter and workflow  
+- **PRODUCT_CHARTER.md**: Product vision and performance dashboard goals
+- **DEVELOPMENT_ROADMAP.md**: Current priorities and next steps
+- **TECHNICAL_DEEP_DIVE.md**: Architectural patterns and system design
+- **DEVELOPMENT.md**: High-level status tracking
 
 **Architecture: Clean CSV architecture, specialized engines, single source of truth state management.**
 
@@ -330,6 +335,56 @@ gameState.players?.find()  // Defensive
 - ✅ **Clear Feedback**: Scope-based button text and tooltips 
 - ✅ **Turn Flow**: Manual actions properly integrate with turn progression
 - ✅ **State Consistency**: Button visibility reflects completion status
+
+### 2025-08-13: Dice-Based Card Action System Bug Fixes
+
+**Major Achievement**: Successfully resolved critical bugs in dice-based card action filtering system, fixing data integrity issues and improving code reliability.
+
+**Issues Resolved**:
+
+1. **DICE_EFFECTS.csv Data Integrity** ✅ FIXED
+   - **Problem**: Column headers used `cards` instead of specific card type columns (`l_cards`, `e_cards`) for LEND-SCOPE-CHECK space
+   - **Impact**: L and E card filtering logic failed, preventing proper dice-based card actions
+   - **Solution**: Fixed column headers from `cards` to `l_cards` and `e_cards` in DICE_EFFECTS.csv
+   - **Result**: L and E card dice actions now filter and display correctly
+
+2. **CardActionsSection.js Filtering Logic** ✅ ENHANCED  
+   - **Problem**: Inconsistent dice-based action detection and missing debug capabilities
+   - **Enhancement**: Added comprehensive debugging with console logging
+   - **Implementation**:
+     ```javascript
+     // Enhanced dice-based action detection with CSVDatabase query patterns
+     const diceEffects = window.CSVDatabase.diceEffects.query({
+         space_name: currentPlayer.position,
+         visit_type: currentPlayer.visitType || 'First',
+         card_type: cardAction.type
+     });
+     ```
+   - **Result**: Reliable dice-based action filtering with diagnostic capabilities
+
+3. **DiceRollSection.js Event Integration** ✅ IMPROVED
+   - **Problem**: Missing player action event emission for turn progression
+   - **Solution**: Added `playerActionTaken` event emission after dice roll processing
+   - **Integration**: Dice rolls now properly advance turn completion requirements
+   - **Result**: Improved turn flow integration with dice-based actions
+
+4. **UI State Management** ✅ ENHANCED
+   - **Addition**: Added dice result modal state tracking in CardActionsSection
+   - **Integration**: Enhanced coordination between dice rolling and card action filtering
+   - **Result**: Better UI synchronization between dice and card action components
+
+**Technical Architecture Maintained**:
+- ✅ **CSV-as-Database**: Data integrity fixes maintain single source of truth principle
+- ✅ **Event-Driven**: Enhanced event emission for proper turn progression
+- ✅ **Debugging Support**: Comprehensive logging for troubleshooting dice-based actions
+- ✅ **Query Patterns**: Consistent CSVDatabase query usage throughout filtering logic
+
+**Benefits Achieved**:
+- ✅ **Data Accuracy**: DICE_EFFECTS.csv now has correct column mappings for all card types
+- ✅ **Reliable Filtering**: Dice-based card actions display correctly for L and E cards
+- ✅ **Enhanced Debugging**: Comprehensive logging helps identify filtering issues
+- ✅ **Turn Integration**: Dice actions properly participate in turn completion system
+- ✅ **Code Quality**: Improved error handling and validation throughout the system
 
 ### 2025-08-13: Card Acknowledgment & Unified Drawing System
 

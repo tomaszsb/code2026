@@ -21,6 +21,136 @@ class GameStateManager {
         this.on('playerActionTaken', (event) => this.handlePlayerAction(event));
         this.on('drawCards', (event) => this.handleDrawCards(event));
         this.on('removeCards', (event) => this.handleRemoveCards(event));
+        // REMOVED: Duplicate processDiceOutcome listener - GameManager handles this event
+        this.on('applyDiceEffects', (event) => this.handleApplyDiceEffects(event));
+    }
+
+    /**
+     * NEW: Process dice roll outcomes from DiceRollSection
+     * This handles drawing, removing, or replacing cards based on dice results.
+     */
+    handleProcessDiceOutcome(event) {
+        this.log('🎲 Processing dice outcome:', event);
+        const { playerId, outcome, cardType, rollValue } = event;
+
+        // Store the last dice roll value for condition checks
+        if (rollValue) {
+            this.setState({
+                currentTurn: {
+                    ...this.state.currentTurn,
+                    lastDiceRoll: rollValue
+                }
+            });
+        }
+
+        if (!outcome || !cardType) {
+            this.log('🎲 No card outcome to process.');
+            return;
+        }
+
+        const parts = outcome.split(' ');
+        const action = parts[0];
+        const amount = parseInt(parts[1]);
+
+        if (isNaN(amount)) {
+            console.error("Invalid amount in dice outcome:", outcome);
+            this.handleError(new Error(`Invalid amount in dice outcome: ${outcome}`), 'handleProcessDiceOutcome');
+            return;
+        }
+
+        if (action === 'Draw') {
+            const drawnCards = this.drawCardsFromDeck(cardType, amount);
+            if (drawnCards.length > 0) {
+                this.log(`🎲 Drawn ${drawnCards.length} ${cardType} cards from deck.`);
+                // Use the unified acknowledgment system to show cards to the player
+                this.processDrawnCardsWithAcknowledgment(playerId, cardType, drawnCards, true);
+            } else {
+                this.log(`🎲 No ${cardType} cards were available to draw.`);
+            }
+        } else if (action === 'Remove') {
+            this.log(`🎲 Removing ${amount} ${cardType} cards from player ${playerId}.`);
+            this.forcePlayerDiscard(playerId, amount, cardType);
+        } else {
+            this.log(`🎲 Dice outcome action '${action}' not yet implemented.`);
+            // Future actions like 'Replace' can be added here.
+        }
+    }
+
+    /**
+     * Apply dice effects after user confirms the modal
+     * This processes all the dice roll effects (cards, money, time) and applies them to the game state
+     */
+    handleApplyDiceEffects(event) {
+        console.log('🎲 DICE EFFECTS: Applying dice effects after modal confirmation:', event);
+        const { effects, diceValue } = event;
+        
+        const currentPlayer = this.state.players.find(p => p.id === this.state.currentPlayer);
+        if (!currentPlayer) {
+            console.error('🎲 DICE EFFECTS: Current player not found');
+            return;
+        }
+
+        // Process card effects - emit event for GameManager to handle
+        if (effects && effects.cards && effects.cardType) {
+            console.log(`🎲 DICE EFFECTS: Emitting processDiceOutcome for GameManager`);
+            this.emit('processDiceOutcome', {
+                playerId: currentPlayer.id,
+                outcome: effects.cards,
+                cardType: effects.cardType,
+                spaceName: currentPlayer.position,
+                visitType: currentPlayer.visitType || 'First'
+            });
+        }
+
+        // Process money effects
+        if (effects && effects.money) {
+            console.log(`🎲 DICE EFFECTS: Processing money effect: ${effects.money}`);
+            let moneyAmount = 0;
+            if (effects.money.includes && effects.money.includes('%')) {
+                // Percentage-based (like fees)
+                const percentage = parseFloat(effects.money.replace('%', ''));
+                moneyAmount = Math.floor((currentPlayer.money || 0) * percentage / 100);
+            } else {
+                moneyAmount = parseInt(effects.money);
+            }
+            
+            if (!isNaN(moneyAmount) && moneyAmount !== 0) {
+                this.emit('moneyChanged', {
+                    playerId: currentPlayer.id,
+                    amount: moneyAmount,
+                    source: 'dice_roll'
+                });
+            }
+        }
+
+        // Process time effects
+        if (effects && effects.time) {
+            console.log(`🎲 DICE EFFECTS: Processing time effect: ${effects.time} days`);
+            const timeAmount = parseInt(effects.time);
+            if (!isNaN(timeAmount) && timeAmount !== 0) {
+                this.emit('timeChanged', {
+                    playerId: currentPlayer.id,
+                    amount: timeAmount,
+                    source: 'dice_roll'
+                });
+            }
+        }
+
+        // Process movement effects (if any)
+        if (effects && effects.destination) {
+            console.log(`🎲 DICE EFFECTS: Processing movement to: ${effects.destination}`);
+            // This would trigger movement logic if dice results include movement
+            // For now, just log it as movement is typically handled separately
+        }
+
+        // Emit completion event now that all effects are applied
+        console.log('🎲 DICE EFFECTS: All effects applied, emitting diceRollComplete');
+        this.emit('diceRollComplete', {
+            playerId: currentPlayer.id,
+            spaceName: currentPlayer.position,
+            visitType: currentPlayer.visitType || 'First',
+            rollValue: diceValue
+        });
     }
 
     /**
@@ -45,7 +175,8 @@ class GameStateManager {
                 canEndTurn: false,
                 lastActionTimestamp: null,
                 fundingCardDrawnForSpace: false,
-                spaceActionsCompleted: false
+                spaceActionsCompleted: false,
+                lastDiceRoll: null
             },
             gameSettings: {
                 maxPlayers: 4,
@@ -56,7 +187,8 @@ class GameStateManager {
                 activeModal: null,
                 showingSpace: null,
                 diceRolling: false,
-                loading: false
+                loading: false,
+                isDiceResultModalActive: false
             },
             // CARD ACKNOWLEDGMENT STATE
             cardAcknowledgment: {
@@ -179,6 +311,18 @@ class GameStateManager {
             previous: previousState,
             current: this.getState(),
             updates
+        });
+    }
+
+    /**
+     * Set UI state - convenience method for updating UI-related state
+     */
+    setUIState(key, value) {
+        this.setState({
+            ui: {
+                ...this.state.ui,
+                [key]: value
+            }
         });
     }
 
@@ -1885,10 +2029,59 @@ class GameStateManager {
                 const result_gt = playerScope > 4000000;
                 console.log(`🔍 CONDITION: ${condition} result: ${result_gt}`);
                 return result_gt;
+                
+            // Dice roll conditions: Check against actual dice roll value
+            case 'roll_1':
+                const lastDiceRoll_1 = this.state.currentTurn?.lastDiceRoll;
+                const result_roll1 = lastDiceRoll_1 === 1;
+                console.log(`🔍 CONDITION: ${condition} result: ${result_roll1} (lastDiceRoll: ${lastDiceRoll_1})`);
+                return result_roll1;
+            case 'roll_2':
+                const lastDiceRoll_2 = this.state.currentTurn?.lastDiceRoll;
+                const result_roll2 = lastDiceRoll_2 === 2;
+                console.log(`🔍 CONDITION: ${condition} result: ${result_roll2} (lastDiceRoll: ${lastDiceRoll_2})`);
+                return result_roll2;
+                
+            // Player-choice conditions: These are fulfilled by the player clicking the button
+            case 'replace':
+            case 'to_right_player':
+            case 'return':
+            case 'loan_up_to_1.4M':
+            case 'loan_1.5M_to_2.75M':
+            case 'loan_above_2.75M':
+            case 'percent_of_borrowed':
+            case 'per_200k':
+                console.log(`🔍 CONDITION: Player-choice condition ${condition} - returning true`);
+                return true;
+                
             default:
                 console.warn(`Unknown condition: ${condition}`);
                 return false;
         }
+    }
+
+    /**
+     * Determine if an effect inherently requires a dice roll and cannot be processed automatically
+     * This makes the system resilient to missing 'manual' flags on dice-dependent effects
+     */
+    effectRequiresDiceRoll(effect) {
+        // Check if effect explicitly uses dice
+        if (effect.use_dice === 'true' || effect.use_dice === true) {
+            return true;
+        }
+
+        // Check if effect value depends on dice roll
+        if (effect.effect_value === 'dice') {
+            return true;
+        }
+
+        // Check if effect condition depends on specific dice roll results
+        if (effect.condition && (effect.condition.startsWith('roll_') || 
+            ['roll_1', 'roll_2', 'roll_3', 'roll_4', 'roll_5', 'roll_6'].includes(effect.condition))) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -1943,6 +2136,8 @@ class GameStateManager {
             });
             
             this.log(`Found ${effects.length} space effects for ${spaceName}/${visitType}`);
+            
+            
             return effects || [];
         } catch (error) {
             console.error('Error querying space effects:', error);
@@ -2012,6 +2207,7 @@ class GameStateManager {
         
         this.log(`Processing ${effects.length} space effects for player ${playerId} at ${spaceName}`);
         
+        
         // Identify mutually exclusive card effect groups (B/I cards based on scope)
         const mutuallyExclusiveEffects = effects.filter(effect => {
             return (effect.effect_type === 'b_cards' || effect.effect_type === 'i_cards') && 
@@ -2034,8 +2230,19 @@ class GameStateManager {
             return !(mutuallyExclusiveEffects.includes(effect));
         });
         
-        remainingEffects.forEach((effect, index) => {
-            this.log(`Processing regular effect ${index + 1}:`, effect);
+        for (const effect of remainingEffects) {
+            this.log(`Processing regular effect:`, effect);
+            
+            
+            // Skip effects that are manually triggered OR inherently require dice rolls
+            if (effect.trigger_type === 'manual' || this.effectRequiresDiceRoll(effect)) {
+                if (effect.trigger_type === 'manual') {
+                    this.log(`Skipping manual trigger effect: ${effect.effect_type}`);
+                } else {
+                    this.log(`Skipping dice-dependent effect: ${effect.effect_type} (requires dice roll)`);
+                }
+                continue;
+            }
             
             // Evaluate condition for regular effects
             const conditionMet = this.evaluateEffectCondition(playerId, effect.condition);
@@ -2047,7 +2254,7 @@ class GameStateManager {
             } else {
                 this.log(`Skipping effect due to unmet condition: ${effect.condition}`);
             }
-        });
+        }
         
         return effectMessages;
     }
@@ -2285,7 +2492,8 @@ class GameStateManager {
                     canEndTurn: true,
                     lastActionTimestamp: Date.now(),
                     fundingCardDrawnForSpace: false,
-                    spaceActionsCompleted: false
+                    spaceActionsCompleted: false,
+                    lastDiceRoll: null
                 }
             });
             return;
@@ -2344,7 +2552,8 @@ class GameStateManager {
                 canEndTurn: requiredCount === 0,
                 lastActionTimestamp: Date.now(),
                 fundingCardDrawnForSpace: false,
-                spaceActionsCompleted: false
+                spaceActionsCompleted: false,
+                lastDiceRoll: null
             }
         });
 
@@ -2400,19 +2609,27 @@ class GameStateManager {
         const requiredCount = requiredActions.length;
         const canEndTurn = completedCount >= requiredCount;
 
+        // Store dice roll value if this is a dice action
+        let updatedCurrentTurn = {
+            ...this.state.currentTurn,
+            requiredActions: requiredActions,
+            completedActions: completedActions,
+            actionCounts: {
+                required: requiredCount,
+                completed: completedCount
+            },
+            canEndTurn: canEndTurn,
+            lastActionTimestamp: Date.now()
+        };
+
+        // If this is a dice action, store the dice value
+        if (actionType === 'dice' && actionDetails?.diceValue) {
+            updatedCurrentTurn.lastDiceRoll = actionDetails.diceValue;
+        }
+
         // Update state
         this.setState({
-            currentTurn: {
-                ...this.state.currentTurn,
-                requiredActions: requiredActions,
-                completedActions: completedActions,
-                actionCounts: {
-                    required: requiredCount,
-                    completed: completedCount
-                },
-                canEndTurn: canEndTurn,
-                lastActionTimestamp: Date.now()
-            }
+            currentTurn: updatedCurrentTurn
         });
 
         // Emit action completion event

@@ -331,11 +331,25 @@ const ComponentUtils = {
         }
         
         // Check for effect-based dice (SPACE_EFFECTS.csv with use_dice=true)
-        const diceEffects = window.CSVDatabase.spaceEffects.query({
+        // Get all effects for this space first
+        const allEffects = window.CSVDatabase.spaceEffects.query({
             space_name: spaceName,
-            visit_type: visitType,
-            use_dice: 'true'
+            visit_type: visitType
         });
+        
+        // Check if any effect has use_dice=true (handle both string and boolean values)
+        const diceEffects = allEffects.filter(effect => {
+            const useDice = effect.use_dice;
+            return useDice === 'true' || useDice === true || useDice === 'True';
+        });
+        
+        // Debug logging for troubleshooting
+        if (spaceName === 'PM-DECISION-CHECK') {
+            console.log(`🎲 DICE DEBUG: Checking requiresDiceRoll for ${spaceName}/${visitType}`);
+            console.log(`🎲 DICE DEBUG: All effects:`, allEffects);
+            console.log(`🎲 DICE DEBUG: Dice effects found:`, diceEffects);
+            console.log(`🎲 DICE DEBUG: Result:`, diceEffects && diceEffects.length > 0);
+        }
         
         return diceEffects && diceEffects.length > 0;
     },
@@ -386,10 +400,17 @@ const ComponentUtils = {
             return true;
         }
         
-        // Player-choice conditions: These are fulfilled by the player clicking the button
-        // Examples: roll_1, roll_2, replace, to_right_player, return, etc.
+        // Dice roll conditions: Check against actual dice roll value
+        if (condition === 'roll_1' || condition === 'roll_2') {
+            const requiredRoll = condition === 'roll_1' ? 1 : 2;
+            const lastDiceRoll = gameState?.currentTurn?.lastDiceRoll;
+            return lastDiceRoll === requiredRoll;
+        }
+        
+        // Other player-choice conditions: These are fulfilled by the player clicking the button
+        // Examples: replace, to_right_player, return, etc.
         const playerChoiceConditions = [
-            'roll_1', 'roll_2', 'replace', 'to_right_player', 'return',
+            'replace', 'to_right_player', 'return',
             'loan_up_to_1.4M', 'loan_1.5M_to_2.75M', 'loan_above_2.75M',
             'percent_of_borrowed', 'per_200k'
         ];
@@ -504,6 +525,67 @@ const ComponentUtils = {
         }
         
         return 0;
+    },
+
+    // Get dice-based card actions, filtered by actual dice roll conditions
+    getDiceCardActions: (spaceName, visitType = 'First', gameState = null) => {
+        if (!window.CSVDatabase?.loaded) return [];
+        
+        const effects = window.CSVDatabase.spaceEffects.query({
+            space_name: spaceName,
+            visit_type: visitType
+        });
+        
+        const actions = [];
+        const uniqueActions = new Map(); // Track unique type+action combinations
+        
+        effects.forEach(effect => {
+            if (effect.effect_type && effect.effect_type.includes('_cards')) {
+                
+                const cardType = effect.effect_type.replace('_cards', '').toUpperCase();
+                
+                // Check if this effect has a dice roll condition
+                const condition = effect.condition;
+                if (condition === 'roll_1' || condition === 'roll_2') {
+                    // For dice roll conditions, only show if:
+                    // 1. Dice has been rolled (lastDiceRoll is not null)
+                    // 2. The condition is met (using same logic as GameStateManager)
+                    const lastDiceRoll = gameState?.currentTurn?.lastDiceRoll;
+                    if (lastDiceRoll === null || lastDiceRoll === undefined) {
+                        // Dice hasn't been rolled yet, don't show this action
+                        return;
+                    }
+                    
+                    const requiredRoll = condition === 'roll_1' ? 1 : 2;
+                    if (lastDiceRoll !== requiredRoll) {
+                        // Dice roll doesn't match required value, don't show this action
+                        return;
+                    }
+                }
+                
+                let action;
+                if (effect.effect_value === 'dice' && effect.use_dice === 'true') {
+                    // Look up dice effects to show range
+                    action = ComponentUtils.getDiceActionText(spaceName, visitType, cardType);
+                } else {
+                    action = `Draw ${effect.effect_value || 1}`;
+                }
+                
+                // Deduplicate by type+action combination
+                const key = `${cardType}-${action}`;
+                if (!uniqueActions.has(key)) {
+                    uniqueActions.set(key, true);
+                    actions.push({ 
+                        type: cardType, 
+                        action: action,
+                        trigger_type: effect.trigger_type || '',
+                        condition: condition
+                    });
+                }
+            }
+        });
+        
+        return actions;
     }
 };
 

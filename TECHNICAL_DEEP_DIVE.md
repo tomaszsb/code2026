@@ -1,8 +1,8 @@
 # TECHNICAL ARCHITECTURE REFERENCE
 
-**Status**: Current implementation details and system architecture for Project Hub NYC PM Game.
+**Status**: Current system architecture and design patterns for Project Hub NYC PM Game.
 
-**Purpose**: Deep-dive technical reference for core game systems and architectural patterns.
+**Purpose**: Deep-dive architectural reference for core game systems. For current implementation details and recent work, see `CLAUDE.md`.
 
 ## 1. Card System Architecture
 
@@ -146,9 +146,9 @@ if (cardAction.trigger_type === 'manual') {
 
 **Result:** L cards now properly check dice roll results before showing manual buttons.
 
-## 3. Phase 21 Systems - Conditional Card Drawing & Manual Funding ✅ (2025-08-10)
+## 3. Conditional Card Drawing & Manual Funding Architecture
 
-The Phase 21 development cycle introduced sophisticated conditional logic capabilities and manual player-controlled funding card acquisition, addressing critical business logic violations and enhancing player agency.
+**Core Pattern**: Scope-based conditional card distribution with player-controlled timing at OWNER-FUND-INITIATION space.
 
 ### 2.1. Conditional Card Drawing System
 
@@ -270,88 +270,26 @@ The card actions filtering system is a sophisticated data-driven architecture th
 2. **Processing Layer**: `ComponentUtils.getCardTypes()` with condition evaluation  
 3. **Filtering Layer**: `CardActionsSection.js` with trigger_type-based filtering
 
-### 3.2. Data Layer: SPACE_EFFECTS.csv Enhancement
+### 3.2. Data-Driven Button Control
 
-```csv
-space_name,visit_type,effect_type,effect_value,condition,use_dice,trigger_type
-PM-DECISION-CHECK,First,l_cards,1,roll_1,true,manual
-PM-DECISION-CHECK,First,e_cards,1,replace,,
-LEND-SCOPE-CHECK,First,l_cards,dice,always,true,manual
-INVESTOR-FUND-REVIEW,First,l_cards,dice,always,true,manual
-```
+**SPACE_EFFECTS.csv Fields:**
+- **`trigger_type`**: Controls button visibility (`manual` = show button, `auto` = automatic, blank = condition-based)
+- **`condition`**: Defines trigger requirements (`roll_1`, `roll_2`, `replace`, `always`, etc.)
+- **`use_dice`**: Indicates dice-based mechanics integration
 
-**Key Fields:**
-- **`trigger_type`**: Controls button visibility (`manual`, `auto`, or blank)
-- **`condition`**: Defines when the effect can be triggered (`roll_1`, `roll_2`, `replace`, `always`, etc.)
-- **`use_dice`**: Indicates if the effect involves dice mechanics
+### 3.3. Condition Evaluation System
 
-### 3.3. Processing Layer: ComponentUtils.getCardTypes()
+**Two-Tier Condition Logic:**
+- **Game State Conditions**: Evaluated against current player state (`scope_le_4M`, `scope_gt_4M`)
+- **Player Choice Conditions**: Always display buttons for player decision (`roll_1`, `roll_2`, `replace`)
 
-This function processes space effects and returns card action objects with trigger_type data:
+### 3.4. Architecture Benefits
 
-```javascript
-// Enhanced return structure
-types.push({ 
-    type: cardType,           // 'L', 'E', 'B', etc.
-    action: action,           // 'Draw 1', 'Draw dice', etc.  
-    trigger_type: effect.trigger_type || ''  // 'manual', 'auto', ''
-});
-```
-
-**Condition Evaluation Enhancement:**
-The `evaluateEffectCondition()` function was enhanced to distinguish between:
-- **Game State Conditions**: `scope_le_4M`, `scope_gt_4M` (evaluated against current game state)
-- **Player Choice Conditions**: `roll_1`, `roll_2`, `replace` (always return true for button display)
-
-```javascript
-const playerChoiceConditions = [
-    'roll_1', 'roll_2', 'replace', 'to_right_player', 'return',
-    'loan_up_to_1.4M', 'loan_1.5M_to_2.75M', 'loan_above_2.75M'
-];
-
-if (playerChoiceConditions.includes(condition)) {
-    return true; // Always show buttons for player-choice conditions
-}
-```
-
-### 3.4. Filtering Layer: CardActionsSection.js Logic
-
-Simplified data-driven filtering logic:
-
-```javascript
-// BEFORE - Hardcoded approach:
-const allowDiceActionsSpaces = ['INVESTOR-FUND-REVIEW', 'LEND-SCOPE-CHECK'];
-const isManualDiceSpace = allowDiceActionsSpaces.includes(currentPlayer.position);
-if (!isManualDiceSpace && isDiceBasedAction(cardAction)) {
-    return false; // Hide dice actions
-}
-
-// AFTER - Data-driven approach:
-if (cardAction.trigger_type === 'manual') {
-    return true; // Always show manual trigger actions
-}
-if (isDiceBasedAction(cardAction) || cardAction.action.includes('dice')) {
-    return false; // Hide automatic dice actions
-}
-```
-
-### 3.5. Benefits Achieved
-
-**✅ Maintainability**: New spaces only require CSV data updates, no code changes
-**✅ Extensibility**: Easy to add new trigger types (`conditional`, `timed`, etc.)
-**✅ Data Integrity**: Single source of truth in CSV eliminates inconsistencies
-**✅ Robustness**: No hardcoded arrays to maintain or forget to update
-**✅ Architecture Compliance**: Strengthens CSV-as-database philosophy
-
-### 3.6. Debugging Architecture
-
-A comprehensive logging system was implemented to trace the card action processing pipeline:
-
-1. **ComponentUtils Logging**: Effect processing and condition evaluation
-2. **CardActionsSection Logging**: Filtering decisions and trigger_type checks
-3. **Pipeline Tracing**: Complete visibility from CSV data to final UI rendering
-
-This debugging system enabled rapid identification of the exact failure points and successful resolution of the missing button issue.
+**Data-Driven Filtering**: Replaced hardcoded space arrays with CSV `trigger_type` column control
+**Extensible Design**: Easy to add new trigger types without code changes  
+**Maintainable**: New spaces require only CSV updates
+**Robust**: Single source of truth eliminates inconsistencies
+**Debuggable**: Comprehensive logging system traces filtering pipeline from CSV to UI
 
 ## 4. Turn Management Architecture
 

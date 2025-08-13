@@ -155,15 +155,27 @@ function ActionPanel({ isInUnifiedContainer = false }) {
 
     // Reset dice UI state when turn advances to new player
     useEventListener('turnAdvanced', ({ previousPlayer, currentPlayer: newCurrentPlayer }) => {
+        // Check if new player needs dice roll before resetting
+        const newPlayerNeedsDice = newCurrentPlayer && currentPlayer && 
+                                   newCurrentPlayer.id === currentPlayer.id &&
+                                   window.CSVDatabase && window.CSVDatabase.loaded &&
+                                   ComponentUtils.requiresDiceRoll(currentPlayer.position, currentPlayer.visitType || 'First');
+        
+        // DEBUG: Log turnAdvanced dice state decision
+        if (currentPlayer && currentPlayer.position === 'PM-DECISION-CHECK') {
+            console.log(`🎮 TURN ADVANCED DEBUG: newPlayerNeedsDice=${newPlayerNeedsDice}`);
+            console.log(`🎮 TURN ADVANCED DEBUG: currentPlayer.position=${currentPlayer.position}`);
+        }
+        
         // Reset dice-related state for all players when turn changes
         setActionState(prev => ({
             ...prev,
             hasRolled: false,
             rolling: false,
-            showDiceRoll: false,
+            showDiceRoll: newPlayerNeedsDice, // Preserve dice state if needed
             diceRollValue: null,
             diceOutcome: null,
-            pendingAction: null,
+            pendingAction: newPlayerNeedsDice ? currentPlayer?.position : null,
             actionsCompleted: [],
             hasMoved: false,
             canEndTurn: false,
@@ -197,6 +209,13 @@ function ActionPanel({ isInUnifiedContainer = false }) {
                 const requiresDice = ComponentUtils.requiresDiceRoll(currentPlayer.position, currentPlayer.visitType || 'First');
                 const cardTypes = ComponentUtils.getCardTypes(currentPlayer.position, currentPlayer.visitType || 'First', gameState, window.GameManagerEffectsEngine);
                 
+                // DEBUG: Log ActionPanel dice state updates
+                if (currentPlayer.position === 'PM-DECISION-CHECK') {
+                    console.log(`🎮 ACTION PANEL DEBUG: ${currentPlayer.position}`);
+                    console.log(`🎮 ACTION PANEL DEBUG: requiresDice=${requiresDice}`);
+                    console.log(`🎮 ACTION PANEL DEBUG: Setting showDiceRoll=${requiresDice}`);
+                    console.log(`🎮 ACTION PANEL DEBUG: cardTypes found:`, cardTypes.length);
+                }
                 
                 setActionState(prev => ({
                     ...prev,
