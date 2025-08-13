@@ -31,14 +31,22 @@ A player's success is measured by a **Normalized Performance Score** that balanc
 *   **Hybrid State Management:** The game uses a pragmatic hybrid model. A global, singleton `GameStateManager` serves as the central source of truth for game logic, while React is used for rendering the UI. This was chosen to handle the complex, event-driven nature of a board game.
 *   **Known Risk:** The reliance on a global `GameStateManager` can create initialization race conditions. New features must be designed carefully to avoid exacerbating this risk.
 
-## 6. Current Feature Development: The Performance Dashboard
+## 6. Current Feature Development: UI Polish & Enhancement
 
+**Recent Completions (2025-08-13):**
+*   **✅ Unified Card System:** Implemented consistent card display across all UI contexts using Card.js and CardGrid.js components
+*   **✅ Comprehensive Effect Rendering:** All 20+ CSV effect fields now properly displayed with intelligent parsing
+*   **✅ Visual Phase Indicators:** Color-coded phase restrictions and enhanced card styling  
+*   **✅ Critical Bug Fixes:** Resolved React fontSize warnings, height restrictions, and modal consistency issues
+*   **✅ Enhanced User Experience:** Cards now display full content without truncation, maintaining professional appearance
+
+**Next Priority: The Performance Dashboard**
 *   **Objective:** To implement a real-time dashboard that displays the **Normalized Performance Score**, providing players with immediate feedback and fostering a competitive environment.
 *   **Proposed Formula:** `score = moneyRemaining - (timeSpent * 100)` (derived from `WinConditionManager.js`).
 *   **Implementation Strategy:**
     *   **Logic:** Create a new `js/utils/PerformanceUtils.js` file to house the calculation logic, keeping `GameStateManager` clean.
-    *   **UI:** Create a new `PerformanceDashboard.js` component.
-    *   **State:** The component will receive `gameState` and `gameStateManager` as props from `FixedApp.js`. It will subscribe to specific events (`playerMoneyChanged`, `playerTimeChanged`) for efficient, targeted updates, avoiding the risks of a general `stateChanged` listener.
+    *   **UI:** Create a new `PerformanceDashboard.js` component using unified design patterns.
+    *   **State:** The component will receive `gameState` and `gameStateManager` as props from `FixedApp.js`. It will subscribe to specific events (`playerMoneyChanged`, `playerTimeChanged`) for efficient, targeted updates.
 
 ## 7. Future Vision: The "Jackbox" Model
 

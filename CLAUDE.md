@@ -48,6 +48,7 @@ python3 -m http.server 8000
 - **Card Effects**: Unified processing through EffectsEngine with proper delegation
 - **Turn Logic**: Game round tracking with skip turn support
 - **UI Components**: Event-driven updates with proper state synchronization
+- **Unified Card System**: Consistent card rendering across all UI contexts (Card.js, CardGrid.js)
 **No build required** - React via CDN with browser-based Babel.
 
 ## Core Architecture
@@ -82,7 +83,10 @@ js/components/ResultsPanel.js       # Game results and history tracking (382 lin
 # Interactive Game Components
 js/components/GameBoard.js          # Interactive board with click-to-explore
 js/components/SpaceExplorer.js      # Space details and exploration modal
+js/components/Card.js               # Unified card component with phase styling and effects (376 lines)
 js/components/CardModal.js          # Enhanced card display with flip animation (248 lines)
+js/components/CardAcknowledgmentModal.js # Card drawn modal using unified Card component
+js/components/CardDisplay.js        # Card grid display with detail panels using unified system
 js/components/RulesModal.js         # Rules display with CSV content
 
 # Specialized UI Sections
@@ -138,6 +142,39 @@ const sortedCards = window.CardUtils.sortCardsByType(cards);
 // ❌ No hardcoded card mappings
 const cardNames = { 'B': 'Business' };  // Forbidden - use CardUtils
 const cardIcons = { 'W': '🔧' };       // Forbidden - use CardUtils
+```
+
+### Unified Card System Standards
+```javascript
+// ✅ Use unified Card component for all card displays
+React.createElement(window.Card, {
+    card: cardObject,
+    size: 'large',        // 'small', 'medium', 'large'
+    onClick: handleClick,
+    showActions: true,
+    actionButtons: [...],
+    style: customStyles
+});
+
+// ✅ Use CardGrid for multiple cards
+React.createElement(window.CardGrid, {
+    cards: cardsArray,
+    onCardClick: handleCardSelect,
+    cardSize: 'medium',
+    showActions: true,
+    getActionButtons: (card) => [...],
+    emptyMessage: 'No cards available'
+});
+
+// ✅ All card effects use CardUtils.getCardEffectDescription()
+const effects = window.CardUtils.getCardEffectDescription(card);
+// Returns: "Time: +2 days • Money: $1,000 • Draw 1 card • Phase: DESIGN"
+
+// ❌ No custom card rendering logic
+React.createElement('div', { /* custom card layout */ }); // Forbidden
+
+// ❌ No hardcoded effect parsing
+const effects = `${card.time_effect} ${card.money_effect}`; // Forbidden
 ```
 
 ### GameStateManager Architecture
@@ -228,6 +265,9 @@ gameState.players?.find()  // Defensive
 - ❌ **Race conditions** - FIXED: GameManager receives valid gameStateManager as prop
 - ❌ **React Hooks violations** - FIXED: No conditional hook calls
 - ❌ **Unconditional debug functions** - FIXED: Debug functions check URL parameters directly
+- ❌ **Custom card rendering** - ALWAYS use unified Card component and CardGrid
+- ❌ **Duplicate effect parsing** - use CardUtils.getCardEffectDescription() only
+- ❌ **fontSize string arithmetic** - always parseInt() before calculations
 
 ## Loading Order (Critical)
 ```html
@@ -238,9 +278,10 @@ gameState.players?.find()  // Defensive
 5. New engines (MovementEngine.js, EffectsEngine.js, ContentEngine.js)
 6. Component utilities
 7. Manager components
-8. UI components (GameBoard, SpaceExplorer, RulesModal)
-9. Panel components (PlayerStatusPanel, ActionPanel)
-10. Main App
+8. Unified card system (Card.js, CardGrid.js)
+9. UI components (GameBoard, SpaceExplorer, RulesModal)
+10. Panel components (PlayerStatusPanel, ActionPanel)
+11. Main App
 ```
 
 ## Architecture Patterns
@@ -529,6 +570,66 @@ gameState.players?.find()  // Defensive
 - ✅ **Tested**: Logic verification confirmed identical behavior to previous hardcoded system
 
 **Technical Architecture**: Maintained event-driven patterns, immutable state management, and CSV-as-database philosophy while eliminating technical debt.
+
+### 2025-08-13: Unified Card Component System & Bug Fixes
+
+**Major Achievement**: Completed unified card system implementation with comprehensive effect rendering and resolved critical display bugs throughout the UI.
+
+**Session Accomplishments**:
+
+1. **Card.js fontSize Bug Resolution** ✅ FIXED
+   - **Problem**: React warning "NaN is an invalid value for the fontSize css style property"
+   - **Root Cause**: Arithmetic operations on fontSize strings like '12px' - 1 = NaN
+   - **Solution**: Added parseInt() parsing before calculations: `parseInt(sizeConfig.fontSize) - 1 + 'px'`
+   - **Locations Fixed**: Effect description, flavor text, phase restriction indicator, action buttons
+   - **Result**: Eliminated React warnings and restored proper font sizing
+
+2. **CardAcknowledgmentModal Unified Integration** ✅ COMPLETED
+   - **Problem**: "Card Drawn" modal used custom rendering, different appearance from other cards
+   - **Impact**: Inconsistent UI experience, duplicate rendering logic (190+ lines)
+   - **Solution**: Replaced entire custom card display with unified Card component
+   - **Implementation**:
+     ```javascript
+     // BEFORE - 190+ lines of custom rendering
+     React.createElement('div', { /* complex custom card layout */ });
+     
+     // AFTER - Clean unified approach
+     React.createElement(window.Card, {
+         card: card,
+         size: 'large',
+         onClick: handleCardClick
+     });
+     ```
+   - **Benefits**: Visual consistency, comprehensive effects display, maintainable codebase
+
+3. **Card Height Restrictions Removal** ✅ FIXED
+   - **Problem**: Large cards in modals not showing full content due to height constraints
+   - **Root Cause**: `minHeight` and `WebkitLineClamp` properties truncating text content
+   - **Solution**: Removed restrictions to allow dynamic content expansion
+   - **Changes Made**:
+     - Removed `minHeight: sizeConfig.minHeight` from cardStyle
+     - Removed `WebkitLineClamp` from card-name, card-description, card-effects, card-flavor
+     - Changed `overflow: 'hidden'` to `overflow: 'visible'`
+   - **Result**: Complete card information display without truncation
+
+**Technical Architecture Maintained**:
+- ✅ **Unified Design System**: All cards use consistent Card component across entire UI
+- ✅ **Comprehensive Effects**: CardUtils displays ALL CSV effect fields (20+ types)
+- ✅ **Phase-Based Styling**: Automatic color coding for phase restrictions
+- ✅ **React Best Practices**: Clean component composition, proper prop handling
+- ✅ **CSV-as-Database**: All card behavior driven by CSV data, not hardcoded logic
+
+**UI Consistency Achieved**:
+- ✅ **Card Modal**: Comprehensive effects with phase indicators
+- ✅ **Cards in Hand**: Unified appearance with action buttons
+- ✅ **Card Acknowledgment**: Matches all other card displays
+- ✅ **Card Display**: Detail panels with unified grid system
+- ✅ **Responsive Design**: Cards grow to fit content appropriately
+
+**Bug Resolution Summary**:
+- **fontSize NaN warnings**: Fixed across all card text elements
+- **Inconsistent card appearance**: Unified CardAcknowledgmentModal with main system
+- **Truncated content**: Removed height/line restrictions for full information display
 
 ### 2025-08-06: Documentation Consolidation & Architecture Update
 

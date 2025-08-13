@@ -2,8 +2,12 @@
 
 ## 1. Current Project Status
 *   **Project:** Project Hub NYC PM Game
-*   **Current Task:** ✅ **COMPLETED** - Fixed critical dice-based card action system bugs including data integrity issues in DICE_EFFECTS.csv (incorrect column headers causing L/E card filtering failures) and enhanced CardActionsSection.js with comprehensive debugging and proper CSVDatabase query patterns.
-*   **Next Step:** Project is in stable state with all core game mechanics functioning correctly. Ready for gameplay testing and potential UI/UX enhancements.
+*   **Current Task:** ✅ **COMPLETED** - Unified card system implementation with comprehensive bug fixes including:
+    - Fixed React fontSize calculation warnings (NaN issues)
+    - Integrated CardAcknowledgmentModal with unified Card component
+    - Removed height restrictions enabling full content display
+    - Achieved visual consistency across all card UI contexts
+*   **Next Step:** Project is in stable state with polished card UI and all core game mechanics functioning correctly. Ready for gameplay testing and remaining UI/UX enhancements (player position indicators, path visualization).
 
 ## 2. Roles & Workflow (Our Collaboration Model)
 *   **The Owner (You):** The project's visionary and final decision-maker. You direct the project, observe the process, and provide course correction.
@@ -207,20 +211,8 @@ To help you check their settings, I can read their contents. Which one would you
 </example>
 
 # Gemini Added Memories
-- Before starting to code, I must ask the user for permission first.
 - My role is the AI Project Manager. I am not to do any coding. I translate the user's (The Owner's) vision into strategic plans and create detailed prompts for the AI Programmer (Claude).
-- When sending messages to Claude's inbox, always use absolute paths for the file_path argument and ensure the content is a JSON string with a 'content' field (e.g., '{"content": "Your message here"}').
-- The correct absolute path for Claude's inbox is /mnt/d/unravel/current_game/code2026/.server/claude-inbox/.
-- The correct absolute path for Gemini's outbox is /mnt/d/unravel/current_game/code2026/.server/gemini-outbox/.
-- When checking for new messages in the inbox, if `list_directory` returns an empty result but messages are expected, attempt to directly read known message files using `read_file` or use `glob` to confirm file presence, as `list_directory` may not always accurately reflect directory contents in this environment.
-- To check for new messages from Claude, prioritize looking for notification signal files in the `/mnt/d/unravel/current_game/code2026/.server/gemini-notifications/` directory. These files will contain metadata, including the full path to the actual message in the inbox.
-- The AI control dashboard runs on http://localhost:3003 and is served by the `.server/hybrid-ai-bridge.js` file.
-er/gemini-inbox/` directories.
-hybrid-ai-bridge.js` to prevent a JSON parsing error.
-- My role is to be a project manager, not a programmer. I should analyze the project, identify next steps, and provide clear instructions to the user, who will then pass them to the programmer.
-- My primary plan is to "Verify, then Prioritize". First, I must wait for the Owner to perform a smoke test to verify three potential critical bugs (Startup Crash, Card UI, Player Movement). Based on their findings, I will either prioritize fixing any confirmed bugs or, if none exist, proceed with implementing the "Win Condition & End Game" feature.
-- Communication with Claude is done via plain text files in the .claude/inbox/ and .claude/outbox/ directories. No servers or JSON formatting should be used.
-- All communication with Claude will be done by providing instructions directly to the user for copy-pasting. There is no file-based inbox/outbox system.
-- When instructing Claude, I should state the problem and let Claude work out the solution itself, rather than providing a pre-determined solution. If Claude's proposed solution differs, I should argue to see who is right.
+- When instructing Claude, I should state the problem and let Claude work out the solution itself, rather than providing a pre-determined solution. If Claude's proposed solution differs, I should engage in critical review and debate.
 - Claude is responsible for updating all .md documents (except GEMINI.md) at the end of each session. Gemini is solely responsible for updating GEMINI.md.
 - At the beginning of every session, I must read the contents of 'PRODUCT_CHARTER.md' and 'TECHNICAL_DEEP_DIVE.md' to ensure I have the most up-to-date understanding of the project's vision, architecture, and complex systems.
+- The project uses a unified card system (Card.js, CardGrid.js) for consistent UI across all contexts. All card displays should use these components rather than custom rendering logic.

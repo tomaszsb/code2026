@@ -55,14 +55,6 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
     
     const cardCount = useMemo(() => allCards.length, [allCards]);
     
-    // Get icon and color for card type (consistent with rules modal)
-    const getCardTypeColor = (cardType) => {
-        return {
-            bg: window.CardUtils.getCardBgColor(cardType),
-            text: window.CardUtils.getCardColor(cardType)
-        };
-    };
-    
     // Check if E card can be used based on current phase
     const canUseECard = (card) => {
         if (!card || card.card_type !== 'E') return false;
@@ -189,50 +181,63 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
             }, `${cardCount}/7`)
         ]),
         
-        // Simple card summary
+        // Unified card display using Card components
         React.createElement('div', {
-            key: 'cards-summary',
+            key: 'cards-display',
             style: {
-                padding: '12px 0',
-                fontSize: '14px',
-                color: '#6c757d'
+                padding: '12px 0'
             }
-        }, allCards.length > 0 ? [
+        }, allCards.length > 0 ? 
+            React.createElement(window.CardGrid, {
+                cards: allCards.slice(0, 6), // Show first 6 cards in summary
+                onCardClick: onCardSelect,
+                cardSize: 'small',
+                showActions: true,
+                getActionButtons: (card) => {
+                    const buttons = [];
+                    
+                    // Add "Use" button for E cards that can be used
+                    if (card.card_type === 'E' && canUseECard(card)) {
+                        buttons.push({
+                            text: 'Use',
+                            className: 'btn btn--success btn--sm',
+                            onClick: (e) => {
+                                e.stopPropagation();
+                                handleUseCard(card);
+                                onCardSelect(card); // Also open modal to see effect details
+                            }
+                        });
+                    }
+                    
+                    return buttons;
+                },
+                style: {
+                    maxHeight: '200px',
+                    overflowY: 'auto'
+                },
+                emptyMessage: 'No cards in hand'
+            }) :
             React.createElement('div', {
-                key: 'card-types-summary',
-                style: { marginBottom: '8px' }
-            }, Object.entries(
-                allCards.reduce((acc, card) => {
-                    // DEFENSIVE: Double-check card validity in reduce
-                    if (card && card.card_type) {
-                        acc[card.card_type] = (acc[card.card_type] || 0) + 1;
-                    }
-                    return acc;
-                }, {})
-            ).map(([type, count]) => `${type}: ${count}`).join(', ')),
-            
-            // Quick E card actions if any
-            allCards.filter(card => card.card_type === 'E' && canUseECard(card)).length > 0 ?
-                React.createElement('div', {
-                    key: 'quick-e-actions',
-                    style: { 
-                        display: 'flex', 
-                        gap: '8px', 
-                        flexWrap: 'wrap',
-                        marginTop: '8px'
-                    }
-                }, allCards.filter(card => card.card_type === 'E' && canUseECard(card)).map((card, index) =>
-                    React.createElement('button', {
-                        key: `quick-use-${index}`,
-                        className: 'btn btn--success btn--sm',
-                        onClick: () => handleUseCard(card),
-                        style: { 
-                            fontSize: '11px', 
-                            padding: '4px 8px'
-                        }
-                    }, `Use ${card.card_name?.substring(0, 10) || 'E Card'}`)
-                )) : null
-        ] : 'Click "View All" to see your cards'),
+                style: {
+                    textAlign: 'center',
+                    padding: '20px',
+                    color: '#6c757d',
+                    fontStyle: 'italic'
+                }
+            }, 'Click "View All" to see your cards')
+        ),
+
+        // Show "and X more..." if there are more than 6 cards
+        allCards.length > 6 && React.createElement('div', {
+            key: 'more-cards-indicator',
+            style: {
+                textAlign: 'center',
+                padding: '8px',
+                fontSize: '12px',
+                color: '#6c757d',
+                fontStyle: 'italic'
+            }
+        }, `... and ${allCards.length - 6} more card${allCards.length - 6 !== 1 ? 's' : ''}`),
 
         // Cards Modal
         showCardsModal && React.createElement('div', {
@@ -297,114 +302,50 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
                 }, '✕ Close')
             ]),
 
-            // Modal Content - Cards Grid
-            React.createElement('div', {
+            // Modal Content - Unified Cards Grid
+            React.createElement(window.CardGrid, {
                 key: 'modal-cards-grid',
-                style: {
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                    gap: '16px',
-                    marginBottom: '24px'
-                }
-            }, allCards.map((card, index) => {
-                const cardColors = getCardTypeColor(card.card_type);
-                return React.createElement('div', {
-                    key: `modal-card-${card.card_id}-${index}`,
-                    style: {
-                        backgroundColor: cardColors.bg,
-                        border: `3px solid ${cardColors.text}`,
-                        borderRadius: '12px',
-                        padding: '20px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-                        minHeight: '120px'
-                    },
-                    onClick: () => onCardSelect(card)
-                }, [
-                    React.createElement('div', {
-                        key: 'card-header',
-                        style: {
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            marginBottom: '12px'
-                        }
-                    }, [
-                        React.createElement('div', {
-                            key: 'card-type',
-                            style: {
-                                color: cardColors.text,
-                                fontWeight: 'bold',
-                                fontSize: '18px'
-                            }
-                        }, `${card.card_type} Card`),
-                        React.createElement('div', {
-                            key: 'card-badge',
-                            style: {
-                                backgroundColor: cardColors.text,
-                                color: cardColors.bg,
-                                borderRadius: '50%',
-                                width: '36px',
-                                height: '36px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '16px',
-                                fontWeight: 'bold'
-                            }
-                        }, card.card_type)
-                    ]),
-                    React.createElement('div', {
-                        key: 'card-name',
-                        style: {
-                            color: cardColors.text,
-                            fontSize: '16px',
-                            fontWeight: '600',
-                            marginBottom: '8px',
-                            lineHeight: '1.4'
-                        }
-                    }, card.card_name || 'Unknown Card'),
-                    card.description && React.createElement('div', {
-                        key: 'card-description',
-                        style: {
-                            color: cardColors.text,
-                            fontSize: '14px',
-                            lineHeight: '1.4',
-                            opacity: 0.8
-                        }
-                    }, card.description),
+                cards: allCards,
+                onCardClick: onCardSelect,
+                cardSize: 'large',
+                showActions: true,
+                getActionButtons: (card) => {
+                    const buttons = [];
                     
-                    // E Card actions in modal
-                    card.card_type === 'E' ? React.createElement('div', {
-                        key: 'card-actions',
-                        style: {
-                            marginTop: '12px',
-                            display: 'flex',
-                            gap: '8px'
-                        }
-                    }, [
-                        React.createElement('button', {
-                            key: 'use-in-modal',
+                    // Add "Use" button for E cards
+                    if (card.card_type === 'E') {
+                        buttons.push({
+                            text: 'Use',
                             className: `btn ${canUseECard(card) ? 'btn--success' : 'btn--disabled'} btn--sm`,
                             onClick: (e) => {
                                 e.stopPropagation();
                                 handleUseCard(card);
+                                onCardSelect(card); // Also trigger modal update to show effects
                             },
                             disabled: !canUseECard(card),
                             title: !canUseECard(card) ? `Can only be used in ${card.phase_restriction} phase` : 'Use this card'
-                        }, 'Use'),
-                        React.createElement('button', {
-                            key: 'details-in-modal',
-                            className: 'btn btn--outline btn--sm',
-                            onClick: (e) => {
-                                e.stopPropagation();
-                                onCardSelect(card);
-                            }
-                        }, 'Details')
-                    ]) : null
-                ]);
-            }))
+                        });
+                    }
+                    
+                    // Add "Details" button for all cards
+                    buttons.push({
+                        text: 'Details',
+                        className: 'btn btn--outline btn--sm',
+                        onClick: (e) => {
+                            e.stopPropagation();
+                            onCardSelect(card);
+                        }
+                    });
+                    
+                    return buttons;
+                },
+                style: {
+                    marginBottom: '24px',
+                    maxHeight: '60vh',
+                    overflowY: 'auto'
+                },
+                emptyMessage: 'No cards in hand'
+            })
         ]))
     ]);
 }

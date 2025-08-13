@@ -11,7 +11,6 @@ function CardAcknowledgmentModal({
     gameStateManager 
 }) {
     const { useEffect, useState } = React;
-    const [isFlipped, setIsFlipped] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
 
     // Handle escape key
@@ -32,7 +31,6 @@ function CardAcknowledgmentModal({
     useEffect(() => {
         if (isVisible && card) {
             setIsTransitioning(true);
-            setIsFlipped(false); // Reset flip state for new card
             
             // Brief transition effect with smooth fade
             const transitionTimeout = setTimeout(() => {
@@ -55,80 +53,29 @@ function CardAcknowledgmentModal({
         }
     }, [isVisible]);
 
-    // Handle card flip
+    // Handle card click (no flip needed with unified Card component)
     const handleCardClick = () => {
-        setIsFlipped(prev => !prev);
+        // Card component handles its own interactions
     };
 
     if (!isVisible || !card) {
         return null;
     }
 
-    // Get card type styling
+    // Get card type styling for modal border (keep minimal styling for modal frame)
     const getCardTypeStyle = (cardType) => {
         const styles = {
-            W: { bg: '#e8f5e8', border: '#28a745', color: '#155724' },
-            B: { bg: '#fff3cd', border: '#ffc107', color: '#856404' },
-            I: { bg: '#d4edda', border: '#17a2b8', color: '#0c5460' },
-            L: { bg: '#f8d7da', border: '#dc3545', color: '#721c24' },
-            E: { bg: '#e2e3e5', border: '#6c757d', color: '#383d41' }
+            W: { border: '#28a745' },
+            B: { border: '#ffc107' },
+            I: { border: '#17a2b8' },
+            L: { border: '#dc3545' },
+            E: { border: '#6c757d' }
         };
         return styles[cardType] || styles.E;
     };
 
-    const cardStyle = getCardTypeStyle(card.cardType);
+    const cardStyle = getCardTypeStyle(card.card_type || card.cardType);
 
-    // Format card effects for display with improved styling
-    const getCardEffects = () => {
-        const effects = [];
-        
-        if (card.loan_amount) {
-            const amount = parseInt(card.loan_amount).toLocaleString();
-            effects.push({ 
-                icon: '💰', 
-                text: 'Loan: ', 
-                amount: `$${amount}` 
-            });
-        }
-        if (card.investment_amount) {
-            const amount = parseInt(card.investment_amount).toLocaleString();
-            effects.push({ 
-                icon: '💎', 
-                text: 'Investment: ', 
-                amount: `$${amount}` 
-            });
-        }
-        if (card.money_effect) {
-            const amountVal = parseInt(card.money_effect);
-            const amount = Math.abs(amountVal).toLocaleString();
-            effects.push({ 
-                icon: '💵', 
-                text: `${amountVal > 0 ? 'Gain' : 'Spend'}: `, 
-                amount: `$${amount}` 
-            });
-        }
-        if (card.time_effect) {
-            const timeVal = parseInt(card.time_effect);
-            const time = Math.abs(timeVal);
-            effects.push({ 
-                icon: '⏰', 
-                text: `${timeVal > 0 ? 'Spend' : 'Save'}: `, 
-                amount: `${time} ${time === 1 ? 'day' : 'days'}` 
-            });
-        }
-        if (card.work_cost) {
-            const amount = parseInt(card.work_cost).toLocaleString();
-            effects.push({ 
-                icon: '🏗️', 
-                text: 'Work Cost: ', 
-                amount: `$${amount}` 
-            });
-        }
-
-        return effects;
-    };
-
-    const cardEffects = getCardEffects();
 
     return React.createElement('div', {
         style: {
@@ -204,197 +151,24 @@ function CardAcknowledgmentModal({
             )
         ]),
 
-        // Card Display with Flip Animation
+        // Unified Card Display
         React.createElement('div', {
             key: 'card-display',
             style: {
-                backgroundColor: cardStyle.bg,
-                border: `3px solid ${cardStyle.border}`,
-                borderRadius: '12px',
-                padding: '24px',
+                display: 'flex',
+                justifyContent: 'center',
                 marginBottom: '24px',
-                textAlign: 'center',
+                padding: '16px'
+            }
+        }, React.createElement(window.Card, {
+            card: card,
+            size: 'large',
+            onClick: handleCardClick,
+            style: {
                 cursor: 'pointer',
-                perspective: '1000px',
-                minHeight: '300px',
-                position: 'relative'
-            },
-            onClick: handleCardClick
-        }, [
-            // Card Front/Back Container
-            React.createElement('div', {
-                key: 'card-flip-container',
-                style: {
-                    width: '100%',
-                    height: '100%',
-                    transition: 'transform 0.6s',
-                    transformStyle: 'preserve-3d',
-                    transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
-                }
-            }, [
-                // Card Front
-                React.createElement('div', {
-                    key: 'card-front',
-                    style: {
-                        position: isFlipped ? 'absolute' : 'relative',
-                        width: '100%',
-                        height: '100%',
-                        backfaceVisibility: 'hidden',
-                        transform: 'rotateY(0deg)'
-                    }
-                }, [
-                    // Card Type and Badge
-                    React.createElement('div', {
-                        key: 'card-type',
-                        style: {
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginBottom: '16px'
-                        }
-                    }, [
-                        React.createElement('div', {
-                            key: 'type-badge',
-                            style: {
-                                backgroundColor: cardStyle.border,
-                                color: 'white',
-                                borderRadius: '50%',
-                                width: '48px',
-                                height: '48px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '20px',
-                                fontWeight: 'bold',
-                                marginRight: '12px'
-                            }
-                        }, card.cardType),
-                        React.createElement('div', {
-                            key: 'type-name',
-                            style: {
-                                fontSize: '18px',
-                                fontWeight: 'bold',
-                                color: cardStyle.color
-                            }
-                        }, `${card.cardType} Card`)
-                    ]),
-
-                    // Card Name
-                    React.createElement('h3', {
-                        key: 'card-name',
-                        style: {
-                            margin: '0 0 12px 0',
-                            color: cardStyle.color,
-                            fontSize: '20px',
-                            fontWeight: '600'
-                        }
-                    }, card.card_name || 'Unknown Card'),
-
-                    // Card Description
-                    card.description && React.createElement('p', {
-                        key: 'description',
-                        style: {
-                            margin: '0 0 16px 0',
-                            color: cardStyle.color,
-                            fontSize: '14px',
-                            lineHeight: '1.5',
-                            opacity: 0.9
-                        }
-                    }, card.description),
-
-                    // Card Effects with improved styling
-                    cardEffects.length > 0 && React.createElement('div', {
-                        key: 'effects',
-                        style: {
-                            backgroundColor: 'rgba(255,255,255,0.7)',
-                            borderRadius: '8px',
-                            padding: '12px',
-                            marginTop: '16px'
-                        }
-                    }, [
-                        React.createElement('h4', {
-                            key: 'effects-title',
-                            style: {
-                                margin: '0 0 8px 0',
-                                color: cardStyle.color,
-                                fontSize: '16px',
-                                fontWeight: 'bold'
-                            }
-                        }, 'Effects:'),
-                        React.createElement('div', {
-                            key: 'effects-list',
-                            style: {
-                                margin: 0
-                            }
-                        }, cardEffects.map((effect, index) =>
-                            React.createElement('div', {
-                                key: index,
-                                style: {
-                                    marginBottom: '6px',
-                                    fontSize: '14px',
-                                    color: cardStyle.color,
-                                    display: 'flex',
-                                    alignItems: 'center'
-                                }
-                            }, [
-                                React.createElement('span', { key: 'icon' }, effect.icon + ' '),
-                                React.createElement('span', { key: 'text' }, effect.text),
-                                React.createElement('span', { 
-                                    key: 'amount',
-                                    style: { 
-                                        fontWeight: 'bold',
-                                        fontSize: '14px'
-                                    }
-                                }, effect.amount)
-                            ])
-                        ))
-                    ])
-                ]),
-
-                // Card Back
-                React.createElement('div', {
-                    key: 'card-back',
-                    style: {
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        backfaceVisibility: 'hidden',
-                        transform: 'rotateY(180deg)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: 'rgba(255,255,255,0.9)',
-                        borderRadius: '8px'
-                    }
-                }, [
-                    React.createElement('img', {
-                        key: 'logo',
-                        src: 'graphics/My ChatGPT image.png',
-                        alt: 'Unravel Logo',
-                        style: {
-                            maxWidth: '150px',
-                            maxHeight: '150px',
-                            opacity: 0.8
-                        },
-                        onError: (e) => {
-                            e.target.style.display = 'none';
-                        }
-                    }),
-                    React.createElement('div', {
-                        key: 'logo-fallback',
-                        style: {
-                            fontSize: '48px',
-                            color: cardStyle.color,
-                            opacity: 0.6,
-                            marginTop: '20px'
-                        }
-                    }, '🎴')
-                ])
-            ])
-        ]),
+                transition: 'transform 0.3s ease'
+            }
+        })),
 
         // Action Buttons
         React.createElement('div', {
