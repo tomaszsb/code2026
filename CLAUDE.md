@@ -27,6 +27,27 @@ window.showGameState();                             # View game state
 # Git Operations
 git add . && git commit -m "Description" && git push origin main
 ```
+
+## Testing Procedures
+
+### Basic Functionality Test
+```bash
+# 1. Start game server
+python3 -m http.server 8000
+
+# 2. Navigate to http://localhost:8000/
+# 3. Complete player setup and start game
+# 4. Verify: Turn counter advances correctly per game round
+# 5. Verify: Cards apply effects without duplication
+# 6. Verify: UI updates immediately when game state changes
+```
+
+### Known Stable Components
+- **GameStateManager**: Single source of truth for all state management
+- **CSV Database**: Unified query system with loading state protection
+- **Card Effects**: Unified processing through EffectsEngine with proper delegation
+- **Turn Logic**: Game round tracking with skip turn support
+- **UI Components**: Event-driven updates with proper state synchronization
 **No build required** - React via CDN with browser-based Babel.
 
 ## Core Architecture
@@ -309,6 +330,53 @@ gameState.players?.find()  // Defensive
 - ✅ **Clear Feedback**: Scope-based button text and tooltips 
 - ✅ **Turn Flow**: Manual actions properly integrate with turn progression
 - ✅ **State Consistency**: Button visibility reflects completion status
+
+### 2025-08-13: Card Acknowledgment & Unified Drawing System
+
+**Major Achievement**: Successfully implemented unified card acknowledgment system that ensures all drawn cards are properly acknowledged before being added to player hands, eliminating immediate effect duplication.
+
+**Architecture Evolution**:
+- **Problem**: Card drawing system had two parallel paths - immediate effects and hand additions, causing inconsistent user experience
+- **Solution**: Unified all card drawing through acknowledgment modal system with proper effect timing control
+
+**Technical Implementation**:
+
+1. **Unified Card Drawing Flow** (`game/js/data/GameStateManager.js:1363-1395`):
+   ```javascript
+   addCardsToPlayer(playerId, cardType, cards, returnMessage = false) {
+       // ALL cards now go through unified acknowledgment process
+       return this.processDrawnCardsWithAcknowledgment(
+           playerId, cardType, cardsToAdd, returnMessage
+       );
+   }
+   ```
+
+2. **Card Acknowledgment System** (`game/js/data/GameStateManager.js:440-540`):
+   - **Queue Management**: Cards queued for sequential acknowledgment display
+   - **Effect Timing**: Immediate activation timing controlled by CSV `activation_timing` column
+   - **Player Experience**: All cards shown to player before effects applied
+
+3. **Dice Rolling Integration** (`game/js/components/DiceRollSection.js:38-162`):
+   - **Event Emission**: Dice rolls emit `playerActionTaken` for turn progression
+   - **Effect Processing**: Supports all card effect types (`cards`, `l_cards`, `e_cards`, etc.)
+   - **Modal Display**: Shows dice result modal with context for all rolls
+
+4. **Manual Funding System** (`game/js/data/GameStateManager.js:2266-2320`):
+   - **Player Agency**: Funding cards require deliberate button press at OWNER-FUND-INITIATION
+   - **Conditional Logic**: Scope-based B/I card selection (≤$4M vs >$4M)
+   - **State Tracking**: Prevents duplicate funding card draws per space visit
+
+**Current Card Drawing Behavior**:
+- **Automatic Draws**: Space entry, dice effects → Cards acknowledged then added to hand
+- **Manual Draws**: Player button actions → Cards acknowledged then added to hand  
+- **Immediate Effects**: Only cards with `activation_timing: "Immediate"` apply effects during acknowledgment
+- **Player Controlled**: E cards (`activation_timing: "Player Controlled"`) go to hand without immediate effects
+
+**Technical Architecture Maintained**:
+- ✅ **CSV-as-Database**: All card behavior controlled by CSV `activation_timing` column
+- ✅ **Event-Driven**: Dice and card actions emit `playerActionTaken` for turn system
+- ✅ **Unified API**: Single `addCardsToPlayer()` method handles all card drawing scenarios
+- ✅ **Immutable State**: All state changes create new objects for React change detection
 
 ### 2025-08-08: Data-Driven Card Actions System - Manual Dice Buttons Fix
 

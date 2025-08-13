@@ -1,6 +1,8 @@
-# TECHNICAL_DEEP_DIVE.md - Project Hub NYC PM Game
+# TECHNICAL ARCHITECTURE REFERENCE
 
-This document provides comprehensive technical analysis of the game's core systems: Card Lifecycle Management, Card Actions Filtering System, Conditional Card Drawing System, and Turn Sequence Orchestration. It serves as a definitive reference for understanding system mechanics, architectural patterns, and implementation details including identified technical debt and optimization opportunities.
+**Status**: Current implementation details and system architecture for Project Hub NYC PM Game.
+
+**Purpose**: Deep-dive technical reference for core game systems and architectural patterns.
 
 ## 1. Card System Architecture
 
@@ -44,29 +46,107 @@ The card system is a highly data-driven and intricate part of the game, governin
 5.  **`GameStateManager.js` (`removeCardFromHand`):** After the effects are successfully applied, `usePlayerCard` calls this method to remove the used card from the player's hand.
 6.  **UI Update:** The `stateChanged` event propagates, causing the UI to update, reflecting the removed card and any changes to player resources.
 
-### 1.4. Technical Debt Assessment
+### 1.4. Current Architecture Status
 
-*   **Concern 1: Duplicate 'E' Card Logic - ✅ RESOLVED:**
-    *   **Description:** Previously, the `handleUseCard` function in `CardsInHand.js` contained logic for processing 'E' card effects (money and time updates) that was duplicated in `EffectsEngine.js`. This violated the Single Source of Truth principle.
-    *   **Resolution:** Refactored `CardsInHand.js` to remove duplicated effect processing logic. All card effect processing now flows through unified `GameStateManager.usePlayerCard()` system, eliminating code duplication and establishing single source of truth for card effects.
+**All major technical debt resolved as of 2025-08-13:**
 
-*   **Concern 2: Hardcoded vs. Data-Driven Card Behavior - ✅ RESOLVED:**
-    *   **Description:** Previously, the `GameStateManager.addCardsToPlayer` function contained a hardcoded check (`if (cardType !== 'E')`) to determine if a card's effects are immediate or player-controlled. This violated the data-driven philosophy and made adding new player-controlled card types difficult.
-    *   **Resolution:** Implemented data-driven card activation system using the `activation_timing` column in `cards.csv`. Refactored `GameStateManager.addCardsToPlayer` to read `card.activation_timing` values ('Immediate' or 'Player Controlled') instead of hardcoding the 'E' card type check. This makes the behavior fully data-driven and extensible.
+*   ✅ **Unified Card Processing**: Single source of truth through GameStateManager.usePlayerCard()
+*   ✅ **Data-Driven Activation**: CSV `activation_timing` column controls card behavior
+*   ✅ **Syntax Validation**: All JavaScript files parse correctly
+*   ✅ **Conditional Logic**: Scope-based B/I card distribution working correctly
+*   ✅ **Manual Funding Control**: Player-initiated funding card acquisition implemented
 
-*   **Concern 3: Syntax Error Technical Debt - ✅ RESOLVED:**
-    *   **Description:** Accumulated syntax errors in core game files were preventing proper script execution. EffectsEngine.js contained duplicate conditional blocks, and CardsInHand.js had missing closing braces in validation logic.
-    *   **Resolution:** Systematically identified and resolved all syntax errors using Node.js validation. Fixed duplicate `if` statement block in EffectsEngine.js and added missing closing brace in CardsInHand.js defensive filtering logic. All JavaScript files now parse and execute correctly.
+## 2. Phase 22 Systems - LIFE Card Mechanics & CSV Data Consistency ✅ NEW (2025-08-13)
 
-*   **Concern 4: Conditional Card Drawing Logic - ✅ RESOLVED:**
-    *   **Description:** OWNER-FUND-INITIATION space was drawing both B and I cards simultaneously from mutually exclusive conditions (scope ≤$4M vs >$4M), violating business logic requiring only one card type based on project scope.
-    *   **Resolution:** Implemented comprehensive conditional logic system with `evaluateEffectCondition()` and `processMutuallyExclusiveCardEffects()` methods in GameStateManager. Fixed SPACE_EFFECTS.csv card_type column assignments for proper B/I card distribution. Project scope now correctly determines Bank cards (≤$4M) vs Investment cards (>$4M) exclusively.
+The Phase 22 development cycle resolved critical LIFE card button logic issues and established unified CSV data consistency across the entire card action system, ensuring reliable dice-based interactions and proper manual/automatic action distinctions.
 
-*   **Concern 5: Manual Funding Card Control - ✅ RESOLVED:**
-    *   **Description:** Funding cards were automatically drawn on space entry, removing player agency and strategic decision-making from the funding acquisition process.
-    *   **Resolution:** Implemented manual funding card draw system with `triggerFundingCardDraw()` method in GameStateManager and funding button in CardActionsSection.js. Added state tracking with `fundingCardDrawnForSpace` and `spaceActionsCompleted` properties. Enhanced UX with contextual button text ("Get Bank Card" vs "Get Investment Card") and integrated with turn completion system via playerActionTaken event emission.
+### 2.1. LIFE Card Button Logic Resolution
 
-## 2. Phase 21 Systems - Conditional Card Drawing & Manual Funding ✅ NEW (2025-08-10)
+**Problem Addressed:** PM-DECISION-CHECK LIFE card buttons were not following the specified behavior:
+- **Expected:** Roll = 1 → automatic L card draw, Roll ≠ 1 → no manual button appears
+- **Actual:** Manual L card buttons appeared regardless of dice roll results due to incorrect filtering logic
+
+**Root Cause Analysis:**
+```javascript
+// ISSUE: isDiceBasedAction() returned false for L cards
+🔍 isDiceBasedAction: Checking for card type "L" at space "PM-DECISION-CHECK"
+🔍 isDiceBasedAction: Result for card type "L" is: false
+🔍 FILTER DEBUG: Layer 2B - Pure manual action for L: SHOW
+
+// EXPECTED: Should use Layer 2A (manual + dice-based) filtering
+🔍 FILTER DEBUG: Layer 2A - Manual + dice-based action for L
+```
+
+**Technical Solution Architecture:**
+
+**1. CSV Data Consistency Fixes** (DICE_EFFECTS.csv):
+```csv
+# BEFORE: Mismatched effect_type values
+PM-DECISION-CHECK,First,cards,L,Draw 1,No change,No change...
+
+# AFTER: Consistent with SPACE_EFFECTS.csv  
+PM-DECISION-CHECK,First,l_cards,L,Draw 1,No change,No change...
+```
+
+**2. Unified Data Access Pattern** (CardActionsSection.js):
+```javascript
+// BEFORE: Direct data array access
+const diceEffects = window.CSVDatabase.diceEffects.data || [];
+const matchingEffect = diceEffects.find(row => /* manual filtering */);
+
+// AFTER: Unified query method with built-in filtering
+const diceEffects = window.CSVDatabase.diceEffects.query({
+    space_name: currentPlayer.position,
+    visit_type: currentPlayer.visitType || 'First',
+    card_type: cardAction.type
+});
+const matchingEffect = diceEffects.length > 0 ? diceEffects[0] : null;
+```
+
+**3. Enhanced Effect Type Recognition** (DiceRollSection.js):
+```javascript
+// BEFORE: Only recognized automatic cards
+if (effect.effect_type === 'cards' && effect.card_type)
+
+// AFTER: Recognizes all card effect types  
+if ((effect.effect_type === 'cards' || effect.effect_type.endsWith('_cards')) && effect.card_type)
+```
+
+### 2.2. CSV Data Consistency Resolution
+
+**Problem Addressed:** Multiple spaces had mismatched `effect_type` values between SPACE_EFFECTS.csv and DICE_EFFECTS.csv, breaking data lookups and preventing proper dice button rendering.
+
+**Affected Spaces & Fixes:**
+- **PM-DECISION-CHECK:** `cards` → `l_cards` (manual LIFE card actions)
+- **LEND-SCOPE-CHECK:** `cards` → `l_cards` and `e_cards` (manual actions)  
+- **OWNER-SCOPE-INITIATION:** Kept as `cards` (automatic dice processing)
+- **INVESTOR-FUND-REVIEW:** Kept as `cards` (automatic dice processing)
+
+**Data Architecture Rules Established:**
+- **Automatic Dice Spaces:** Use `effect_type: 'cards'` for DiceRollSection.js automatic processing
+- **Manual Action Spaces:** Use specific prefixes (`l_cards`, `e_cards`) to match SPACE_EFFECTS.csv trigger types
+- **Single Source of Truth:** CSV data drives all button visibility and filtering decisions
+
+### 2.3. Layer 2A/2B Filtering Logic Correction
+
+**Problem Addressed:** LIFE cards were incorrectly using Layer 2B (pure manual) filtering instead of Layer 2A (manual + dice-based) filtering, causing buttons to appear when they should be hidden.
+
+**Filtering Logic Flow:**
+```javascript
+// Layer 2A: Manual + dice-based actions (CORRECT for L cards)
+if (cardAction.trigger_type === 'manual' && isDiceBasedAction(cardAction)) {
+    return isDiceBasedManualActionAvailable(cardAction); // Check dice results
+}
+
+// Layer 2B: Pure manual actions (for E cards only)
+if (cardAction.trigger_type === 'manual') {
+    return true; // Always show non-dice manual actions
+}
+```
+
+**Result:** L cards now properly check dice roll results before showing manual buttons.
+
+## 3. Phase 21 Systems - Conditional Card Drawing & Manual Funding ✅ (2025-08-10)
 
 The Phase 21 development cycle introduced sophisticated conditional logic capabilities and manual player-controlled funding card acquisition, addressing critical business logic violations and enhancing player agency.
 
