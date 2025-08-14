@@ -30,17 +30,40 @@ function CardActionsSection({
     });
 
     // Handle card action execution
-    const handleCardAction = (cardType, action) => {
+    const handleCardAction = (cardType, action, condition) => {
         if (!currentPlayer) {
             return;
         }
         
-        // Emit the card action processing event
-        gameStateManager.emit('processCardAction', {
-            playerId: currentPlayer.id,
-            cardType,
-            action
-        });
+        // Check if this is a replace action
+        if (condition === 'replace' && action.includes('Replace')) {
+            // Extract amount from action text (e.g., "Replace 1" -> 1)
+            const amountMatch = action.match(/Replace (\d+)/i);
+            const amount = amountMatch ? parseInt(amountMatch[1]) : 1;
+            
+            console.log('CardActionsSection: Handling replace action:', {
+                cardType,
+                action,
+                condition,
+                amount,
+                playerId: currentPlayer.id
+            });
+            
+            // Emit show card replacement event
+            gameStateManager.emit('showCardReplacement', {
+                playerId: currentPlayer.id,
+                cardType,
+                amount,
+                source: 'manual_action'
+            });
+        } else {
+            // Emit the card action processing event for other actions
+            gameStateManager.emit('processCardAction', {
+                playerId: currentPlayer.id,
+                cardType,
+                action
+            });
+        }
 
         // Emit standardized player action taken event
         gameStateManager.emit('playerActionTaken', {
@@ -298,7 +321,7 @@ function CardActionsSection({
                 return React.createElement('button', {
                     key: `${cardAction.type}-${index}`,
                     className: `btn btn--secondary btn--full card-action-button card-action-${cardAction.type.toLowerCase()}`,
-                    onClick: () => handleCardAction(cardAction.type, cardAction.action),
+                    onClick: () => handleCardAction(cardAction.type, cardAction.action, cardAction.condition),
                     title: `${cardTypeName}: ${cardAction.action}`
                 }, `${cardTypeName} - ${cardAction.action}`);
             })

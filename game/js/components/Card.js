@@ -68,8 +68,6 @@ function Card({
     const cardStyle = {
         width: sizeConfig.width,
         backgroundColor: cardConfig.bgColor,
-        border: `2px solid ${cardConfig.borderColor}`,
-        borderRadius: '8px',
         padding: sizeConfig.padding,
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all 0.2s ease',
@@ -78,11 +76,20 @@ function Card({
         flexDirection: 'column',
         position: 'relative',
         fontSize: sizeConfig.fontSize,
-        // Phase accent border
-        ...(phaseAccent && { 
+        // Default borders and radii
+        border: `2px solid ${cardConfig.borderColor}`,
+        borderRadius: '8px',
+
+        // Override for phase accent
+        ...(phaseAccent && {
             borderTop: `4px solid ${phaseAccent}`,
+            borderLeft: `2px solid ${cardConfig.borderColor}`,
+            borderRight: `2px solid ${cardConfig.borderColor}`,
+            borderBottom: `2px solid ${cardConfig.borderColor}`,
             borderTopLeftRadius: '6px',
-            borderTopRightRadius: '6px'
+            borderTopRightRadius: '6px',
+            borderBottomLeftRadius: '8px',
+            borderBottomRightRadius: '8px'
         }),
         // Custom styling
         ...style
@@ -344,7 +351,7 @@ function CardGrid({
         }
     }, cards.map((card, index) => 
         React.createElement(Card, {
-            key: `card-${card.card_id || index}`,
+            key: `card-${card.card_id}-${index}`,
             card: card,
             onClick: onCardClick ? () => onCardClick(card) : null,
             size: cardSize,

@@ -4,11 +4,58 @@
 
 ## Current Status: PRODUCTION READY ✅ 
 
-**LATEST ACHIEVEMENT:** Fixed critical dice-based card action filtering bugs with DICE_EFFECTS.csv data integrity improvements and enhanced CardActionsSection debugging capabilities.
+**LATEST ACHIEVEMENT:** Implemented complete card replacement system with event-driven architecture - players can now replace cards at PM-DECISION-CHECK space with full modal UI selection.
 
-**CURRENT STATE:** Production-ready game with fully functional card drawing, dice mechanics, and turn management. All systems use CSV-driven data architecture with proper event-driven communication.
+**CURRENT STATE:** Production-ready game with fully functional card drawing, dice mechanics, turn management, and card replacement. All systems use CSV-driven data architecture with proper event-driven communication.
 
 ## Detailed Work Log
+
+### 2025-08-14: Card Replacement System - Complete Implementation
+
+**MAJOR FEATURE:** Fully functional card replacement system from CSV to UI
+
+**Problem Analysis:**
+- **Issue**: PM-DECISION-CHECK space has "replace" condition in CSV but button showed "Draw 1 E Card"
+- **Root Cause**: `ComponentUtils.js` was hardcoding "Draw" text regardless of CSV condition
+- **Architecture Gap**: No mechanism for players to select which cards to replace
+
+**Implementation - Event-Driven Architecture:**
+
+1. **CSV Parsing Fix** (`ComponentUtils.js:377-382`):
+   ```javascript
+   // BEFORE - Always showed "Draw"
+   action = `Draw ${effect.effect_value || 1}`;
+   
+   // AFTER - Condition-aware
+   if (effect.condition === 'replace') {
+       action = `Replace ${effect.effect_value || 1}`;
+   } else {
+       action = `Draw ${effect.effect_value || 1}`;
+   }
+   ```
+
+2. **CardReplacementModal** - Event-driven modal component:
+   - **Listens for**: `showCardReplacementModal` events
+   - **Emits**: `cardReplacementConfirmed` events
+   - **Features**: Card selection UI, unique key handling, defensive checks
+
+3. **GameStateManager Event Handlers**:
+   - `handleShowCardReplacement()`: Validates player data, emits modal events
+   - `handleCardReplacementConfirmed()`: Executes replacement (remove old + draw new)
+   - **Defensive**: Handles case where player has no cards to replace (fallback to draw)
+
+4. **CardActionsSection Integration**:
+   - Detects `condition === 'replace'` and routes to replacement system
+   - Passes condition data through event chain
+
+**Technical Achievements:**
+- ✅ **Data-Driven**: Button text reflects CSV data (`Replace 1 E Card`)
+- ✅ **Event Architecture**: Uses existing `emit`/`useEventListener` patterns
+- ✅ **UI Consistency**: Modal uses unified Card component system
+- ✅ **State Management**: GameStateManager remains single source of truth
+- ✅ **Error Handling**: Prevents infinite recursion, handles edge cases
+
+**Result**: Players can now visit PM-DECISION-CHECK, click "Replace 1 E Card", select cards from modal, and complete replacement with acknowledgment system.
 
 ### 2025-08-13: Unified Card System & Critical Bug Fixes
 

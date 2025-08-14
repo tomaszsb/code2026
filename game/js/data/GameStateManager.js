@@ -21,6 +21,8 @@ class GameStateManager {
         this.on('playerActionTaken', (event) => this.handlePlayerAction(event));
         this.on('drawCards', (event) => this.handleDrawCards(event));
         this.on('removeCards', (event) => this.handleRemoveCards(event));
+        this.on('showCardReplacement', (event) => this.handleShowCardReplacement(event));
+        this.on('cardReplacementConfirmed', (event) => this.handleCardReplacementConfirmed(event));
         // REMOVED: Duplicate processDiceOutcome listener - GameManager handles this event
         this.on('applyDiceEffects', (event) => this.handleApplyDiceEffects(event));
     }
@@ -2737,6 +2739,116 @@ class GameStateManager {
         } catch (error) {
             console.error('GameStateManager: Error handling removeCards event:', error);
             this.handleError(error, 'Remove Cards Event');
+        }
+    }
+
+    /**
+     * Handle showCardReplacement events - triggers the replacement modal
+     */
+    handleShowCardReplacement(eventData) {
+        const { playerId, cardType, amount } = eventData;
+        
+        try {
+            const player = this.state.players.find(p => p.id === playerId);
+            if (!player) {
+                console.error(`GameStateManager: Player ${playerId} not found for card replacement`);
+                return;
+            }
+            
+            // Check if player has cards of this type
+            if (!player.cards[cardType] || !Array.isArray(player.cards[cardType]) || player.cards[cardType].length === 0) {
+                console.log(`GameStateManager: Player ${playerId} has no ${cardType} cards to replace. Drawing cards first...`);
+                
+                // If no cards to replace, just draw new cards instead
+                this.emit('drawCards', {
+                    playerId,
+                    cardType,
+                    count: amount,
+                    source: 'replacement_fallback'
+                });
+                return;
+            }
+            
+            // Emit event to show the replacement modal
+            console.log('GameStateManager: Emitting showCardReplacementModal with player.cards:', player.cards);
+            this.emit('showCardReplacementModal', {
+                playerId,
+                cardType,
+                amount,
+                playerCards: player.cards,
+                playerName: player.name
+            });
+            
+        } catch (error) {
+            console.error('GameStateManager: Error handling showCardReplacement event:', error);
+            this.handleError(error, 'Show Card Replacement Event');
+        }
+    }
+
+    /**
+     * Handle cardReplacementConfirmed events - executes the actual replacement
+     */
+    handleCardReplacementConfirmed(eventData) {
+        const { playerId, cardType, amount, cardsToReplace, selectedIndices } = eventData;
+        
+        try {
+            const playerIndex = this.state.players.findIndex(p => p.id === playerId);
+            if (playerIndex === -1) {
+                console.error(`GameStateManager: Player ${playerId} not found for card replacement`);
+                return;
+            }
+            
+            const currentPlayer = this.state.players[playerIndex];
+            
+            // Draw new cards first
+            const newCards = this.drawCardsFromDeck(cardType, amount);
+            if (newCards.length === 0) {
+                console.warn(`GameStateManager: No ${cardType} cards could be drawn for replacement`);
+                return;
+            }
+            
+            // Remove selected cards from player's hand (sort indices in descending order to avoid index shifts)
+            let updatedCards = [...currentPlayer.cards[cardType]];
+            const sortedIndices = [...selectedIndices].sort((a, b) => b - a);
+            for (const index of sortedIndices) {
+                if (index >= 0 && index < updatedCards.length) {
+                    updatedCards.splice(index, 1);
+                }
+            }
+            
+            // Add new cards to player's hand
+            updatedCards = [...updatedCards, ...newCards];
+            
+            // Update player state
+            const updatedPlayer = {
+                ...currentPlayer,
+                cards: {
+                    ...currentPlayer.cards,
+                    [cardType]: updatedCards
+                }
+            };
+            
+            const updatedPlayers = [...this.state.players];
+            updatedPlayers[playerIndex] = updatedPlayer;
+            this.setState({ players: updatedPlayers });
+            
+            // Show acknowledgment for the new cards
+            this.processDrawnCardsWithAcknowledgment(playerId, cardType, newCards, true);
+            
+            // Emit event for UI feedback
+            this.emit('cardReplacementCompleted', {
+                playerId,
+                cardType,
+                replacedCards: cardsToReplace,
+                newCards,
+                source: 'card_replacement'
+            });
+            
+            console.log(`GameStateManager: Replaced ${amount} ${cardType} cards for player ${currentPlayer.name}`);
+            
+        } catch (error) {
+            console.error('GameStateManager: Error handling cardReplacementConfirmed event:', error);
+            this.handleError(error, 'Card Replacement Confirmed Event');
         }
     }
 

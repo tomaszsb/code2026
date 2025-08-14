@@ -14,6 +14,7 @@
     - ✅ **Comprehensive Card Effects:** All 20+ CSV effect fields rendered properly
     - ✅ **Visual Phase Indicators:** Color-coded phase restrictions on cards
     - ✅ **Bug Fixes:** fontSize calculations, height restrictions, modal consistency
+    - ✅ **Implemented Card Replacement Mechanic:** Full implementation of card replacement logic, including UI, event handling, and state management.
 *   **Remaining Tasks:**
     1.  **Player Position Indicators:** Visual tokens/highlights on game board
     2.  **Path Visualization:** Connection lines between board spaces

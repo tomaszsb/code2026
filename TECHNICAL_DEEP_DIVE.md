@@ -143,6 +143,81 @@ The card system is a highly data-driven and intricate part of the game, governin
   - Changed `overflow: 'hidden'` to `overflow: 'visible'`
 - **Result**: Complete card information display without truncation
 
+### 1.7. Card Replacement System Architecture ✅ NEW (2025-08-14)
+
+**Major Feature Implementation**: Complete event-driven card replacement system allowing players to strategically exchange cards at specific game spaces.
+
+**Problem Addressed:** PM-DECISION-CHECK space defined `condition: 'replace'` in CSV data, but the system had no mechanism for players to select which cards to replace, and button text incorrectly showed "Draw 1 E Card" instead of "Replace 1 E Card".
+
+#### 1.7.1. Data-Driven Architecture
+
+**CSV Integration** (`ComponentUtils.js:377-382`):
+```javascript
+// Condition-aware action text generation
+if (effect.condition === 'replace') {
+    action = `Replace ${effect.effect_value || 1}`;
+} else {
+    action = `Draw ${effect.effect_value || 1}`;
+}
+```
+
+**SPACE_EFFECTS.csv Pattern:**
+```csv
+space_name,visit_type,effect_type,effect_value,card_type,condition,use_dice,trigger_type
+PM-DECISION-CHECK,First,e_cards,1,E,replace,,manual
+```
+
+#### 1.7.2. Event-Driven Flow Architecture
+
+**Complete Event Chain:**
+1. **CardActionsSection** detects `condition === 'replace'` → emits `showCardReplacement`
+2. **GameStateManager.handleShowCardReplacement()** validates player data → emits `showCardReplacementModal`
+3. **CardReplacementModal** displays UI for card selection → emits `cardReplacementConfirmed`
+4. **GameStateManager.handleCardReplacementConfirmed()** executes replacement logic
+
+**Defensive Event Handling:**
+- **Infinite Recursion Prevention**: Uses different event names (`showCardReplacement` vs `showCardReplacementModal`)
+- **Edge Case Handling**: Fallback to card drawing if player has no cards to replace
+- **Data Validation**: Defensive checks for undefined player data and card arrays
+
+#### 1.7.3. UI Component Integration
+
+**CardReplacementModal** (`CardReplacementModal.js`):
+- **Event-Driven**: Uses `useEventListener('showCardReplacementModal')` pattern
+- **State Management**: Self-contained state for modal visibility and card selection
+- **Unified Rendering**: Uses existing Card component system for consistent UI
+- **Selection Logic**: Multi-card selection with visual feedback and confirmation flow
+
+**Modal Features:**
+- Card grid display with selection checkboxes
+- Real-time selection counter (`Selected: 1/1`)
+- Disabled state management (prevent over-selection)
+- Unified Card component rendering for consistency
+
+#### 1.7.4. GameStateManager Integration
+
+**Event Handlers Added:**
+```javascript
+this.on('showCardReplacement', (event) => this.handleShowCardReplacement(event));
+this.on('cardReplacementConfirmed', (event) => this.handleCardReplacementConfirmed(event));
+```
+
+**Replacement Logic** (`handleCardReplacementConfirmed`):
+1. **Draw New Cards**: `drawCardsFromDeck(cardType, amount)` for replacement cards
+2. **Remove Selected Cards**: Array manipulation with index-safe removal (reverse order)
+3. **State Update**: Immutable player state update with new card arrays
+4. **Acknowledgment Integration**: Uses existing `processDrawnCardsWithAcknowledgment()` system
+
+#### 1.7.5. Architecture Benefits
+
+**✅ Data-Driven**: Button text reflects CSV condition data accurately
+**✅ Event Architecture**: Follows existing `emit`/`useEventListener` patterns completely
+**✅ State Consistency**: GameStateManager remains single source of truth
+**✅ UI Integration**: Modal uses unified Card component system
+**✅ Error Handling**: Comprehensive defensive programming and edge case management
+
+**Result**: Players can now visit PM-DECISION-CHECK, see "Replace 1 E Card" button, select cards from modal interface, and complete replacement with full integration to acknowledgment system.
+
 ## 2. Phase 22 Systems - LIFE Card Mechanics & CSV Data Consistency ✅ NEW (2025-08-13)
 
 The Phase 22 development cycle resolved critical LIFE card button logic issues and established unified CSV data consistency across the entire card action system, ensuring reliable dice-based interactions and proper manual/automatic action distinctions.

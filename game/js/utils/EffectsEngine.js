@@ -212,14 +212,22 @@ class EffectsEngine {
                 };
 
             case action.includes('replace'):
-                // Replace typically means remove and draw
+                // Emit event for GameStateManager to handle card replacement
                 this.log(`Replacing ${value} ${cardType.toUpperCase()} cards`);
+                if (window.GameStateManager && value > 0) {
+                    window.GameStateManager.emit('showCardReplacement', {
+                        playerId: player.id,
+                        cardType: cardType,
+                        amount: value,
+                        source: 'space_effect'
+                    });
+                }
                 return { 
                     success: true, 
                     action: 'card_replace', 
                     cardType: cardType, 
                     value: value,
-                    note: 'Replace action requires UI interaction'
+                    note: `Card replacement modal triggered for ${value} ${cardType.toUpperCase()} cards`
                 };
 
             case action.includes('transfer'):

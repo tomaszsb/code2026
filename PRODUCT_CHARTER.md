@@ -39,6 +39,7 @@ A player's success is measured by a **Normalized Performance Score** that balanc
 *   **✅ Visual Phase Indicators:** Color-coded phase restrictions and enhanced card styling  
 *   **✅ Critical Bug Fixes:** Resolved React fontSize warnings, height restrictions, and modal consistency issues
 *   **✅ Enhanced User Experience:** Cards now display full content without truncation, maintaining professional appearance
+*   **✅ Implemented Card Replacement Mechanic:** Full implementation of card replacement logic, including UI, event handling, and state management.
 
 **Next Priority: The Performance Dashboard**
 *   **Objective:** To implement a real-time dashboard that displays the **Normalized Performance Score**, providing players with immediate feedback and fostering a competitive environment.

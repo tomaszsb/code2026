@@ -499,6 +499,12 @@ const GameInterface = React.memo(({ gameState, gameStateManager, debugMode }) =>
             gameStateManager: gameStateManager
         }) : null,
 
+        // Card Replacement Modal
+        window.CardReplacementModal ? React.createElement(window.CardReplacementModal, {
+            key: 'card-replacement-modal',
+            gameStateManager: gameStateManager
+        }) : null,
+
         // New Scalable Modal System
         (() => {
             const activeModal = gameUIStateRef.current.activeModal;

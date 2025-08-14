@@ -374,6 +374,9 @@ const ComponentUtils = {
                 if (effect.effect_value === 'dice' && effect.use_dice === 'true') {
                     // Look up dice effects to show range
                     action = ComponentUtils.getDiceActionText(spaceName, visitType, cardType);
+                } else if (effect.condition === 'replace') {
+                    // Handle replace condition specifically
+                    action = `Replace ${effect.effect_value || 1}`;
                 } else {
                     action = `Draw ${effect.effect_value || 1}`;
                 }
@@ -385,7 +388,8 @@ const ComponentUtils = {
                     types.push({ 
                         type: cardType, 
                         action: action,
-                        trigger_type: effect.trigger_type || ''
+                        trigger_type: effect.trigger_type || '',
+                        condition: effect.condition || ''
                     });
                 }
             }

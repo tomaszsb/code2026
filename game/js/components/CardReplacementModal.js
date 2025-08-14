@@ -3,17 +3,39 @@
  * Allows player to choose which specific cards to replace when using "Replace X" actions
  */
 
-function CardReplacementModal({ 
-    show, 
-    onClose, 
-    onConfirm, 
-    cardType, 
-    amount, 
-    playerCards, 
-    playerName 
-}) {
+function CardReplacementModal({ gameStateManager }) {
     const { useState, useEffect } = React;
+    const [show, setShow] = useState(false);
+    const [cardType, setCardType] = useState('');
+    const [amount, setAmount] = useState(1);
+    const [playerCards, setPlayerCards] = useState({});
+    const [playerName, setPlayerName] = useState('');
+    const [playerId, setPlayerId] = useState('');
     const [selectedCards, setSelectedCards] = useState([]);
+
+    // Event listener for showing the replacement modal
+    useEventListener('showCardReplacementModal', ({ 
+        playerId: eventPlayerId, 
+        cardType: eventCardType, 
+        amount: eventAmount, 
+        playerCards: eventPlayerCards, 
+        playerName: eventPlayerName 
+    }) => {
+        console.log('CardReplacementModal: Received showCardReplacement event:', {
+            playerId: eventPlayerId,
+            cardType: eventCardType,
+            amount: eventAmount,
+            playerCards: eventPlayerCards,
+            playerName: eventPlayerName
+        });
+        setShow(true);
+        setCardType(eventCardType);
+        setAmount(eventAmount);
+        setPlayerCards(eventPlayerCards);
+        setPlayerName(eventPlayerName);
+        setPlayerId(eventPlayerId);
+        setSelectedCards([]);
+    });
 
     // Reset selection when modal opens
     useEffect(() => {
@@ -24,6 +46,11 @@ function CardReplacementModal({
 
     if (!show) return null;
 
+    // Defensive checks for undefined data
+    if (!playerCards || !cardType) {
+        return null;
+    }
+
     const availableCards = playerCards[cardType] || [];
     const cardConfig = window.CardUtils ? window.CardUtils.getCardTypeConfig(cardType) : { name: cardType, icon: '🎴' };
     
@@ -31,7 +58,7 @@ function CardReplacementModal({
     if (availableCards.length === 0) {
         return React.createElement('div', {
             className: 'modal-overlay card-replacement-modal',
-            onClick: onClose
+            onClick: handleCancel
         }, [
             React.createElement('div', {
                 key: 'modal-content',
@@ -48,7 +75,7 @@ function CardReplacementModal({
                     React.createElement('button', {
                         key: 'close-btn',
                         className: 'modal-close-btn',
-                        onClick: onClose,
+                        onClick: handleCancel,
                         'aria-label': 'Close'
                     }, '×')
                 ]),
@@ -67,7 +94,7 @@ function CardReplacementModal({
                     React.createElement('button', {
                         key: 'close-btn',
                         className: 'btn btn--primary',
-                        onClick: onClose
+                        onClick: handleCancel
                     }, 'Close')
                 ])
             ])
@@ -92,15 +119,28 @@ function CardReplacementModal({
     };
 
     const handleConfirm = () => {
-        if (selectedCards.length === amount) {
-            onConfirm(selectedCards);
-            onClose();
+        if (selectedCards.length === amount && gameStateManager) {
+            // Get the actual card objects that were selected
+            const cardsToReplace = selectedCards.map(index => playerCards[cardType][index]);
+            
+            // Emit the card replacement confirmation event
+            gameStateManager.emit('cardReplacementConfirmed', {
+                playerId: playerId,
+                cardType: cardType,
+                amount: amount,
+                cardsToReplace: cardsToReplace,
+                selectedIndices: selectedCards
+            });
+            
+            // Close the modal
+            setShow(false);
+            setSelectedCards([]);
         }
     };
 
     const handleCancel = () => {
         setSelectedCards([]);
-        onClose();
+        setShow(false);
     };
 
     return React.createElement('div', {

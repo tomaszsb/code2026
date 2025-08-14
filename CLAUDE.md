@@ -115,6 +115,14 @@ React.createElement(window.Card, {
 const config = window.CardUtils.getCardTypeConfig('W');
 const effects = window.CardUtils.getCardEffectDescription(card);
 
+// ✅ Card replacement via event system
+gameStateManager.emit('showCardReplacement', {
+    playerId: playerId,
+    cardType: 'E',
+    amount: 1,
+    source: 'manual_action'
+});
+
 // ❌ Custom rendering forbidden
 React.createElement('div', { /* custom layout */ });  // Forbidden
 ```
@@ -173,6 +181,23 @@ player.money += amount;  // FORBIDDEN
 - **TECHNICAL_DEEP_DIVE.md**: Architecture details
 
 ## Recent Work Log
+
+### 2025-08-14: Card Replacement System Implementation
+
+**Major Achievement**: Fully functional card replacement system with event-driven architecture
+
+**Components Implemented**:
+- **CSV Parsing**: Fixed `ComponentUtils.js` to properly handle `replace` condition from CSV data
+- **Button Text**: "Replace 1 E Card" now displays correctly instead of "Draw 1 E Card"
+- **CardReplacementModal**: Event-driven modal using `useEventListener` and `emit` patterns
+- **GameStateManager**: Added `handleShowCardReplacement()` and `handleCardReplacementConfirmed()` methods
+- **Event Flow**: `showCardReplacement` → `showCardReplacementModal` → `cardReplacementConfirmed`
+
+**Technical Details**:
+- **Data-Driven**: CSV `condition: 'replace'` now properly parsed and handled
+- **Architecture Compliant**: Uses existing event patterns, follows GameStateManager as single source of truth
+- **UI Integration**: Modal shows player's cards for selection, integrates with acknowledgment system
+- **Defensive Programming**: Prevents infinite recursion, handles edge cases (no cards to replace)
 
 ### 2025-08-13: Bug Fixes & Unified Card System
 
