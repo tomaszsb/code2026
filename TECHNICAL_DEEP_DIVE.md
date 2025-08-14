@@ -46,15 +46,102 @@ The card system is a highly data-driven and intricate part of the game, governin
 5.  **`GameStateManager.js` (`removeCardFromHand`):** After the effects are successfully applied, `usePlayerCard` calls this method to remove the used card from the player's hand.
 6.  **UI Update:** The `stateChanged` event propagates, causing the UI to update, reflecting the removed card and any changes to player resources.
 
-### 1.4. Current Architecture Status
+### 1.4. Card Acknowledgment & Unified Drawing System
+
+**Major Achievement (2025-08-13)**: Successfully implemented unified card acknowledgment system that ensures all drawn cards are properly acknowledged before being added to player hands, eliminating immediate effect duplication.
+
+**Architecture Evolution**:
+- **Problem**: Card drawing system had two parallel paths - immediate effects and hand additions, causing inconsistent user experience
+- **Solution**: Unified all card drawing through acknowledgment modal system with proper effect timing control
+
+**Technical Implementation**:
+
+1. **Unified Card Drawing Flow** (`game/js/data/GameStateManager.js:1363-1395`):
+   ```javascript
+   addCardsToPlayer(playerId, cardType, cards, returnMessage = false) {
+       // ALL cards now go through unified acknowledgment process
+       return this.processDrawnCardsWithAcknowledgment(
+           playerId, cardType, cardsToAdd, returnMessage
+       );
+   }
+   ```
+
+2. **Card Acknowledgment System** (`game/js/data/GameStateManager.js:440-540`):
+   - **Queue Management**: Cards queued for sequential acknowledgment display
+   - **Effect Timing**: Immediate activation timing controlled by CSV `activation_timing` column
+   - **Player Experience**: All cards shown to player before effects applied
+
+3. **Dice Rolling Integration** (`game/js/components/DiceRollSection.js:38-162`):
+   - **Event Emission**: Dice rolls emit `playerActionTaken` for turn progression
+   - **Effect Processing**: Supports all card effect types (`cards`, `l_cards`, `e_cards`, etc.)
+   - **Modal Display**: Shows dice result modal with context for all rolls
+
+4. **Manual Funding System** (`game/js/data/GameStateManager.js:2266-2320`):
+   - **Player Agency**: Funding cards require deliberate button press at OWNER-FUND-INITIATION
+   - **Conditional Logic**: Scope-based B/I card selection (≤$4M vs >$4M)
+   - **State Tracking**: Prevents duplicate funding card draws per space visit
+
+**Current Card Drawing Behavior**:
+- **Automatic Draws**: Space entry, dice effects → Cards acknowledged then added to hand
+- **Manual Draws**: Player button actions → Cards acknowledged then added to hand  
+- **Immediate Effects**: Only cards with `activation_timing: "Immediate"` apply effects during acknowledgment
+- **Player Controlled**: E cards (`activation_timing: "Player Controlled"`) go to hand without immediate effects
+
+### 1.5. Current Architecture Status
 
 **All major technical debt resolved as of 2025-08-13:**
 
 *   ✅ **Unified Card Processing**: Single source of truth through GameStateManager.usePlayerCard()
 *   ✅ **Data-Driven Activation**: CSV `activation_timing` column controls card behavior
-*   ✅ **Syntax Validation**: All JavaScript files parse correctly
+*   ✅ **Unified Card Acknowledgment**: All card draws use consistent modal display system
 *   ✅ **Conditional Logic**: Scope-based B/I card distribution working correctly
 *   ✅ **Manual Funding Control**: Player-initiated funding card acquisition implemented
+*   ✅ **fontSize Bug Resolution**: All React warnings eliminated with parseInt() parsing
+*   ✅ **Card Height Restrictions**: Removed truncation for full content display
+
+### 1.6. Unified Card Component System Implementation
+
+**Major Implementation (2025-08-13)**: Completed unified card system with comprehensive effect rendering and resolved critical display bugs throughout the UI.
+
+**CardAcknowledgmentModal Unified Integration**:
+- **Problem**: "Card Drawn" modal used custom rendering (190+ lines), different appearance from other cards
+- **Solution**: Replaced entire custom card display with unified Card component
+- **Implementation**:
+  ```javascript
+  // BEFORE - 190+ lines of custom rendering
+  React.createElement('div', { /* complex custom card layout */ });
+  
+  // AFTER - Clean unified approach
+  React.createElement(window.Card, {
+      card: card,
+      size: 'large',
+      onClick: handleCardClick
+  });
+  ```
+- **Benefits**: Visual consistency, comprehensive effects display, maintainable codebase
+
+**Card.js fontSize Bug Resolution**:
+- **Problem**: React warning "NaN is an invalid value for the fontSize css style property"
+- **Root Cause**: Arithmetic operations on fontSize strings like '12px' - 1 = NaN
+- **Solution**: Added parseInt() parsing before calculations
+- **Locations Fixed**: Effect description, flavor text, phase restriction indicator, action buttons
+- **Technical Fix**:
+  ```javascript
+  // BEFORE
+  fontSize: sizeConfig.fontSize - 1
+  
+  // AFTER  
+  fontSize: parseInt(sizeConfig.fontSize) - 1 + 'px'
+  ```
+
+**Card Height Restrictions Removal**:
+- **Problem**: Large cards in modals not showing full content due to height constraints
+- **Root Cause**: `minHeight` and `WebkitLineClamp` properties truncating text content
+- **Changes Made**:
+  - Removed `minHeight: sizeConfig.minHeight` from cardStyle
+  - Removed `WebkitLineClamp` from card-name, card-description, card-effects, card-flavor
+  - Changed `overflow: 'hidden'` to `overflow: 'visible'`
+- **Result**: Complete card information display without truncation
 
 ## 2. Phase 22 Systems - LIFE Card Mechanics & CSV Data Consistency ✅ NEW (2025-08-13)
 
