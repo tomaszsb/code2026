@@ -139,7 +139,7 @@ function CardActionsSection({
         }
         
         // Check if this space has dice effects for this card type
-        console.log(`🔍 isDiceBasedAction: Checking for card type "${cardAction.type}" at space "${currentPlayer.position}"`);
+        // console.log(`🔍 isDiceBasedAction: Checking for card type "${cardAction.type}" at space "${currentPlayer.position}"`);
         
         const diceEffects = window.CSVDatabase.diceEffects.query({
             space_name: currentPlayer.position,
@@ -147,23 +147,23 @@ function CardActionsSection({
             card_type: cardAction.type
         });
         
-        console.log(`🔍 isDiceBasedAction: Found ${diceEffects.length} matching effects`);
-        if (diceEffects.length > 0) {
-            console.log(`🔍 isDiceBasedAction: Found matching row in DICE_EFFECTS.csv:`, diceEffects[0]);
-        }
+        // console.log(`🔍 isDiceBasedAction: Found ${diceEffects.length} matching effects`);
+        // if (diceEffects.length > 0) {
+        //     console.log(`🔍 isDiceBasedAction: Found matching row in DICE_EFFECTS.csv:`, diceEffects[0]);
+        // }
         
         const matchingEffect = diceEffects.length > 0 ? diceEffects[0] : null;
         
-        console.log(`🔍 isDiceBasedAction: Result for card type "${cardAction.type}" is: ${!!matchingEffect}`);
+        // console.log(`🔍 isDiceBasedAction: Result for card type "${cardAction.type}" is: ${!!matchingEffect}`);
         return !!matchingEffect;
     };
 
     // Check if a dice-based manual action is available based on dice roll results
     const isDiceBasedManualActionAvailable = (cardAction) => {
-        console.log(`🔍 FILTER DEBUG: Checking dice-based manual action for ${cardAction.type}`);
+        // console.log(`🔍 FILTER DEBUG: Checking dice-based manual action for ${cardAction.type}`);
         
         if (!currentPlayer || !window.CSVDatabase?.loaded) {
-            console.log(`🔍 FILTER DEBUG: Missing player or database`);
+            // console.log(`🔍 FILTER DEBUG: Missing player or database`);
             return false;
         }
 
@@ -171,11 +171,11 @@ function CardActionsSection({
         const gameState = gameStateManager?.getState();
         const lastDiceRoll = gameState?.currentTurn?.lastDiceRoll;
         
-        console.log(`🔍 FILTER DEBUG: lastDiceRoll = ${lastDiceRoll}`);
+        // console.log(`🔍 FILTER DEBUG: lastDiceRoll = ${lastDiceRoll}`);
         
         // If no dice has been rolled, hide the action
         if (!lastDiceRoll) {
-            console.log(`🔍 FILTER DEBUG: No dice rolled yet, hiding action`);
+            // console.log(`🔍 FILTER DEBUG: No dice rolled yet, hiding action`);
             return false;
         }
 
@@ -186,10 +186,10 @@ function CardActionsSection({
             card_type: cardAction.type
         });
 
-        console.log(`🔍 FILTER DEBUG: Found ${diceEffects.length} dice effects for ${cardAction.type} at ${currentPlayer.position}`);
+        // console.log(`🔍 FILTER DEBUG: Found ${diceEffects.length} dice effects for ${cardAction.type} at ${currentPlayer.position}`);
 
         if (diceEffects.length === 0) {
-            console.log(`🔍 FILTER DEBUG: No dice effects found, hiding action`);
+            // console.log(`🔍 FILTER DEBUG: No dice effects found, hiding action`);
             return false;
         }
 
@@ -197,11 +197,11 @@ function CardActionsSection({
         const diceEffect = diceEffects[0]; // Should be only one effect per card type per space/visit
         const rollResult = diceEffect[`roll_${lastDiceRoll}`];
         
-        console.log(`🔍 FILTER DEBUG: Roll ${lastDiceRoll} result for ${cardAction.type}: "${rollResult}"`);
+        // console.log(`🔍 FILTER DEBUG: Roll ${lastDiceRoll} result for ${cardAction.type}: "${rollResult}"`);
         
         // Available if roll result is not "No change" and not empty
         const isAvailable = rollResult && rollResult !== 'No change' && rollResult.trim() !== '';
-        console.log(`🔍 FILTER DEBUG: Action ${cardAction.type} available: ${isAvailable}`);
+        // console.log(`🔍 FILTER DEBUG: Action ${cardAction.type} available: ${isAvailable}`);
         
         return isAvailable;
     };
@@ -246,30 +246,30 @@ function CardActionsSection({
 
         // Layer 2: Proper data-driven filtering (logical fix)
         return availableCardActions.filter((cardAction) => {
-            console.log(`🔍 FILTER DEBUG: Processing card action ${cardAction.type} with trigger_type: ${cardAction.trigger_type}`);
+            // console.log(`🔍 FILTER DEBUG: Processing card action ${cardAction.type} with trigger_type: ${cardAction.trigger_type}`);
             
             // Layer 2A: Manual actions that are ALSO dice-based need dice validation
             if (cardAction.trigger_type === 'manual' && isDiceBasedAction(cardAction)) {
-                console.log(`🔍 FILTER DEBUG: Layer 2A - Manual + dice-based action for ${cardAction.type}`);
+                // console.log(`🔍 FILTER DEBUG: Layer 2A - Manual + dice-based action for ${cardAction.type}`);
                 // Check if dice has been rolled and if this action is available based on dice result
                 const result = isDiceBasedManualActionAvailable(cardAction);
-                console.log(`🔍 FILTER DEBUG: Layer 2A result for ${cardAction.type}: ${result}`);
+                // console.log(`🔍 FILTER DEBUG: Layer 2A result for ${cardAction.type}: ${result}`);
                 return result;
             }
             
             // Layer 2B: Pure manual actions (not dice-based) always show
             if (cardAction.trigger_type === 'manual') {
-                console.log(`🔍 FILTER DEBUG: Layer 2B - Pure manual action for ${cardAction.type}: SHOW`);
+                // console.log(`🔍 FILTER DEBUG: Layer 2B - Pure manual action for ${cardAction.type}: SHOW`);
                 return true; // Always show manual trigger actions that aren't dice-based
             }
             
             // Layer 2C: Hide automatic dice actions that aren't marked as manual
             if (isDiceBasedAction(cardAction) || (cardAction.action && cardAction.action.includes('dice'))) {
-                console.log(`🔍 FILTER DEBUG: Layer 2C - Automatic dice action for ${cardAction.type}: HIDE`);
+                // console.log(`🔍 FILTER DEBUG: Layer 2C - Automatic dice action for ${cardAction.type}: HIDE`);
                 return false; // Hide automatic dice actions
             }
             
-            console.log(`🔍 FILTER DEBUG: Default case for ${cardAction.type}: SHOW`);
+            // console.log(`🔍 FILTER DEBUG: Default case for ${cardAction.type}: SHOW`);
             return true; // Show all other cards normally
         });
     };

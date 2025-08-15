@@ -73,7 +73,7 @@ function DiceRollSection({
                         if (rollEffect && rollEffect !== 'No change') {
                             if (!diceOutcomeResult) diceOutcomeResult = {};
                             
-                            if (effect.effect_type === 'cards') {
+                            if (effect.effect_type === 'cards' || effect.effect_type.endsWith('_cards')) {
                                 diceOutcomeResult.cards = rollEffect;
                                 diceOutcomeResult.cardType = effect.card_type;
                             } else if (effect.effect_type === 'money') {
@@ -162,13 +162,13 @@ function DiceRollSection({
     };
 
 
-    // DEBUG: Log dice roll section props
-    if (currentPlayer && (currentPlayer.position === 'OWNER-SCOPE-INITIATION' || currentPlayer.position === 'PM-DECISION-CHECK')) {
-        console.log(`🎲 DICE SECTION DEBUG: ${currentPlayer.position}`);
-        console.log(`🎲 DICE SECTION DEBUG: diceRequired=${diceRequired}, showDiceRoll=${showDiceRoll}`);
-        console.log(`🎲 DICE SECTION DEBUG: hasRolled=${hasRolled}, rolling=${rolling}`);
-        console.log(`🎲 DICE SECTION DEBUG: diceRollValue=${diceRollValue}, diceOutcome=`, diceOutcome);
-    }
+    // DEBUG: Log dice roll section props (commented out to reduce log spam)
+    // if (currentPlayer && (currentPlayer.position === 'OWNER-SCOPE-INITIATION' || currentPlayer.position === 'PM-DECISION-CHECK')) {
+    //     console.log(`🎲 DICE SECTION DEBUG: ${currentPlayer.position}`);
+    //     console.log(`🎲 DICE SECTION DEBUG: diceRequired=${diceRequired}, showDiceRoll=${showDiceRoll}`);
+    //     console.log(`🎲 DICE SECTION DEBUG: hasRolled=${hasRolled}, rolling=${rolling}`);
+    //     console.log(`🎲 DICE SECTION DEBUG: diceRollValue=${diceRollValue}, diceOutcome=`, diceOutcome);
+    // }
 
     // Don't render if dice roll is not required or shown
     if (!showDiceRoll && !diceRequired) {

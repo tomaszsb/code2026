@@ -4,11 +4,68 @@
 
 ## Current Status: PRODUCTION READY ✅ 
 
-**LATEST ACHIEVEMENT:** Implemented complete card replacement system with event-driven architecture - players can now replace cards at PM-DECISION-CHECK space with full modal UI selection.
+**LATEST ACHIEVEMENT:** Fixed critical movement system bug preventing movement from Logic-type spaces like PM-DECISION-CHECK. Players can now successfully move to selected destinations after completing required actions.
 
-**CURRENT STATE:** Production-ready game with fully functional card drawing, dice mechanics, turn management, and card replacement. All systems use CSV-driven data architecture with proper event-driven communication.
+**CURRENT STATE:** Production-ready game with fully functional card drawing, dice mechanics, turn management, card replacement, and working movement system. All systems use CSV-driven data architecture with proper event-driven communication.
 
 ## Detailed Work Log
+
+### 2025-08-15: Card System Bug Fixes
+
+**UI Bug Fix: Cards Not Disappearing From Hand**
+- **Symptom**: Used cards were not disappearing from the player's hand UI.
+- **Root Cause**: A React re-rendering issue where the `CardsInHand` component was not updating after the game state changed, due to a subtle memoization issue.
+- **Solution**: Implemented a forced re-render mechanism by adding an `updateCounter` state variable to the `CardsInHand` component. This counter is incremented when a card is used, and it's added to the dependency array of the `useMemo` hook that calculates the card list, guaranteeing a UI update.
+- **File Modified**: `game/js/components/CardsInHand.js`
+
+**Dice Effect Bug Fix: Automatic Life Card Not Awarded**
+- **Symptom**: On PM-DECISION-CHECK space, rolling a 1 was not automatically adding a Life card as specified in `DICE_EFFECTS.csv`.
+- **Root Cause**: The dice roll logic in `DiceRollSection.js` was only checking for `effect_type === 'cards'` and was not handling variations like `l_cards`.
+- **Solution**: Updated the condition to `effect.effect_type === 'cards' || effect.effect_type.endsWith('_cards')` to correctly identify all card-related effects from the CSV data.
+- **File Modified**: `game/js/components/DiceRollSection.js`
+
+### 2025-08-15: Critical Movement System Bug Fix
+
+**CRITICAL BUG RESOLVED:** Movement failure from choice-type spaces
+
+**Problem Analysis:**
+- **Symptom**: Players at PM-DECISION-CHECK couldn't move to selected destinations when pressing "End Turn"
+- **Root Cause**: MovementEngine's `getLogicMoves()` function returned empty array `[]` for all Logic-type spaces
+- **Classification Impact**: PM-DECISION-CHECK was correctly identified as "Logic" space but blocked from movement
+- **Flow Breakdown**: TurnControls requires `availableMoves.length > 0` to execute movement logic
+
+**Technical Investigation:**
+- **MovementEngine.js**: Space classification logic correctly identified Logic spaces via `spaceName.includes('DECISION-CHECK')`
+- **GameStateManager.js**: User destination selection worked correctly, storing "ARCH-INITIATION" in turn state
+- **TurnControls.js**: Movement execution blocked because `movementEngine.getAvailableMoves()` returned empty array
+- **State Preservation**: All previous fixes for destination preservation were working correctly
+
+**Solution Implementation:**
+```javascript
+// BEFORE - MovementEngine.js getLogicMoves()
+getLogicMoves(spaceData, player, visitType) {
+    return []; // Blocked all movement from Logic spaces
+}
+
+// AFTER - Now reads actual destinations from CSV data
+getLogicMoves(spaceData, player, visitType) {
+    const moves = [];
+    for (let i = 1; i <= 5; i++) {
+        const spaceKey = `destination_${i}`;
+        if (spaceData[spaceKey] && spaceData[spaceKey].trim()) {
+            moves.push(spaceData[spaceKey]);
+        }
+    }
+    return moves;
+}
+```
+
+**Files Modified:**
+- **game/js/utils/MovementEngine.js**: Fixed `getLogicMoves()` function (lines 282-293)
+
+**Result**: Players at PM-DECISION-CHECK can now complete all actions and successfully move to their selected destination (ARCH-INITIATION, ARCHITECT-FUND-INITIATION, or PROJECT-PLANNING).
+
+**Architecture Compliance**: Maintains CSV-as-database principles by reading movement data from MOVEMENT.csv instead of hardcoding restrictions.
 
 ### 2025-08-14: Card Replacement System - Complete Implementation
 
@@ -195,4 +252,3 @@
 - Event-driven updates for player money/time changes
 
 **Historical development details in `CLAUDE.md`**
-

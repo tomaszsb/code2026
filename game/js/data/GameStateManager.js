@@ -922,7 +922,8 @@ class GameStateManager {
             turnCount: this.state.turnCount
         });
 
-        // Initialize turn actions for the new current player
+        // Initialize turn actions for the new space after movement and turn advancement
+        // This ensures the player has the correct requirements for their new location
         this.initializeTurnActions(nextPlayer.id);
     }
 
@@ -2313,7 +2314,7 @@ class GameStateManager {
                 playerId: playerId,
                 actionType: 'card',
                 actionData: {
-                    source: 'funding_card_draw',
+                    source: 'available_card_action',
                     spaceName: 'OWNER-FUND-INITIATION',
                     cardType: mutuallyExclusiveEffects[0]?.card_type,
                     messages: messages
@@ -2531,14 +2532,38 @@ class GameStateManager {
                 }
             }
 
-            // MOVEMENT CORRECTION: Movement handled automatically during End Turn, not as required action
-            // Movement logic exists in handleEndTurn() in TurnControls.js
-            // This prevents the "Actions: 2/3" issue where movement blocks turn completion
+            // Check for movement requirements - only choice-type movement is a required action
+            if (window.CSVDatabase && window.CSVDatabase.loaded) {
+                const movementData = window.CSVDatabase.movement.find(
+                    player.position, 
+                    player.visitType || 'First'
+                );
+                if (movementData && movementData.movement_type === 'choice') {
+                    requiredActions.push({ type: 'movement', required: true, completed: false });
+                    requiredCount++;
+                    console.log(`🎯 REQUIRED ACTIONS: Added movement as required action for choice-type movement at ${player.position}`);
+                } else if (movementData) {
+                    console.log(`🎯 REQUIRED ACTIONS: Movement at ${player.position} is ${movementData.movement_type} type - handled automatically`);
+                }
+            }
 
         } catch (error) {
             console.error('Error analyzing space requirements:', error);
         }
 
+        // Preserve existing turn data (like selectedDestination) when reinitializing
+        const existingTurnData = this.state.currentTurn || {};
+        
+        // CRITICAL: Ensure selectedDestination is preserved across reinitialization
+        const preservedSelectedDestination = existingTurnData.selectedDestination || null;
+        console.log(`🎯 TURN INIT: Preserving selectedDestination: "${preservedSelectedDestination}" for player ${playerId}`);
+        
+        // IMPORTANT: If user has already selected a destination, don't reinitialize
+        if (preservedSelectedDestination && preservedSelectedDestination !== 'null') {
+            console.log(`🎯 TURN INIT: User already selected destination "${preservedSelectedDestination}", skipping reinitialization`);
+            return; // Don't reinitialize if user has made their choice
+        }
+        
         // Update current turn state
         this.setState({
             currentTurn: {
@@ -2553,12 +2578,16 @@ class GameStateManager {
                 },
                 canEndTurn: requiredCount === 0,
                 lastActionTimestamp: Date.now(),
-                fundingCardDrawnForSpace: false,
-                spaceActionsCompleted: false,
-                lastDiceRoll: null
+                // Preserve important turn data when reinitializing
+                selectedDestination: preservedSelectedDestination,
+                fundingCardDrawnForSpace: existingTurnData.fundingCardDrawnForSpace || false,
+                spaceActionsCompleted: existingTurnData.spaceActionsCompleted || false,
+                lastDiceRoll: existingTurnData.lastDiceRoll || null
             }
         });
 
+        console.log(`🎯 TURN INIT: Set selectedDestination to: "${preservedSelectedDestination}"`);
+        
         // Emit turn initialization event
         this.emit('turnActionsInitialized', {
             playerId: playerId,
@@ -2580,6 +2609,35 @@ class GameStateManager {
         if (this.state.currentTurn.playerId !== playerId) {
             console.warn(`GameStateManager: Action from ${playerId} but current turn is ${this.state.currentTurn.playerId}`);
             return;
+        }
+
+        // Differentiate between card usage from hand (free) vs space card actions (required)
+        if (actionType === 'card') {
+            const isHandCardUsage = actionDetails?.source !== 'available_card_action';
+            
+            if (isHandCardUsage) {
+                console.log(`🎴 CARD ACTION: Player ${playerId} used a card from hand - free action allowed`);
+                // Card usage from hand is a free action
+                const completedActions = [...this.state.currentTurn.completedActions];
+                completedActions.push({
+                    type: actionType,
+                    playerId: playerId,
+                    completedAt: Date.now(),
+                    details: actionDetails
+                });
+                
+                this.setState({
+                    currentTurn: {
+                        ...this.state.currentTurn,
+                        completedActions: completedActions
+                    }
+                });
+                return;
+            } else {
+                console.log(`🎴 CARD ACTION: Player ${playerId} drew cards from space action - required action`);
+                // Card drawing from space actions should be processed as required actions
+                // Continue to the normal required action processing below
+            }
         }
 
         // Find the required action and mark it completed
@@ -2627,6 +2685,15 @@ class GameStateManager {
         // If this is a dice action, store the dice value
         if (actionType === 'dice' && actionDetails?.diceValue) {
             updatedCurrentTurn.lastDiceRoll = actionDetails.diceValue;
+        }
+        
+        // If this is a movement action, store the selected destination
+        console.log(`🚶 MOVEMENT DEBUG: Processing movement action with actionType="${actionType}", actionDetails=`, actionDetails);
+        if (actionType === 'movement' && actionDetails?.selectedDestination) {
+            updatedCurrentTurn.selectedDestination = actionDetails.selectedDestination;
+            console.log(`🚶 MOVEMENT: Stored selected destination ${actionDetails.selectedDestination} for end turn`);
+        } else if (actionType === 'movement') {
+            console.log(`🚶 MOVEMENT WARNING: Movement action but no selectedDestination found in actionDetails`);
         }
 
         // Update state
@@ -2816,10 +2883,7 @@ class GameStateManager {
                 }
             }
             
-            // Add new cards to player's hand
-            updatedCards = [...updatedCards, ...newCards];
-            
-            // Update player state
+            // Update player state with old cards removed (new cards will be added via acknowledgment process)
             const updatedPlayer = {
                 ...currentPlayer,
                 cards: {
@@ -2832,7 +2896,7 @@ class GameStateManager {
             updatedPlayers[playerIndex] = updatedPlayer;
             this.setState({ players: updatedPlayers });
             
-            // Show acknowledgment for the new cards
+            // Show acknowledgment for the new cards (this will add them to the player's hand after acknowledgment)
             this.processDrawnCardsWithAcknowledgment(playerId, cardType, newCards, true);
             
             // Emit event for UI feedback

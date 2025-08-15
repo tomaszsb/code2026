@@ -280,9 +280,16 @@ class MovementEngine {
      * Get logic space movement options (handled by LogicSpaceManager)
      */
     getLogicMoves(spaceData, player, visitType) {
-        // Logic spaces are handled by LogicSpaceManager component
-        // Return empty moves to prevent normal movement
-        return [];
+        const moves = [];
+
+        for (let i = 1; i <= 5; i++) {
+            const spaceKey = `destination_${i}`;
+            if (spaceData[spaceKey] && spaceData[spaceKey].trim()) {
+                moves.push(spaceData[spaceKey]);
+            }
+        }
+
+        return moves;
     }
 
     /**

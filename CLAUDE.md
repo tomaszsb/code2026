@@ -182,6 +182,38 @@ player.money += amount;  // FORBIDDEN
 
 ## Recent Work Log
 
+### 2025-08-15: Card System Bug Fixes
+
+**UI Rendering Bug Fix: Cards Not Disappearing From Hand**
+- **Symptom**: Used cards were not being removed from the player's hand in the UI.
+- **Root Cause**: A React re-rendering issue in the `CardsInHand` component.
+- **Solution**: Implemented a forced re-render mechanism using an `updateCounter` state variable in the `CardsInHand` component to ensure the UI updates correctly after a card is used.
+
+**Dice Effect Bug Fix: Automatic Life Card Not Awarded**
+- **Symptom**: On PM-DECISION-CHECK space, rolling a 1 was not automatically adding a Life card.
+- **Root Cause**: The dice roll logic in `DiceRollSection.js` was not correctly identifying the `l_cards` effect type.
+- **Solution**: Updated the condition to `effect.effect_type === 'cards' || effect.effect_type.endsWith('_cards')`.
+
+### 2025-08-15: Critical Movement System Fix
+
+**Major Bug Fix**: Resolved movement failure from choice-type spaces like PM-DECISION-CHECK
+
+**Root Cause Identified**:
+- **MovementEngine Classification**: PM-DECISION-CHECK was correctly classified as "Logic" space due to containing "DECISION-CHECK"
+- **Empty Movement Bug**: `getLogicMoves()` function returned empty array `[]`, preventing all movement from Logic spaces
+- **TurnControls Dependency**: End Turn button requires `availableMoves.length > 0` to execute movement
+- **Preserved Selection Lost**: User's selected destination (ARCH-INITIATION) was correctly stored but never used
+
+**Technical Solution**:
+- **MovementEngine.js Fix**: Modified `getLogicMoves()` to read actual destinations from CSV data instead of returning empty array
+- **Destination Preservation**: Enhanced GameStateManager to preserve selectedDestination across state updates
+- **Early Return Logic**: Added protection against unwanted turn reinitialization that wipes stored destinations
+
+**Files Modified**:
+- **game/js/utils/MovementEngine.js**: Fixed `getLogicMoves()` function (lines 282-293)
+- **game/js/data/GameStateManager.js**: Enhanced `initializeTurnActions()` with preservation logic and early return
+- **Architecture Compliance**: Maintains event-driven patterns and CSV-as-database principles
+
 ### 2025-08-14: Card Replacement System Implementation
 
 **Major Achievement**: Fully functional card replacement system with event-driven architecture

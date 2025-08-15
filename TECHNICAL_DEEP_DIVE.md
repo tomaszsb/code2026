@@ -4,6 +4,49 @@
 
 **Purpose**: Deep-dive architectural reference for core game systems. For current implementation details and recent work, see `CLAUDE.md`.
 
+## 0. Recent Critical System Fixes
+
+### 0.1. Movement System Architecture Fix (2025-08-15)
+
+**Problem**: Logic-type spaces (like PM-DECISION-CHECK) were unable to execute movement due to architectural oversight in MovementEngine.
+
+**Space Classification System**:
+```javascript
+// MovementEngine.js - getSpaceType()
+if (spaceName.includes('DECISION-CHECK') || spaceName.includes('LOGIC')) {
+    spaceType = 'Logic';
+}
+```
+
+**Movement Processing Flow**:
+1. **Space Entry**: Player arrives at PM-DECISION-CHECK (classified as Logic space)
+2. **Turn Actions**: Player completes dice roll, card actions, movement selection
+3. **Movement Selection**: User selects destination (e.g., ARCH-INITIATION) - stored correctly in currentTurn.selectedDestination
+4. **End Turn**: TurnControls calls `movementEngine.getAvailableMoves(currentPlayer)`
+5. **Critical Failure Point**: `getLogicMoves()` returned `[]`, blocking movement execution
+
+**Technical Solution**:
+```javascript
+// BEFORE - Blocked all Logic space movement
+getLogicMoves(spaceData, player, visitType) {
+    return []; // No movement allowed from Logic spaces
+}
+
+// AFTER - Now reads actual destinations from CSV data
+getLogicMoves(spaceData, player, visitType) {
+    const moves = [];
+    for (let i = 1; i <= 5; i++) {
+        const spaceKey = `destination_${i}`;
+        if (spaceData[spaceKey] && spaceData[spaceKey].trim()) {
+            moves.push(spaceData[spaceKey]);
+        }
+    }
+    return moves;
+}
+```
+
+**Architecture Impact**: This fix maintains CSV-as-database principles while enabling proper movement from Logic-type decision spaces, preserving the event-driven architecture for movement processing.
+
 ## 1. Card System Architecture
 
 The card system is a highly data-driven and intricate part of the game, governing how players acquire, manage, and use various types of cards to influence game state.
@@ -217,6 +260,18 @@ this.on('cardReplacementConfirmed', (event) => this.handleCardReplacementConfirm
 **✅ Error Handling**: Comprehensive defensive programming and edge case management
 
 **Result**: Players can now visit PM-DECISION-CHECK, see "Replace 1 E Card" button, select cards from modal interface, and complete replacement with full integration to acknowledgment system.
+
+### 1.8. Card System Bug Fixes (2025-08-15)
+
+**UI Rendering Bug: Cards Not Disappearing From Hand**
+- **Symptom**: Used cards were not being removed from the player's hand in the UI.
+- **Root Cause**: A React re-rendering issue in the `CardsInHand` component. The component's `useMemo` hook for calculating the list of cards was not re-evaluating because its dependency (`player.cards`) was not being detected as changed due to a subtle memoization issue.
+- **Solution**: A forced re-render mechanism was implemented by adding an `updateCounter` state variable to the `CardsInHand` component. This counter is incremented whenever a card is used, and it's added to the dependency array of the `useMemo` hook, guaranteeing a UI update.
+
+**Dice Effect Bug: Automatic Life Card Not Awarded**
+- **Symptom**: At the PM-DECISION-CHECK space, rolling a 1 did not automatically grant a Life card as defined in `DICE_EFFECTS.csv`.
+- **Root Cause**: The dice roll processing logic in `DiceRollSection.js` was too specific, checking only for `effect_type === 'cards'` and failing to recognize other card-related effect types like `l_cards`.
+- **Solution**: The condition was updated to be more flexible: `effect.effect_type === 'cards' || effect.effect_type.endsWith('_cards')`. This ensures that any effect type ending in `_cards` is correctly identified as a card-related effect, making the system more robust and data-driven.
 
 ## 2. Phase 22 Systems - LIFE Card Mechanics & CSV Data Consistency ✅ NEW (2025-08-13)
 

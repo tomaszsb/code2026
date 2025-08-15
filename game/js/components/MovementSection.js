@@ -102,6 +102,34 @@ function MovementSection({
                 showMoveDetails: true
             });
         }
+
+        // For choice-type movement, emit playerActionTaken to mark movement as completed
+        if (currentPlayer && gameStateManager && window.CSVDatabase?.loaded) {
+            const movementData = window.CSVDatabase.movement.find(
+                currentPlayer.position, 
+                currentPlayer.visitType || 'First'
+            );
+            
+            if (movementData && movementData.movement_type === 'choice') {
+                console.log(`🚶 MOVEMENT: Player ${currentPlayer.name} selected destination ${spaceName} for choice-type movement`);
+                
+                // Emit the movement selection as a completed required action
+                gameStateManager.emit('playerActionTaken', {
+                    playerId: currentPlayer.id,
+                    actionType: 'movement',
+                    actionData: {
+                        selectedDestination: spaceName,
+                        source: 'movement_selection',
+                        movementType: 'choice'
+                    },
+                    timestamp: Date.now(),
+                    spaceName: currentPlayer.position,
+                    visitType: currentPlayer.visitType || 'First'
+                });
+                
+                console.log(`🚶 MOVEMENT: Movement selection marked as completed required action`);
+            }
+        }
     };
 
 

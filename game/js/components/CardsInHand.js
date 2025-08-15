@@ -6,6 +6,7 @@
 function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) {
     const { useMemo, useState, useEffect } = React;
     const [showCardsModal, setShowCardsModal] = useState(false);
+    const [updateCounter, setUpdateCounter] = useState(0);
     
     // Handle escape key to close modal
     useEffect(() => {
@@ -51,7 +52,7 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
         });
         
         return cards;
-    }, [player?.cards]);
+    }, [player?.cards, updateCounter]);
     
     const cardCount = useMemo(() => allCards.length, [allCards]);
     
@@ -101,6 +102,7 @@ function CardsInHand({ player, onCardSelect, cardsExpanded, onToggleExpanded }) 
             description: result || 'Card effect applied'
         });
         
+        setUpdateCounter(c => c + 1);
     };
 
     if (!player) {

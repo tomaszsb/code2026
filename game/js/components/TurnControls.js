@@ -171,30 +171,59 @@ function TurnControls({
             // Get available moves using MovementEngine
             const availableMoves = movementEngine.getAvailableMoves(currentPlayer);
             if (availableMoves && availableMoves.length > 0) {
-                // Select the first available move (most spaces have only one destination)
-                const selectedMove = availableMoves[0];
+                // Check if user has already selected a destination for choice-type movement
+                // Use fresh state access to ensure we get the most recent selectedDestination
+                const freshGameState = gameStateManager.getState();
+                const userSelectedDestination = freshGameState?.currentTurn?.selectedDestination;
+                
+                console.log(`🚶 TURN END: Available moves: [${availableMoves.join(', ')}]`);
+                console.log(`🚶 TURN END: User selected destination: "${userSelectedDestination}"`);
+                
+                let selectedMove;
+                if (userSelectedDestination && availableMoves.includes(userSelectedDestination)) {
+                    // Use the user's selected destination
+                    selectedMove = userSelectedDestination;
+                    console.log(`🚶 TURN END: Using user-selected destination: ${selectedMove}`);
+                } else {
+                    // Fallback to first available move (for fixed/logic movement or no selection)
+                    selectedMove = availableMoves[0];
+                    console.log(`🚶 TURN END: Using automatic destination: ${selectedMove}`);
+                    if (userSelectedDestination) {
+                        console.log(`🚶 TURN END WARNING: User selected "${userSelectedDestination}" but it's not in available moves`);
+                    }
+                }
+                
                 const visitType = movementEngine.getVisitType(currentPlayer, selectedMove);
                 
                 // Execute the move directly through GameStateManager BEFORE ending turn
+                console.log(`🚶 TURN END: About to move player ${currentPlayer.id} to ${selectedMove} with visitType ${visitType}`);
                 const allMessages = gameStateManager.movePlayerWithEffects(
                     currentPlayer.id, 
                     selectedMove, 
                     visitType
                 );
+                console.log(`🚶 TURN END: Movement completed, messages:`, allMessages);
                 
-                // Emit standardized player action taken event
-                gameStateManager.emit('playerActionTaken', {
-                    playerId: currentPlayer.id,
-                    actionType: 'movement',
-                    actionData: {
-                        destination: selectedMove,
-                        visitType: visitType,
-                        movementMessages: allMessages
-                    },
-                    timestamp: Date.now(),
-                    spaceName: currentPlayer.position,
-                    visitType: currentPlayer.visitType || 'First'
-                });
+                // Only emit playerActionTaken if this is automatic movement (not user-selected)
+                // User-selected destinations already emitted the action when selected
+                if (!userSelectedDestination) {
+                    // Emit standardized player action taken event for automatic movement
+                    gameStateManager.emit('playerActionTaken', {
+                        playerId: currentPlayer.id,
+                        actionType: 'movement',
+                        actionData: {
+                            destination: selectedMove,
+                            visitType: visitType,
+                            movementMessages: allMessages,
+                            source: 'automatic_movement'
+                        },
+                        timestamp: Date.now(),
+                        spaceName: currentPlayer.position,
+                        visitType: currentPlayer.visitType || 'First'
+                    });
+                } else {
+                    console.log(`🚶 TURN END: Using pre-selected destination, skipping duplicate action event`);
+                }
                 
                 // Allow a brief moment for visual updates to complete before ending turn
                 setTimeout(() => {
