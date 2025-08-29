@@ -3,3 +3,7 @@ node_modules/
 .env
 game/server.log
 .claude/settings.local.json
+
+# Temporary status files
+CURRENT_STATUS_AND_NEXT_STEPS.md
+function_list.md
